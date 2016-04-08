@@ -53,7 +53,7 @@ ruleset b507199x5 {
     //functions
     // taken from website, not tested. function call to a different pico on the same kre  
 	  cloud_url = "https://#{meta:host()}/sky/cloud/";
-
+      //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
       skyQuery = function(eci, mod, func, params) {
               response = http:get("#{cloud_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
    
@@ -84,7 +84,9 @@ ruleset b507199x5 {
 	
   //-------------------- Rulesets --------------------
     rulesets = function() {
-      eci = meta:eci().klog("eci: ");
+      eci = meta:eci()
+      //.klog("eci: ")
+      ;
       results = pci:list_ruleset(eci).klog("results of pci list_ruleset");//defaultsTo("error",standardError("pci list_ruleset failed"));  
       rids = results{'rids'}.defaultsTo("error",standardError("no hash key rids"));
       {
@@ -104,7 +106,10 @@ ruleset b507199x5 {
        'description'     : results
       };
     }
-    installRulesets = defaction(eci, rids){
+    // add defaultsto for eci so it defaultsto meta:eci
+    // everywhere installRulesets defaction will need a with eci for any out side 
+    installRulesets = defaction(rids){
+      configure using eci = meta:eci();
       new_ruleset = pci:new_ruleset(eci, rids);
       send_directive("installed #{rids}");
     }
@@ -113,6 +118,7 @@ ruleset b507199x5 {
       send_directive("uninstalled #{rids}");
     }
   //-------------------- Channels --------------------
+    // cahnnelinfo, needs to return a status, adjust everywhere its used.
     channel = function (value){
       // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
       my_channels = channels();
@@ -136,6 +142,7 @@ ruleset b507199x5 {
       channel_single = channel(name);
       channel_single{'cid'};
     }
+    //combine with channel and only switch on value(change to id) parameter
     channels = function() { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
@@ -177,6 +184,7 @@ ruleset b507199x5 {
         'channels' : channels
       };
     }
+    // add update channel type.
     updateAttributes = defaction(eci, attributes){
       set_eci = pci:set_eci_attributes(eci, attributes);
       send_directive("updated channel attributes for #{eci}");
@@ -192,7 +200,9 @@ ruleset b507199x5 {
       deleteeci =pci:delete_eci(eci);
       send_directive("deleted channel #{eci}");
     }
-    createChannel = defaction(eci, options){
+    // add a defaultsto
+    createChannel = defaction(options){
+      configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
       send_directive("created channel #{new_eci}");
     }
@@ -417,7 +427,7 @@ ruleset b507199x5 {
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     if(rids neq "") then { // should we be valid checking?
-      installRulesets(eci, rid_list);
+      installRulesets(rid_list);
     }
     fired {
       log (standardOut("success installed rids #{rids}"));
@@ -530,7 +540,7 @@ ruleset b507199x5 {
           // do we need to check the format of name? is it wrangler's job?
     if(channel_name.match(re/\w[\w-]*/)) then 
           { 
-      createChannel(meta:eci(), options);
+      createChannel(options);
           }
     fired {
       log (standardOut("success created channels #{channel_name}"));

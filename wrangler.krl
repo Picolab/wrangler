@@ -142,6 +142,13 @@ ruleset b507199x5 {
       channel_single = channel(name);
       channel_single{'cid'};
     }
+    // always return a eci weather given a eci or name
+    alwaysEci = function(value){
+      eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
+              value |
+              eciFromName(value);
+      eci;       
+    }
     //combine with channel and only switch on value(change to id) parameter
     channels = function() { 
       eci = meta:eci();
@@ -184,15 +191,18 @@ ruleset b507199x5 {
         'channels' : channels
       };
     }
-    updateAttributes = defaction(eci, attributes){
+    updateAttributes = defaction(value, attributes){
+      eci = alwaysEci(value);
       set_eci = pci:set_eci_attributes(eci, attributes);
       send_directive("updated channel attributes for #{eci}");
     }
-    updatePolicy = defaction(eci, policy){
+    updatePolicy = defaction(value, policy){
+      eci = alwaysEci(value);
       set_polcy = pci:set_eci_policy(eci, policy); // policy needs to be a map, do we need to cast types?
       send_directive("updated channel policy for #{eci}");
     }
-    updateType = defaction(eci, type){
+    updateType = defaction(value, type){
+      eci = alwaysEci(value);
       set_type = pci:set_eci_type(eci, type); 
       send_directive("updated channel type for #{eci}");
     }

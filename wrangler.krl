@@ -325,7 +325,7 @@ ruleset b507199x5 {
       subsript = subs.map( function(channel){
           {channel{'name'}:channel{'attributes'}}
       });
-      /* 
+      /*  
       {"18:floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
       */
@@ -743,7 +743,7 @@ ruleset b507199x5 {
     then
     {
 
-      createChannel(meta:eci(),options);// just use meta:eci()??
+      createChannel(options);// just use meta:eci()??
 
       event:send(subscription_map, "wrangler", "pending_subscription") // send request
         with attrs = {
@@ -800,7 +800,7 @@ ruleset b507199x5 {
     if(status eq "inbound") 
     then
     {
-      createChannel(meta:eci(),options);
+      createChannel(options);
     }
     fired { 
       log(standardOut("successful pending incoming"));

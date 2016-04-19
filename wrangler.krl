@@ -184,7 +184,6 @@ ruleset b507199x5 {
         'channels' : channels
       };
     }
-    // add update channel type.
     updateAttributes = defaction(eci, attributes){
       set_eci = pci:set_eci_attributes(eci, attributes);
       send_directive("updated channel attributes for #{eci}");
@@ -193,11 +192,15 @@ ruleset b507199x5 {
       set_polcy = pci:set_eci_policy(eci, policy); // policy needs to be a map, do we need to cast types?
       send_directive("updated channel policy for #{eci}");
     }
+    updateType = defaction(eci, type){
+      set_type = pci:set_eci_type(eci, type); 
+      send_directive("updated channel type for #{eci}");
+    }
     deleteChannel = defaction(value) {
       eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               value |
               eciFromName(value);
-      deleteeci =pci:delete_eci(eci);
+      deleteeci = pci:delete_eci(eci);
       send_directive("deleted channel #{eci}");
     }
     // add a defaultsto

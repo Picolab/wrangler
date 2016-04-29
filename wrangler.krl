@@ -15,13 +15,13 @@
 //whats the benifit of forking a ruleset vs creating a new one?
 //pci: lacks abillity to change channel type 
 
-ruleset b507199x5 {
+ruleset b507798x0 {
   meta {
     name "wrangler"
     description <<
       Wrangler ( ) Module
 
-      use module  b507199x5 alias wrangler
+      use module  b507798x0 alias wrangler
 
       This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
       When a PICO is created or authenticated this ruleset
@@ -240,7 +240,8 @@ ruleset b507199x5 {
 	}
   // slows down website, and creates dependscies, store name as a ent in wrangler
   profile = function(key) {
-    pds:profile(key);
+    ent:name;
+    //pds:profile(key);
   }
   pico = function(namespace) {
     {
@@ -266,39 +267,96 @@ ruleset b507199x5 {
 			'attributes' : ent:attributes
 		}
 	}
-	prototypes = function() {
-		{
-			'status' : true,
-			'prototypes' : ent:prototypes
-		}
-	}
-	
 	
 	deletePico = defaction(eci) {
 		noret = pci:delete_pico(eci, {"cascade":1});
 		send_directive("deleted pico #{eci}");
 	}
 	
-	
-	prototypeDefinitions = {
-		"core": [
-        "b507199x5.dev",
-        "b507199x8.dev", // pds
-        "b507199x1.dev"// quick fix and a ugly one! bootstrap rid
-			//"a169x625"
-		]
-	}
+  corePrototype = {
+      "meta" : {
+                "discription": "Wrangler base prototype"
+                },
+      "rids": [ "b507199x5.dev",
+                "b507199x8.dev" // pds
+                 //"a169x625"
+              ],
+      "channels" : [{
+                      "name"       : "testPrototypChannel",
+                      "type"       : "ProtoType",
+                      "attributes" : "prototypes test attrs",
+                      "policy"     : "not implamented"
+                    },
+                    {
+                      "name"       : "test2PrototypChannel",
+                      "type"       : "ProtoType",
+                      "attributes" : "prototypes test attrs",
+                      "policy"     : "not implamented"
+                    }
+                    ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
+      "subscriptions_request": [{
+                                  "name"          : "corePrototypeName",
+                                  "name_space"    : "corePrototypeNameSpace",
+                                  "my_role"       : "son",
+                                  "your_role"     : "test",
+                                  "target_eci"    : "1654165",
+                                  "channel_type"  : "ProtoType",
+                                  "attrs"         : "nogiven"
+                                }],
+      "Prototype_events" : [["wrangler","init_general"],
+                            ["wrangler","init_profile"],
+                            ["wrangler","init_settings"]
+                           ], // array of arrays [[domain,type],....], used to create data structure in pds.
+      "PDS" : {
+                "profile" : {},
+                "general" : {},
+                "settings": {}
+      }
+  };
+  devtoolsPrototype = {
+      "meta" : {
+                "discription": "devtools prototype"
+                },
+      "rids": [ 
+                "b507199x1.dev"// quick fix and a ugly one! bootstrap rid
+                 //"a169x625"
+              ],
+      "channels" : [{
+                      "name"       : "testDevtoolsPrototypChannel",
+                      "type"       : "ProtoType",
+                      "attributes" : "devtool prototypes test attrs",
+                      "policy"     : "not implamented"
+                    },
+                    {
+                      "name"       : "testDevtools2PrototypChannel",
+                      "type"       : "ProtoType",
+                      "attributes" : "devtool prototypes test attrs",
+                      "policy"     : "not implamented"
+                    }
+                    ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
+      "subscriptions_request": [],
+      "Prototype_events" : [["wrangler","init_general"],
+                            ["wrangler","init_profile"],
+                            ["wrangler","init_settings"]
+                           ], // array of arrays [[domain,type],....], used to create data structure in pds.
+      "PDS" : {
+                "profile" : {},
+                "general" : {},
+                "settings": {}
+      }
+  };
 
-  //defaultPrototype = {
-      Prototype_rids = "";//"asdf;asdf;asdf"
-      Prototype_init_event_domain = "wrangler"; //  used to dynamicaly raise any desired events.
-      Prototype_init_event_type = "init_events"; //  used to dynamicaly raise any desired events.
-      Prototype_events = [["wrangler","init_general"],["wrangler","init_profile"],["wrangler","init_settings"]]; // array of arrays [[domain,type],....], used to create data structure in pds.
-  //}
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
 // we will store base prototypes as hard coded varibles with, 
-
+  prototypes = function() {
+    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype };// if no prototypes set to map so we can use put()
+    prototypes = init_prototypes.put(['core'],corePrototype);
+    {
+      'status' : true,
+      'prototypes' : prototypes
+    }
+  };
 
 // create a ent:prototype_at_creationg, ent:predefined_prototype. 
 // at creation wrangler will create child and send protype to child and 
@@ -307,51 +365,28 @@ ruleset b507199x5 {
 
 // create child from protype will take the name with a option of a prototype with a default to core.
   createChild = defaction(name){ 
-    configure using protype_name = "core";
-    // get prototype from ent varible and default to base core if not found.
+    configure using protype_name = "devtools"; // core must be installed by default for prototypeing to work 
+    results = prototype(); // get prototype from ent varible and default to core if not found.
+    prototypes = results{"prototypes"};
+    prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");
+    rids = prototype{"rids"};
     // create child and give name
-    // install rids 
+    attributes = {
+      "name": name,
+      "prototype": prototype.encode()
+    };
+    // create child 
+    newPicoInfo = pci:new_pico(meta:eci()); // we need pci updated to take a name.
+    newPicoEci = newPicoInfo{"cid"};// store child eci
+    // bootstrap child
+    a = pci:new_ruleset(newPicoEci, corePrototype{"rids"}); // install core rids (bootstrap child) 
+    // bootstrap prototype
+    b = pci:new_ruleset(newPicoEci, rids);// install protypes 
     // update child ent:prototype_at_creation with prototype
-    //
-    a = attributes.klog("attributes: ");
-    init_event_domain = attributes{"Prototype_init_event_domain"}; // array [domain,type]
-    init_event_type = attributes{"Prototype_init_event_type"}; // array [domain,type]
-    prototype_rids = attributes{"Prototype_rids"};
-
-    rids = prototype_rids.split(re/;/); 
-    // create child 
-    newPicoInfo = pci:new_pico(meta:eci());
-    newPicoEci = newPicoInfo{"cid"};// store child eci
-    // bootstrap child
-    a = pci:new_ruleset(newPicoEci, prototypeDefinitions{"core"}); // install core rids (bootstrap child) 
-    // create child structure from prototype
-    b = pci:new_ruleset(newPicoEci, rids);// install protypes rules 
-
-    event:send({"cid":newPicoEci}, init_event_domain, init_event_type) // event to child to handle prototype creation 
+    event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
   }
 
-
-
-
-  createChild = defaction(attributes){ 
-    a = attributes.klog("attributes: ");
-    init_event_domain = attributes{"Prototype_init_event_domain"}; // array [domain,type]
-    init_event_type = attributes{"Prototype_init_event_type"}; // array [domain,type]
-    prototype_rids = attributes{"Prototype_rids"};
-
-    rids = prototype_rids.split(re/;/); 
-    // create child 
-    newPicoInfo = pci:new_pico(meta:eci());
-    newPicoEci = newPicoInfo{"cid"};// store child eci
-    // bootstrap child
-    a = pci:new_ruleset(newPicoEci, prototypeDefinitions{"core"}); // install core rids (bootstrap child) 
-    // create child structure from prototype
-    b = pci:new_ruleset(newPicoEci, rids);// install protypes rules 
-
-    event:send({"cid":newPicoEci}, init_event_domain, init_event_type) // event to child to handle prototype creation 
-      with attrs = attributes
-  }
 
   //-------------------- Subscriptions ----------------------
     subscriptions = function() { // slow, whats a better way to prevent channel call, bigO(n^2)
@@ -611,43 +646,110 @@ ruleset b507199x5 {
 		pre {
       attribute = event:attrs();
       name = event:attr("name");
-      Attribute = attribute // defaultsTo 
-                  .put(["Prototype_rids"],(event:attr("Prototype_rids") || Prototype_rids))
-                  .put(["Prototype_init_event_domain"],(event:attr("Prototype_init_event_domain") || Prototype_init_event_domain))
-                  .put(["Prototype_init_event_type"],(event:attr("Prototype_init_event_type") || Prototype_init_event_type))
-                  ;                  
+      prototype = event:attr("prototype").defaultsTo("devtools", standardError("missing event attr prototype"));           
 		}
 
 		{
-			createChild( Attribute ); 
+			createChild(name) with protype_name = prototype; 
 		}
 		always {
 			log(standardOut("pico created with name #{name}"));
 		}
 	}
 	 
-	rule initializeEvents {// this rule should raise events to self that then raise events to pds
-		select when wrangler init_events 
-		  foreach Prototype_events.klog("Prototype_events : ") setting (PT_event)
-		pre {
-      PTE_domain = PT_event[0].klog("domain : ");
-		  PTE_type = PT_event[1].klog("type : ");
+  rule initializePrototype { 
+    select when wrangler create_prototype //raised from parent in new child
+    pre {
+      prototype_at_creation = event:attr("prototype").decode(); // no defaultto????
+      pico_name = event:attr("name");
     }
-		{
-      event:send({"cid":meta:eci()}, PTE_domain, PTE_type)  
-      with attrs = event:attrs();
-		}
-		
-		always {
+    {
+      noop();
+    }
+    
+    always {
+      log("inited prototype");
+      set ent:prototypes{['at_creation']} prototype_at_creation;
+      set ent:name pico_name;
+      raise wrangler event "init_events"
+            attributes {};
+    }
+  }
+// prototype channels creation 
+  rule initializeCoreChannels {
+    select when wrangler init_events 
+      foreach corePrototype{'channels'}.klog("Prototype core channels : ") setting (PT_channel)
+    pre {
+      attrs = {
+                  "channel_name" : PT_channel{"name"},
+                  "channel_type" : PT_channel{"type"},
+                  "attributes"   : PT_channel{"attributes"},
+                  "policy"       : PT_channel{"policy"}
+              };
+    }
+    {
+      noop();
+    }
+    always {
       log("init pds");
-      //raise PTE_domain event PTE_type 
-      //raise "wrangler" event PTE_type 
-      //      attributes event:attrs().klog("attributes : ")
-		}
-	}
+      raise wrangler event "channel_creation_requested" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+// core channels creation
+  rule initializePrototypeChannels {
+    select when wrangler init_events 
+      foreach ent:prototypes{['at_creation','channels']}.klog("Prototype_channels : ") setting (PT_channel)
+    pre {
+      attrs = {
+                  "channel_name" : PT_channel{"name"},
+                  "channel_type" : PT_channel{"type"},
+                  "attributes"   : PT_channel{"attributes"},
+                  "policy"       : PT_channel{"policy"}
+              };
+    }
+    {
+      noop();
+    }
+    always {
+      log("init pds");
+      raise wrangler event "channel_creation_requested" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+// core subscription creation 
+  rule initializeCoreSubscriptions {
+    select when wrangler init_events 
+      foreach corePrototype{'subscriptions_request'}.klog("Prototype core subscriptions_request: ") setting (subscription)
+    pre {
+      attrs = subscription;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init pds");
+      raise wrangler event "subscription" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
 
-
-
+// prototype subscription creation 
+  rule initializePrototypeSubscriptions {
+    select when wrangler init_events 
+      foreach ent:prototypes{['at_creation','subscriptions_request']}.klog("Prototype subscriptions_request: ") setting (subscription)
+    pre {
+      attrs = subscription;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init pds");
+      raise wrangler event "subscription" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
 
     rule initializeGeneral {
     select when wrangler init_general 
@@ -776,7 +878,9 @@ ruleset b507199x5 {
       pending_entry = {
         "subscription_name"  : name,
         "name_space"    : name_space,
-        "relationship" : my_role,
+        "relationship" : my_role +"<->"+ your_role, 
+        "my_role" : my_role,
+        "target_role" : your_role,
         "target_eci"  : target_eci, // this will remain after accepted
         "status" : "outbound", // should this be passed in from out side? I dont think so.
         "attributes" : attributes
@@ -800,7 +904,9 @@ ruleset b507199x5 {
         with attrs = {
           "name"  : name,
           "name_space"    : name_space,
-          "relationship" : your_role,
+          "relationship" : your_role +"<->"+ my_role ,
+          "my_role" : your_role,
+          "target_role" : my_role,
           "event_eci"  : eciFromName(unique_name), 
           "status" : "inbound",
           "channel_type" : channel_type,
@@ -832,6 +938,8 @@ ruleset b507199x5 {
             "subscription_name"  : event:attr("name").defaultsTo("", standardError("")),
             "name_space"    : event:attr("name_space").defaultsTo("", standardError("name_space")),
             "relationship" : event:attr("relationship").defaultsTo("", standardError("relationship")),
+            "my_role" : event:attr("my_role").defaultsTo("", standardError("my_role")),
+            "target_role" : event:attr("target_role").defaultsTo("", standardError("target_role")),
             "event_eci"  : event:attr("event_eci").defaultsTo("", standardError("event_eci")),
             "status"  : event:attr("status").defaultsTo("", standardError("status")),
             "attributes" : event:attr("attributes").defaultsTo("", standardError("attributes"))
@@ -858,7 +966,12 @@ ruleset b507199x5 {
       raise wrangler event inbound_pending_subscription_added // event to nothing
           with status = pending_subscriptions{'status'}
             and name = pending_subscriptions{'subscription_name'}
-            and channel_name = unique_name;
+            and channel_name = unique_name
+            and name_space = pending_subscriptions{'name_space'}
+            and relationship = pending_subscriptions{'relationship'}
+            and target_role = pending_subscriptions{'target_role'}
+            and my_role = pending_subscriptions{'my_role'}
+            and attributes = pending_subscriptions{'attributes'};
       log(standardOut("failure >>")) if (channel_name eq "");
     } 
     else { 

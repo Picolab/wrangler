@@ -40,7 +40,7 @@ ruleset b507199x5 {
     provides skyQuery, rulesets, rulesetsInfo, //ruleset
     channels, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, //pico
-    subscriptions, channel, eciFromName, subscriptionsAttributes, //subscription
+    subscriptions, channel, eciFromName, subscriptionAttributes, //subscription
     standardError
     sharing on
 
@@ -221,7 +221,7 @@ ruleset b507199x5 {
     }
 
   //-------------------- Picos --------------------
-
+   /// should children and parent functions return a map instead of an array??
 	children = function() {
 		self = meta:eci();
 		children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
@@ -238,7 +238,7 @@ ruleset b507199x5 {
 			'parent' : parent
 		}
 	}
-
+  // slows down website, and creates dependscies, store name as a ent in wrangler
   profile = function(key) {
     pds:profile(key);
   }
@@ -295,8 +295,46 @@ ruleset b507199x5 {
       Prototype_init_event_type = "init_events"; //  used to dynamicaly raise any desired events.
       Prototype_events = [["wrangler","init_general"],["wrangler","init_profile"],["wrangler","init_settings"]]; // array of arrays [[domain,type],....], used to create data structure in pds.
   //}
+// intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
-  createChildFromPrototype = defaction(attributes){ 
+// we will store base prototypes as hard coded varibles with, 
+
+
+// create a ent:prototype_at_creationg, ent:predefined_prototype. 
+// at creation wrangler will create child and send protype to child and 
+// then wrangle in the child will handle the creation of the pico and its prototypes
+// protype has a meta, rids, channels, events( creation events ) 
+
+// create child from protype will take the name with a option of a prototype with a default to core.
+  createChild = defaction(name){ 
+    configure using protype_name = "core";
+    // get prototype from ent varible and default to base core if not found.
+    // create child and give name
+    // install rids 
+    // update child ent:prototype_at_creation with prototype
+    //
+    a = attributes.klog("attributes: ");
+    init_event_domain = attributes{"Prototype_init_event_domain"}; // array [domain,type]
+    init_event_type = attributes{"Prototype_init_event_type"}; // array [domain,type]
+    prototype_rids = attributes{"Prototype_rids"};
+
+    rids = prototype_rids.split(re/;/); 
+    // create child 
+    newPicoInfo = pci:new_pico(meta:eci());
+    newPicoEci = newPicoInfo{"cid"};// store child eci
+    // bootstrap child
+    a = pci:new_ruleset(newPicoEci, prototypeDefinitions{"core"}); // install core rids (bootstrap child) 
+    // create child structure from prototype
+    b = pci:new_ruleset(newPicoEci, rids);// install protypes rules 
+
+    event:send({"cid":newPicoEci}, init_event_domain, init_event_type) // event to child to handle prototype creation 
+      with attrs = attributes
+  }
+
+
+
+
+  createChild = defaction(attributes){ 
     a = attributes.klog("attributes: ");
     init_event_domain = attributes{"Prototype_init_event_domain"}; // array [domain,type]
     init_event_type = attributes{"Prototype_init_event_type"}; // array [domain,type]
@@ -393,11 +431,11 @@ ruleset b507199x5 {
 
     }
     // takes name or eci 
-    subscriptionsAttributes = function (value){
-      v = value; // we dont need this right? // remove when you can test
-      eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-              value |
-              eciFromName(value);
+    subscriptionAttributes = function (name_or_eci){
+      v = name_or_eci; // we dont need this right? // remove when you can test
+      eci = (name_or_eci.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
+              name_or_eci |
+              eciFromName(name_or_eci);
 
       attributes = channelAttributes(eci);
       attributes{'Attributes'};
@@ -581,7 +619,7 @@ ruleset b507199x5 {
 		}
 
 		{
-			createChildFromPrototype( Attribute ); 
+			createChild( Attribute ); 
 		}
 		always {
 			log(standardOut("pico created with name #{name}"));
@@ -833,7 +871,7 @@ ruleset b507199x5 {
     pre{
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
       back_channel = channel(channel_name);
-      back_channel_eci = back_channel{'cid'}; // this is why we call channel and not subscriptionsAttributes.
+      back_channel_eci = back_channel{'cid'}; // this is why we call channel and not subscriptionAttributes.
       attributes = back_channel{'attributes'};
       status = attributes{'status'};
       //back_channel_eci = eciFromName(channel_name).klog("back eci: ");
@@ -865,14 +903,14 @@ ruleset b507199x5 {
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       outGoing = function(event_eci){
-        attributes = subscriptionsAttributes(meta:eci().klog("meta:eci for attributes: ")).klog("outgoing attributes: ");
+        attributes = subscriptionAttributes(meta:eci().klog("meta:eci for attributes: ")).klog("outgoing attributes: ");
         attr = attributes.put({"status" : "subscribed"}).klog("put outgoing status: "); // over write original status
         attrs = attr.put({"event_eci" : event_eci}).klog("put outgoing event_eci: "); // add event_eci
         attrs;
       };
 
       incoming = function(channel_name){
-        attributes = subscriptionsAttributes(channel_name);
+        attributes = subscriptionAttributes(channel_name);
         attr = attributes.put({"status": "subscribed"}).klog("incoming attributes: ");
         attr;
       };
@@ -911,7 +949,7 @@ ruleset b507199x5 {
       //get channel from name
       back_channel = channel(channel_name);
       // look up back channel for canceling outbound.
-      back_channel_eci = back_channel{'cid'}.klog("back_channel_eci: "); // this is why we call channel and not subscriptionsAttributes.
+      back_channel_eci = back_channel{'cid'}.klog("back_channel_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
       attributes = back_channel{'attributes'};
       // get event_eci for subscription_map // who we will notify

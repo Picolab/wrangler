@@ -38,11 +38,12 @@
        return res;
    };
 
-   var mkEsl = function(parts) {
-    if (wrangler.host === "none") {
+   var mkEsl = function(parts,host) {
+    if (wrangler.host === "none") { // I dont think this will ever be true.....
         throw "No wrangler host defined";
     }
-    parts.unshift(wrangler.host); // adds host to beginning of array
+    var Host = ;
+    parts.unshift(host); // adds host to beginning of array
     var res = 'https://'+ parts.join("/"); // returns a url structure string
     return res;
     };
@@ -92,12 +93,12 @@
            //url constructor
            var esl = mkEsl(
             //['sky/event',
-            [ wrangler.eventPath ,
+            [  options._path || wrangler.eventPath ,
             eci,
             eid,
             eventDomain,
             eventType
-            ]);
+            ],options._host || wrangler.host);
 
          console.log("wrangler.raise ESL: ", esl);
          console.log("event attributes: ", eventAttributes);
@@ -136,15 +137,15 @@
         //url constructor
         var esl = mkEsl(
           //['sky/cloud',
-          [ wrangler.functionPath ,
+          [ options._path || wrangler.functionPath ,
             module,
             func_name
-            ]);
+            ], options._host || wrangler.host);
 
         $.extend(parameters, { "_eci": eci });
 
         console.log("Attaching event parameters ", parameters);
-        // should this go in mkEsl ?
+        // should this go in mkEsl ? no, then you could not use it in raiseEvent
         esl = esl + "?" + $.param(parameters);
 
         var process_error = function(res)

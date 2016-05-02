@@ -303,15 +303,39 @@ ruleset b507798x0 {
                                   "channel_type"  : "ProtoType",
                                   "attrs"         : "nogiven"
                                 }],
-      "Prototype_events" : [["wrangler","init_general"],
-                            ["wrangler","init_profile"],
-                            ["wrangler","init_settings"]
-                           ], // array of arrays [[domain,type],....], used to create data structure in pds.
+      "Prototype_events" : [{
+                              'domain': 'wrangler',
+                              'type'  : 'core_prototype_event1',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            },
+                            {
+                              'domain': 'wrangler',
+                              'type'  : 'core_prototype_event2',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            },
+                            {
+                              'domain': 'wrangler',
+                              'type'  : 'core_prototype_event3',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            }
+                            ], // array of maps
       "PDS" : {
-                "profile" : {},
-                "general" : {},
-                "settings": {}
-      }
+                "profile" : {"name":"core"},
+                "general" : {"test":{"subtest":"just a test"}},
+                "settings": {"b507798x0.dev":{
+                                              "name":"wrangler",
+                                              "rid" :"b507798x0.dev",
+                                              "data":{},
+                                              "schema":["im","a","schema"]
+                                              }
+                            }
+              }
   };
   devtoolsPrototype = {
       "meta" : {
@@ -335,10 +359,28 @@ ruleset b507798x0 {
                     }
                     ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
       "subscriptions_request": [],
-      "Prototype_events" : [["wrangler","init_general"],
-                            ["wrangler","init_profile"],
-                            ["wrangler","init_settings"]
-                           ], // array of arrays [[domain,type],....], used to create data structure in pds.
+      "Prototype_events" : [{
+                              'domain': 'wrangler',
+                              'type'  : 'devtools_prototype_event1',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            },
+                            {
+                              'domain': 'wrangler',
+                              'type'  : 'devtools_prototype_event2',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            },
+                            {
+                              'domain': 'wrangler',
+                              'type'  : 'devtools_prototype_event3',
+                              'attrs' : {'attr1':'1',
+                                          'attr2':'2'
+                                        }
+                            }
+                            ], 
       "PDS" : {
                 "profile" : {},
                 "general" : {},
@@ -751,40 +793,151 @@ ruleset b507798x0 {
     }
   }
 
-    rule initializeGeneral {
-    select when wrangler init_general 
+  rule initializeProfile {// this rule should build pds data structure
+    select when wrangler init_events
     pre {
-
+      attrs = corePrototype{['PDS','profile']};
+    }
+    {
+      noop();
+    }
+    always {
+    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+            attributes attrs
+    }
+  }
+  rule initializeGeneral {
+    select when wrangler init_events 
+      foreach corePrototype{['PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
+    pre {
+      key_array = namespace.keys();
+      mapedvalues = namespace.values();
+      maps= mapedvalues[0];
+      attrs = {
+        'namespace': key_array[0],
+        'mapvalues': maps.encode()
+      };
     }
     {
       noop();
     }
     always {
       raise pds event map_item // init general  
-            attributes 
-          { 
-            "namespace": "developer",
-              "mapvalues": { "name": "tedrub",
-                  "discription": "ted rub was a programer!" 
-                 }
-          }
+            attributes attrs
     }
   }
-  rule initializeProfile {// this rule should build pds data structure
-    select when wrangler init_profile
-    
-    pre {}
-    
+
+  rule initializePdsSettings {// this rule should build pds data structure
+    select when wrangler init_events
+    pre {
+      attrs = corePrototype{['PDS','profile']};
+    }
     {
       noop();
     }
-    
     always {
-
     raise pds event updated_profile // init prototype  // rule in pds needs to be created.
-            attributes event:attrs()
+            attributes attrs
     }
   }
+
+  rule initializedBarrier{// after core pds is initialize update prototype pds and raise prototype events
+    select when pds new_map_added // general inited
+            and pds profile_updated // profile inited
+            and pds settings_added // settings inited
+    pre {
+    }
+    {
+      noop();
+    }
+    always {
+    raise wrangler event pds_inited// init prototype  // rule in pds needs to be created.
+            attributes {}
+    }
+  }
+
+  rule updatePrototypeProfile {// this rule should build pds data structure
+    select when wrangler pds_inited
+    pre {
+      attrs = ent:prototypes{['at_creation','PDS','profile']};
+    }
+    {
+      noop();
+    }
+    always {
+    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+            attributes attrs
+    }
+  }
+  rule updatePrototypeGeneral {
+    select when wrangler pds_inited 
+      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
+    pre {
+      key_array = namespace.keys();
+      mapedvalues = namespace.values();
+      maps= mapedvalues[0];
+      attrs = {
+        'namespace': key_array[0],
+        'mapvalues': maps.encode()
+      };
+    }
+    {
+      noop();
+    }
+    always {
+      raise pds event map_item // init general  
+            attributes attrs
+    }
+  }
+
+  rule updatePrototypePdsSettings {// this rule should build pds data structure
+    select when wrangler pds_inited
+    pre {
+      attrs = ent:prototypes{['at_creation','PDS','profile']};
+    }
+    {
+      noop();
+    }
+    always {
+    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+            attributes attrs
+    }
+  }
+  rule raiseCoreEvents {
+    select when wrangler pds_inited
+    foreach corePrototype{['Prototype_events']} setting (Prototype_event)
+    pre {
+      Prototype_domain = Prototype_event{'domain'};
+      Prototype_type = Prototype_event{'type'};
+      Prototype_attrs = Prototype_event{'attrs'};
+    }
+    {
+      noop();
+    }
+    always {
+    //raise Prototype_domain event Prototype_type // init prototype  // rule in pds needs to be created.
+    raise wrangler event Prototype_type 
+            attributes Prototype_attrs
+    }
+  }
+  rule raisePrototypeEvents {
+    select when wrangler pds_inited
+    foreach ent:prototypes{['at_creation','Prototype_events']} setting (Prototype_event)
+    pre {
+      Prototype_domain = Prototype_event{'domain'};
+      Prototype_type = Prototype_event{'type'};
+      Prototype_attrs = Prototype_event{'attrs'};
+    }
+    {
+      noop();
+    }
+    always {
+    //raise Prototype_domain event Prototype_type // init prototype  // rule in pds needs to be created.
+    raise wrangler event Prototype_type 
+            attributes Prototype_attrs
+    }
+  }
+
 /*
 	rule setPicoAttributes {
 		select when wrangler set_attributes_requested

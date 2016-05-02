@@ -260,11 +260,11 @@ ruleset b506607x16 {
     }
   }
 
-  rule itemed_mapped {
+  rule itemed_mapped {// should use decode??
     select when pds map_item
     pre{
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
-      mapvalues = event:attr("mapvalues").defaultsTo("", "no mapvalues");
+      mapvalues = event:attr("mapvalues").defaultsTo("", "no mapvalues").decode();
     }
     always {
       set ent:general{namespace} mapvalues;
@@ -373,8 +373,8 @@ ruleset b506607x16 {
       noop(); 
     }
     fired {
-      raise sds event "profile_updated" attributes event:attrs();
       set ent:profile newly_constructed_profile;
+      raise pds event "profile_updated" attributes event:attrs();
     }
   }
  /* rule SDS_update_profile {  // do we need this rule?
@@ -461,6 +461,7 @@ ruleset b506607x16 {
       set ent:settings{[setRID, "Schema"]} setSchema if not setSchema;
       //set ent:settings{[setRID, "Data"]}   setData if not setData;
       set ent:settings{[setRID, "Data", setAttr]} setValue if not setAttr;
+      raise pds event "settings_added" attributes event:attrs();
     }
   }
   /*

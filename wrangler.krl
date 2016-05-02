@@ -938,37 +938,48 @@ ruleset b507798x0 {
     }
   }
 
-/*
-	rule setPicoAttributes {
-		select when wrangler set_attributes_requested
-		pre {
-			newAttrs = event:attr("attributes").decode().defaultsTo("", standardError("no attributes passed"));
-		}
-		if(newAttrs neq "") then
-		{
-			noop();
-		}
-		fired {
-			set ent:attributes newAttrs;
-		}
-		else {
-			log "no attributes passed to set pico rule";
-		}
-	}
-	
-	rule clearPicoAttributes {
-		select when wrangler clear_attributes_requested
-		pre {
-		}
-		{
-			noop();
-		}
-		fired {
-			clear ent:attributes;
-		}
-	}
-	*/
+  rule addPrototype {
+    select when wrangler add_prototype
+    pre {
 
+    }
+    {
+      noop();
+    }
+    always {
+      set ent:prototypes{prototype_name} prototype;
+    raise wrangler event Prototype_type_added 
+            attributes event:attrs();
+    }
+  }
+  rule updatePrototype {
+    select when wrangler update_prototype
+    pre {
+
+    }
+    {
+      noop();
+    }
+    always {
+      set ent:prototypes{prototype_name} prototype;
+    raise wrangler event Prototype_type_updated
+            attributes event:attrs();
+    }
+  }
+  rule removePrototype {
+    select when wrangler add_prototype
+    pre {
+
+    }
+    {
+      noop();
+    }
+    always {
+      clear ent:prototypes{prototype_name} ;
+    raise wrangler event Prototype_type_removed 
+            attributes event:attrs();
+    }
+  }
 	rule deleteChild {
 		select when wrangler child_deletion
 		pre {
@@ -1123,8 +1134,8 @@ ruleset b507798x0 {
             and relationship = pending_subscriptions{'relationship'}
             and target_role = pending_subscriptions{'target_role'}
             and my_role = pending_subscriptions{'my_role'}
-            and attributes = pending_subscriptions{'attributes'};
-            and event_eci = pending_subscriptions{'event_eci'};
+            and attributes = pending_subscriptions{'attributes'}
+            and event_eci = pending_subscriptions{'event_eci'}
             and channel_type = channel_type;
       log(standardOut("failure >>")) if (channel_name eq "");
     } 

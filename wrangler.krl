@@ -52,15 +52,15 @@ ruleset b507798x0 {
   global {
     //functions
     // taken from website, not tested. function call to a different pico on the same kre  
-	  cloud_url = "https://#{meta:host()}/sky/cloud/";
+	 
       //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
-      skyQuery = function(eci, mod, func, params) {
+      skyQuery = function(eci,_host, mod, func, params) {
+              host = _host || meta:host();
+              cloud_url = "https://#{host}/sky/cloud/";
               response = http:get("#{cloud_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
    
-   
               status = response{"status_code"};
-   
-   
+
               error_info = {
                   "error": "sky cloud request was unsuccesful.",
                   "httpStatus": {
@@ -1037,7 +1037,6 @@ ruleset b507798x0 {
         "target_eci"  : target_eci, // this will remain after accepted
         "status" : "outbound", // should this be passed in from out side? I dont think so.
         "attributes" : attributes
-
       }; 
       //create call back for subscriber     
       options = {
@@ -1125,6 +1124,8 @@ ruleset b507798x0 {
             and target_role = pending_subscriptions{'target_role'}
             and my_role = pending_subscriptions{'my_role'}
             and attributes = pending_subscriptions{'attributes'};
+            and event_eci = pending_subscriptions{'event_eci'};
+            and channel_type = channel_type;
       log(standardOut("failure >>")) if (channel_name eq "");
     } 
     else { 

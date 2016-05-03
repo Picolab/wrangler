@@ -38,9 +38,9 @@ ruleset b507798x0 {
     // Accounting keys
       //none
     provides skyQuery, rulesets, rulesetsInfo, //ruleset
-    channels, channelAttributes, channelPolicy, channelType, //channel
+    channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, //pico
-    subscriptions, channel, eciFromName, subscriptionAttributes, //subscription
+    subscriptions, eciFromName, subscriptionAttributes, //subscription
     standardError
     sharing on
 
@@ -113,33 +113,39 @@ ruleset b507798x0 {
       new_ruleset = pci:new_ruleset(eci, rids);
       send_directive("installed #{rids}");
     }
-    uninstallRulesets = defaction(eci, rids){
+    uninstallRulesets = defaction(rids){
+      configure using eci = meta:eci();
       deleted = pci:delete_ruleset(eci, rids);
       send_directive("uninstalled #{rids}");
     }
   //-------------------- Channels --------------------
-    // cahnnelinfo, needs to return a status, adjust everywhere its used.
-    channel = function (value){
+  /* can be deleted after channel testing.
+    internalChannel = function (value){
+      eci = meta:eci();
+      results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
+      channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      
       // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
-      my_channels = channels();
       attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               'cid' |
               'name';
-      channel_list = my_channels{"channels"}.defaultsTo("no Channel",standardOut("no channel found, by channels"));
+      channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
       filtered_channels = channel_list.filter(function(channel){
         (channel{attribute} eq value);}); 
       result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
       (result);
     }
-
+  */
     nameFromEci = function(eci){ 
       //eci = meta:eci();
-      channel_single = channel(eci);
+      results = channel(eci);
+      channel_single = results{'channels'};
       channel_single{'name'};
     } 
 
     eciFromName = function(name){
-      channel_single = channel(name);
+      results = channel(name);
+      channel_single = results{'channels'};
       channel_single{'cid'};
     }
     // always return a eci weather given a eci or name
@@ -150,13 +156,27 @@ ruleset b507798x0 {
       eci;       
     }
     //combine with channel and only switch on value(change to id) parameter
-    channels = function() { 
+    channel = function(id) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      
+      single_channel = function(id,channels){
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+        attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
+                'cid' |
+                'name';
+        channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
+        filtered_channels = channel_list.filter(function(channel){
+          (channel{attribute} eq value);}); 
+        result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
+        (result);
+      };
+
+      results = (id.isnull()) => channels | single_channel(id,channels);
       {
         'status'   : (channels neq "error"),
-        'channels' : channels
+        'channels' : results
       };
     }
     channelAttributes = function(eci) {
@@ -174,7 +194,7 @@ ruleset b507798x0 {
       };
     }
     channelType = function(eci) { // put this as an issue in kre engine for pci function. old accounts may have different structure as there types, "type : types"
-      my_channels = channels().defaultsTo("error",">> undefined >>");
+      my_channels = channel().defaultsTo("error",">> undefined >>");
 
       getType = function(eci,my_channels) { // change varible names
         channels = my_channels{"channels"}.defaultsTo("undefined",standardError("undefined"));
@@ -238,10 +258,8 @@ ruleset b507798x0 {
 			'parent' : parent
 		}
 	}
-  // slows down website, and creates dependscies, store name as a ent in wrangler
   profile = function(key) {
-    ent:name;
-    //pds:profile(key);
+    pds:profile(key);
   }
   pico = function(namespace) {
     {
@@ -251,10 +269,12 @@ ruleset b507798x0 {
     }
   }
 
+  // slows down website, and creates dependscies, store name as a ent in wrangler
   name = function() {
-    pdsProfiles = pds:profile();
-    pdsProfile = pdsProfiles{"profile"};
-    name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | ent:name ;
+    //pdsProfiles = pds:profile();
+    //pdsProfile = pdsProfiles{"profile"};
+    //name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | ent:name ;
+    name =  ent:name;
     {
       'status' : pdsProfiles{"status"},
       'picoName' : name
@@ -431,9 +451,10 @@ ruleset b507798x0 {
 
 
   //-------------------- Subscriptions ----------------------
-    subscriptions = function() { // slow, whats a better way to prevent channel call, bigO(n^2)
+    // name subscriptions and add results status 
+    allSubscriptions = function (){// slow, whats a better way to prevent channel call, bigO(n^2)
       // list of channels
-      channels_result = channels();
+      channels_result = channel();
       channel_list = channels_result{'channels'};
       // filter list channels to only have subs
       filtered_channels = channel_list.filter( function(channel){
@@ -447,12 +468,24 @@ ruleset b507798x0 {
       }); 
       // reconstruct list, to have a backchannel in attributes.
       subs = filtered_channels.map( function(channel){
-           channel.put(["attributes","back_channel"],channel{"cid"});
+           channel.put(["attributes","back_channel"],channel{"cid"})
+                  .put(["attributes","Channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash
       subsript = subs.map( function(channel){
           {channel{'name'}:channel{'attributes'}}
       });
+      /*  
+      {"18:floppy" :
+          {"status":"inbound","relationship":"","name_space":"18",..}
+      */
+      subsript;
+    };
+    // change to subscriptionsByStatus, and track down other calls
+    // takes in a status value, can be inbound, outbound, subscribed and null will return everything.
+    subscriptions = function() { 
+
+      subsript = allSubscriptions();
       /*  
       {"18:floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
@@ -475,7 +508,17 @@ ruleset b507798x0 {
         'subscriptions'  : subscription
       };
 
-    }
+    };
+    // subscriptions collected By attribute name provided// combine with "by filter"// combine with subscriptions
+    subscriptionsByCollection = function (attribute_name){
+      true;
+
+    };
+    // takes an attribute(name,type,relationship, etc.) and a value(what you want like, tedrub, work , slave<=>master , etc)returns subscriptions of that attribute and value.
+  //  subscriptionsByFilter = function (attr,value){
+
+   //};
+
 
     randomName = function(namespace){
         n = 5;
@@ -492,7 +535,7 @@ ruleset b507798x0 {
     }
     // optimize by taking a list of names, to prevent multiple network calls for channels
     checkName = function(name){
-          chan = channels();
+          chan = channel();
           //channels = channels(); worse bug ever!!!!!!!!!!!!!!!!!!!!!!!!!!!
           // in our meetings we said to check name_space, how is that done?
           /*{
@@ -573,7 +616,7 @@ ruleset b507798x0 {
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     { 
-      uninstallRulesets(eci,rid_list);
+      uninstallRulesets(rid_list);
     }
     fired {
       log (standardOut("success uninstalled rids #{rids}"));
@@ -593,7 +636,7 @@ ruleset b507798x0 {
       attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"));
       attrs = attributes.split(re/;/);
       //attrs = attributes.decode();
-      //channels = Channels();
+      //channels = Channel();
     }
     if(eci neq "" && attributes neq "error") then { // check?? redundant????
       updateAttributes(eci,attributes);
@@ -1148,7 +1191,8 @@ ruleset b507798x0 {
     select when wrangler pending_subscription_approval
     pre{
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
-      back_channel = channel(channel_name);
+      results = channel(channel_name);
+      back_channel = results{'channels'};
       back_channel_eci = back_channel{'cid'}; // this is why we call channel and not subscriptionAttributes.
       attributes = back_channel{'attributes'};
       status = attributes{'status'};
@@ -1225,7 +1269,8 @@ ruleset b507798x0 {
 
       channel_name = event:attr("channel_name").defaultsTo( "No channel_name", standardError("channel_name"));
       //get channel from name
-      back_channel = channel(channel_name);
+      results = channel(channel_name);
+      back_channel = results{'channels'};
       // look up back channel for canceling outbound.
       back_channel_eci = back_channel{'cid'}.klog("back_channel_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
@@ -1271,7 +1316,7 @@ ruleset b507798x0 {
                   (attributes{'event_eci'} ); 
               return;
           };
-          my_channels = channels();
+          my_channels = channel();
           channel_list = my_channels{"channels"}.defaultsTo("no Channel",standardOut("no channel found, by channels"));
           filtered_channels = channel_list.filter( function (channel) {
           ( get_event_eci(channel) eq event_eci);

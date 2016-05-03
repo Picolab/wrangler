@@ -469,7 +469,7 @@ ruleset b507798x0 {
       // reconstruct list, to have a backchannel in attributes.
       subs = filtered_channels.map( function(channel){
            channel.put(["attributes","back_channel"],channel{"cid"})
-                  .put(["attributes","Channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
+                  .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash
       subsript = subs.map( function(channel){
@@ -481,31 +481,26 @@ ruleset b507798x0 {
       */
       subsript;
     };
-    // change to subscriptionsByStatus, and track down other calls
-    // takes in a status value, can be inbound, outbound, subscribed and null will return everything.
-    subscriptions = function() { 
 
+    subscriptions = function(collection,filtered) { 
       subsript = allSubscriptions();
       /*  
       {"18:floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
       */
-      status = function(sub){ // takes a subscription and returns its status.
+     //types = ['name','channel_name','back_channel','name_space','relationship',....] could check imput for validness. 
+      type = function(sub){ // takes a subscription and returns its status.
         value = sub.values(); // array of values [attributes]
         attributes = value.head(); // get attributes
-        status = (attributes.typeof() eq 'hash')=> // for robustness check type.
-        attributes{'status'} |
-          'error';
-        (status);
+        group = (attributes.typeof() eq 'hash')=> // for robustness check type.
+        attributes{collection} | 'error';
+        (group);
       };
-      // return a collection of subs based on status.
-      subscription = subsript.collect(function(sub){
-        (status(sub));
-      });
-
+      return1 = collection.isnull() => subsript |  subsript.collect(function(sub){(type(sub));}) ;
+      return2 = filtered.isnull() => return1 | return1{filtered};
       {
         'status' : (subscriptions neq "error"),
-        'subscriptions'  : subscription
+        'subscriptions'  : return2
       };
 
     };

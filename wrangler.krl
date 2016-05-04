@@ -297,6 +297,7 @@ ruleset b507798x0 {
       "meta" : {
                 "discription": "Wrangler base prototype"
                 },
+                //array of maps for meta data of rids .. [{rid : id},..}  
       "rids": [ "b507199x5.dev",
                 "b507199x8.dev" // pds
                  //"a169x625"
@@ -314,6 +315,7 @@ ruleset b507798x0 {
                       "policy"     : "not implamented"
                     }
                     ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
+                    // belongs in relationManager 
       "subscriptions_request": [{
                                   "name"          : "corePrototypeName",
                                   "name_space"    : "corePrototypeNameSpace",
@@ -441,6 +443,7 @@ ruleset b507798x0 {
     newPicoInfo = pci:new_pico(meta:eci()); // we need pci updated to take a name.
     newPicoEci = newPicoInfo{"cid"};// store child eci
     // bootstrap child
+    //combine new_ruleset calls 
     a = pci:new_ruleset(newPicoEci, corePrototype{"rids"}); // install core rids (bootstrap child) 
     // bootstrap prototype
     b = pci:new_ruleset(newPicoEci, rids);// install protypes 

@@ -2,3 +2,4 @@ This is the basic way to raise events and query with mocha.
 smart tests still need to be designed. 
 Idea is to create a child Pico and remove the current wrangler.krl and install development version. 
 bootstrapping should not reinstall as long as devtools is not used with the child pico. 
+![Alt text](Screen Shot 2016-05-04 at 2.44.20 PM.png.jpg?raw=true "Optional Title")

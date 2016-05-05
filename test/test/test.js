@@ -2,10 +2,10 @@
 var assert = require('chai').assert, 
 	should = require('chai').should(),
     supertest = require('supertest'),
-    event_api = supertest("https://kibdev.kobj.net/sky/event/D7898552-0AFC-11E6-A7BC-38D4E71C24E1");
+    event_api = supertest("https://kibdev.kobj.net/sky/event/D7898552-0AFC-11E6-A7BC-38D4E71C24E1/123/wrangler"),
     sky_query = supertest("https://kibdev.kobj.net/sky/cloud/b507199x5.dev");
 
-
+// what does done do ??????????????????????????
 //check if list children works for creatChild test. 
 describe('children(_eci)', function() {
   it('array of child tuples errors if not 200', function(done) {
@@ -17,28 +17,160 @@ describe('children(_eci)', function() {
   });
 });
 //Check if install ruleset works for creatChild test. 
+//describe('install ruleset', function() {
+//  it('install ruleset errors if not 200', function(done) {
+//      event_api.get('/install_rulesets_requested')
+//      .set('Accept', 'application/json')
+//      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rids : 'b507706x12.dev' })
+//      .expect(200,done)
+//  });
+//});
+/*
 describe('query for installed ruleset & install new ruleset & uninstall & check', function() {
-
-  it('errors if not 200', function(done) {
+  it('errors if bad not 200 or no new installed ruleset', function(done) {
   //list installed rulesets 
-  check_install();
-  function getInstalled(){
     sky_query.get("/rulesets")
     .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
-    .expect(200, done)
-    .expect('Content-Type', /json/)
-  }
-  event_api.get('/children')
+    .expect(200) 
+    .end(function(first_response){
+      event_api.get('/install_rulesets_requested')
+      .set('Accept', 'application/json')
+      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rid : 'b507706x12.dev' })
+      .expect(200)
+      .end(function(first_response){
+      sky_query.get("/rulesets")
+      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+      .expect(200) 
+      .expect(function (res,first_response) {
+        console.log(res.body);
+        console.log(first_response);
+         if (((first_response.body.rids.length - res.body.rids.length) != 1 )) throw new Error("no new installed rulesets");
+      })
+      done();
+    });
+    });
+    
+    
+  });
+  /*
+  it(' remove installed ruleset, errors if not 200', function(done) {
+    event_api.get('/uninstall_rulesets_requested')
     .set('Accept', 'application/json')
-    .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+    .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rid : 'b507706x12.dev' })
     .expect(200, done)
     .expect('Content-Type', /json/)
   });
-
+  */
+//});
+/*
+describe('installed rulesets', function() {
+  var first_response;
+  var second_response;
+  sky_query.get("/rulesets")
+    .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+    .expect(200)
+    .end(function(err,res){
+      response = res.text;
+      first_response = JSON.parse(response);
+      res.body.status.should.equal(true);
+    });
+  describe('install ruleset', function() {
+     event_api.get('/install_rulesets_requested')
+      .set('Accept', 'application/json')
+      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rid : 'b507706x12.dev' })
+      .expect(200);
+    describe('second installed rulesets', function() {
+      sky_query.get("/rulesets")
+        .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+        .expect(200)
+        .end(function(err,res){
+        response = res.text;
+        second_response = JSON.parse(response);
+        res.body.status.should.equal(true);
+       }); 
+      it('list should differ by one if new ruleset installed.', function(done) {
+        console.log(first_response.rids.length);
+        console.log(second_response.rids.length);
+        if (((first_response.rids.length - second_response.rids.length) != 1 )){
+          if(((first_response.rids.length - second_response.rids.length) > 1 )){
+            throw new Error("multiple new installed rulesets");
+          }else{
+            throw new Error("no new installed rulesets");
+          }
+        } 
+        done();
+      });
+    });
+  });
 });
+*/
+
+describe('installed rulesets', function() {
+  var first_response;
+  var second_response;
+
+  before(function(done) {
+    sky_query.get("/rulesets")
+    .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+    .expect(200)
+    .end(function(err,res){
+      response = res.text;
+      first_response = JSON.parse(response);
+      done();
+    });
+  });
+
+
+  it('install ruleset', function(done) {
+     event_api.get('/install_rulesets_requested')
+      .set('Accept', 'application/json')
+      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rids : 'b507706x12.dev' })
+      .expect(200)
+      .end(function(err,res){
+        done();
+      });
+  });
+  afterEach('install ruleset',function(done) {
+     sky_query.get("/rulesets")
+        .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1' })
+        .expect(200)
+        .end(function(err,res){
+        response = res.text;
+        second_response = JSON.parse(response);
+        res.body.status.should.equal(true);
+        done();
+       }); 
+      });
+ 
+  it('list should differ by one if new ruleset installed.', function() {
+        console.log(first_response.rids.length);
+        console.log(second_response.rids.length);
+        if (((second_response.rids.length - first_response.rids.length) != 1 )){
+          if(((second_response.rids.length - first_response.rids.length) > 1 )){
+            throw new Error("multiple new installed rulesets");
+          }else{
+            throw new Error("no new installed rulesets");
+          }
+        }
+  });
+     after( function(done) {
+      event_api.get('/uninstall_rulesets_requested')
+      .set('Accept', 'application/json')
+      .query({ _eci: 'D7898552-0AFC-11E6-A7BC-38D4E71C24E1',rids : 'b507706x12.dev' })
+      .expect(200, done)
+      .expect('Content-Type', /json/)
+      .end(function(err,res){
+        done();
+      });
+    });
+
+
+  });
+
 //Check if uninstall ruleset works for creatChild test. 
 
 //create Child pico for testing in 
+/*
 describe('createChild(TestDriver) Pico for testing', function() {
   // get list of children and store for difference check.
   it('array of child tuples errors if not 200', function(done) {
@@ -55,14 +187,14 @@ describe('createChild(TestDriver) Pico for testing', function() {
     .query({ name: 'TestDriver' })
     .expect(200, done)
     .expect('Content-Type', /json/)
-  });
+  }); 
   // get list of children to check for new child with the previous list,
   // store new child for eci
   // fails if no child created or multiple children created
 
   // install developer version of wrangler in child pico 
   // uninstall current wrangler 
-});
+});*/
 
 // registering rulesets 
 //     -list registered -multiple & single 

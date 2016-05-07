@@ -4,17 +4,26 @@ var chai = require('chai'),
     assert = chai.assert,
     //assert = require('chai').assert, 
     should = chai.should(),
+    //diff = require('deep-diff').diff,
+    _ = require('underscore'),
     supertest = require('supertest'),
+
     _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1", 
+    wrangler_dev = "b507803x0.dev", 
+    wrangler_prod = 'b507199x5.dev',
+    bootstrap_rid = "b507199x1.dev",
+    testing_rid1 = "b507706x12.dev",// used to install, uninstall and query meta data 
+    testing_rid2 = "b507706x13.dev",// used to install, uninstall and query meta data 
+
     event_api = supertest("https://kibdev.kobj.net/sky/event/"+_eci+"/123/wrangler"),
     sky_query = supertest("https://kibdev.kobj.net/sky/cloud/b507199x5.dev"),
     childSkyQuery = supertest("https://kibdev.kobj.net/sky/cloud/b507803x0.dev"),
-    //diff = require('deep-diff').diff,
-    _ = require('underscore');
+    child_testing_pico;
+
     function childEventApi(eci) {
       return supertest("https://kibdev.kobj.net/sky/event/"+eci+"/1988/wrangler");
     };
-    var child_testing_pico;
+
 //check if list children works for creatChild test. 
 describe('children(_eci)', function() {
   it('array of child tuples errors if not 200', function(done) {
@@ -338,7 +347,7 @@ describe('rulesets management', function() {
       it('install ruleset', function(done) {
        childEventApi(child_testing_pico[0][0]).get('/install_rulesets_requested')
        .set('Accept', 'application/json')
-       .query({rids : 'b507706x12.dev' })
+       .query({rids :testing_rid1})
        .expect(200)
        .end(function(err,res){
         //assert.equal(true,res.status);
@@ -370,16 +379,15 @@ describe('rulesets management', function() {
           }else{
             throw new Error("no new installed rulesets");
           }
-        } else if (installed_rulesets[0]!='b507706x12.dev'){
-          throw new Error("wrong ruleset installed should of been b507706x12.dev");
-        }
+        } 
+        assert.include(installed_rulesets,testing_rid1,"should include "+testing_rid1); 
       });
     });
     describe('uninstall single rulesets', function() {
       before(function(done){
         childEventApi(child_testing_pico[0][0]).get('/uninstall_rulesets_requested')
         .set('Accept', 'application/json')
-        .query({rids : 'b507706x12.dev' })
+        .query({rids : testing_rid1 })
         .expect(200)
         .expect('Content-Type', /json/)
         .end(function(err,res){
@@ -394,7 +402,7 @@ describe('rulesets management', function() {
           response = res.text;
           response = JSON.parse(response);
           assert.equal(true,response.status);
-          assert.notInclude(response.rids,"b507706x12.dev","installed rulesets should not be included b507706x12.dev.");
+          assert.notInclude(response.rids,testing_rid1,"installed rulesets should not be included "+testing_rid1);
           done();
         });
       });
@@ -403,13 +411,88 @@ describe('rulesets management', function() {
 
 
 describe('installing a multiple ruleset', function() {
-    // pending test below
-    it('should install multiple new ruleset');
+      var first_response;
+      var second_response;
+
+      before(function(done) {
+        childSkyQuery.get("/rulesets")
+        .query({ _eci: child_testing_pico[0][0] })
+        .expect(200)
+        .end(function(err,res){
+          response = res.text;
+          first_response = JSON.parse(response);
+          assert.equal(true,first_response.status);
+          done();
+        });
+      });
+
+
+      it('install rulesets', function(done) {
+       childEventApi(child_testing_pico[0][0]).get('/install_rulesets_requested')
+       .set('Accept', 'application/json')
+       .query({rids : testing_rid1+';'+testing_rid2})
+       .expect(200)
+       .end(function(err,res){
+        //assert.equal(true,res.status);
+        done();
+      });
+     });
+      afterEach('install rulesets',function(done) {
+       this.retries(2);
+       childSkyQuery.get("/rulesets")
+       .query({ _eci: child_testing_pico[0][0] })
+       .expect(200)
+       .end(function(err,res){
+        response = res.text;
+        second_response = JSON.parse(response);
+        assert.equal(true,second_response.status);
+        done();
+      }); 
+     });
+
+      it('list should differ by two if new ruleset installed.', function() {
+        var installed_rulesets = _.difference( second_response.rids, first_response.rids);
+        if ((installed_rulesets.length) != 2 ){
+          console.log("before install",first_response.rids);
+          console.log("after install",second_response.rids);
+          console.log("difference",installed_rulesets);
+          if((installed_rulesets.length) > 2 ){
+            throw new Error("more than 2 new installed rulesets");
+          }else if((installed_rulesets.length) > 1){
+            throw new Error("only one new installed rulesets");
+          }else {
+            throw new Error("no new installed rulesets");
+          }
+        }
+        assert.include(installed_rulesets,testing_rid1,"should include "+testing_rid1); 
+        assert.include(installed_rulesets,testing_rid2,"should include "+testing_rid2); 
+      });
   });
 
 describe('uninstalling a multiple ruleset', function() {
-    // pending test below
-    it('should uninstall multiple new ruleset');
+      before(function(done){
+        childEventApi(child_testing_pico[0][0]).get('/uninstall_rulesets_requested')
+        .set('Accept', 'application/json')
+        .query({rids : testing_rid1+';'+testing_rid2 })
+        .expect(200)
+        .expect('Content-Type', /json/)
+        .end(function(err,res){
+          done();
+        });
+      });
+      it("check list for uninstalled rulesets", function(done){
+        childSkyQuery.get("/rulesets")
+        .query({ _eci: child_testing_pico[0][0] })
+        .expect(200)
+        .end(function(err,res){
+          response = res.text;
+          response = JSON.parse(response);
+          assert.equal(true,response.status);
+          assert.notInclude(response.rids,testing_rid1,"installed rulesets should not be included "+testing_rid1);
+          assert.notInclude(response.rids,testing_rid2,"installed rulesets should not be included "+testing_rid2);
+          done();
+        });
+      });
   });
 });
 
@@ -426,6 +509,72 @@ describe('uninstalling a multiple ruleset', function() {
 //     -update channel attributes 
 //     -remove channel
 describe('channel management', function() {
+   describe('create channel', function() {
+      var first_response;
+      var second_response;
+
+      before(function(done) {
+        childSkyQuery.get("/channel")
+        .query({ _eci: child_testing_pico[0][0] })
+        .expect(200)
+        .end(function(err,res){
+          response = res.text;
+          first_response = JSON.parse(response);
+          assert.equal(true,first_response.status);
+          done();
+        });
+      });
+      it('create channel', function(done) {
+       childEventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
+       .set('Accept', 'application/json')
+       .query({channel_name:"Time Wizard",
+               channel_type:"TestDriver",
+               attributes: "time warping",
+               policy: "never take prisoners, never be taken alive"})
+       .expect(200)
+       .end(function(err,res){
+        done();
+      });
+     });
+      afterEach('create channel',function(done) {
+       this.retries(2);
+       childSkyQuery.get("/channel")
+       .query({ _eci: child_testing_pico[0][0] })
+       .expect(200)
+       .end(function(err,res){
+        response = res.text;
+        second_response = JSON.parse(response);
+        assert.equal(true,second_response.status);
+        done();
+      }); 
+     });
+
+      it('list should differ by one if new channel created.', function() {
+        first_response = first_response.channels =="error" ? []: first_response.channels;
+        second_response = second_response.channels =="error" ? []: second_response.channels;
+        var first_response_cid = _.map(first_response, function(channel){ return channel.cid; });
+        var second_response_cid = _.map(second_response, function(channel){ return channel.cid; });
+        var new_channel_cid = _.difference( second_response_cid, first_response_cid  );
+        new_channels = _.filter(second_response, function(channel){ return channel.cid == new_channel_cid; });
+        //child_testing_pico = new_channel;
+        if (new_channels.length != 1){
+          console.log("first_response:",first_response);
+          console.log("second_response:",second_response);
+          console.log("first_response mapped:",first_response_cid);
+          console.log("second_response mapped:",second_response_cid);
+          console.log("difference:",new_channel_cid);
+          console.log("second_response filtered:",new_channels);
+        } 
+        assert.isAbove(new_channels.length,0,"no channels created");
+        assert.isBelow(new_channels.length,2,"multiple channel created");
+        assert.equal(1,new_channels.length,1);
+        assert.equal("Time Wizard",new_channels[0].name);
+        assert.equal("TestDriver",new_channels[0].type);
+        assert.equal("time warping",new_channels[0].attributes.channel_attributes);
+        //assert.equal("never take prisoners, never be taken alive",new_channels[0].policy);
+        //policys are not returned in channel pci command.
+      });
+    });
   describe('list channels', function() {
     // pending test below
     it('should return all channels');

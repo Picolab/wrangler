@@ -22,7 +22,9 @@ Use these varibles to calibrate the test driver to your needs.
 
 ####Dependancys
  -**superTest**, mostly used for http get/post commands
+ 
  -**chai**, used for asserts 
+ 
  -**underscore**, functions for manipulating results.
 ###Tests
 ####Initailize Testing environment 

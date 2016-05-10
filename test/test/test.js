@@ -19,6 +19,24 @@ var chai = require('chai'),
     sky_query = supertest("https://kibdev.kobj.net/sky/cloud/b507199x5.dev"),
     childSkyQuery = supertest("https://kibdev.kobj.net/sky/cloud/b507803x0.dev"),
     child_testing_pico;
+    channel_for_testing1 = {
+              channel_name:"Time Wizard",
+              channel_type:"TestDriver",
+              attributes: "time warping",
+              policy: "never take prisoners, never be taken alive"
+            };
+    channel_for_testing2 = {
+              channel_name:"Chimera",
+              channel_type:"TestDriver",
+              attributes: "fire-breathing",
+              policy: "no wasted parts"
+            };
+    channel_for_testing3 = {
+              channel_name:"Hippocampus",
+              channel_type:"TestDriver",
+              attributes: "wave surfing",
+              policy: "drive on ward"
+            };
 
     function childEventApi(eci) {
       return supertest("https://kibdev.kobj.net/sky/event/"+eci+"/1988/wrangler");
@@ -509,7 +527,7 @@ describe('uninstalling a multiple ruleset', function() {
 //     -update channel attributes 
 //     -remove channel
 describe('channel management', function() {
-   describe('create channel', function() {
+   describe('list channel, create channel, list channel and confirms creation', function() {
       var first_response;
       var second_response;
 
@@ -524,18 +542,17 @@ describe('channel management', function() {
           done();
         });
       });
+
       it('create channel', function(done) {
        childEventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
        .set('Accept', 'application/json')
-       .query({channel_name:"Time Wizard",
-               channel_type:"TestDriver",
-               attributes: "time warping",
-               policy: "never take prisoners, never be taken alive"})
+       .query(channel_for_testing1)
        .expect(200)
        .end(function(err,res){
         done();
       });
      });
+
       afterEach('create channel',function(done) {
        this.retries(2);
        childSkyQuery.get("/channel")
@@ -568,6 +585,8 @@ describe('channel management', function() {
         assert.isAbove(new_channels.length,0,"no channels created");
         assert.isBelow(new_channels.length,2,"multiple channel created");
         assert.equal(1,new_channels.length,1);
+        //assert.include(new_channels,channel_for_testing1,"should include time " + channel_for_testing1);
+        // we should find a way to find the channel with out hard coding the index. 
         assert.equal("Time Wizard",new_channels[0].name);
         assert.equal("TestDriver",new_channels[0].type);
         assert.equal("time warping",new_channels[0].attributes.channel_attributes);
@@ -577,7 +596,26 @@ describe('channel management', function() {
     });
   describe('list channels', function() {
     // pending test below
-    it('should return all channels');
+    describe('should create two extra channels for testing',function(){
+      it('create channel', function(done) {
+       childEventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
+       .set('Accept', 'application/json')
+       .query(channel_for_testing2)
+       .expect(200)
+       .end(function(err,res){
+        done();
+        });
+      });
+      it('create channel', function(done) {
+       childEventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
+       .set('Accept', 'application/json')
+       .query(channel_for_testing3)
+       .expect(200)
+       .end(function(err,res){
+        done();
+        });
+      });
+    });
     it('should return a single channel');
   });
   describe('list channels', function() {

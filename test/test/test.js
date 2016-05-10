@@ -37,7 +37,7 @@
         attributes: "wave surfing",
         policy: "drive on ward"
       };
-
+      //url constructor with a unique event id.
       function childEventApi(eci) {
         return supertest("https://kibdev.kobj.net/sky/event/"+eci+"/1988/wrangler");
       };
@@ -96,7 +96,7 @@ describe('Initailize Testing environment ', function() {
 
     it('compares updated list of rules with previous to insure only desired ruleset was installed', function() {
       var installed_rulesets = _.difference( second_response.rids, first_response.rids);
-      assert
+      //assert
       if (((installed_rulesets.length) != 1 )){
         console.log("before install",first_response.rids);
         console.log("after install",second_response.rids);
@@ -115,7 +115,7 @@ describe('Initailize Testing environment ', function() {
     it('uninstall ruleset '+testing_rid1, function(done) {
       event_api.get('/uninstall_rulesets_requested')
       .set('Accept', 'application/json')
-      .query({rids : 'b507706x12.dev' })
+      .query({rids : testing_rid1 })
       .expect(200)
       .expect('Content-Type', /json/)
       .end(function(err,res){
@@ -605,6 +605,7 @@ describe('Main Tests', function() {
           assert.equal(1,new_channels.length,1);
           //assert.include(new_channels,channel_for_testing1,"should include time " + channel_for_testing1);
           // we should find a way to find the channel with out hard coding the index. 
+          // ---- map find / filter / re-map value
           assert.equal("Time Wizard",new_channels[0].name);
           assert.equal("TestDriver",new_channels[0].type);
           assert.equal("time warping",new_channels[0].attributes.channel_attributes);

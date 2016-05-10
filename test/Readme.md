@@ -9,10 +9,15 @@ At the top of test.js you will find dependancys and global varibles used for tes
 Use these varibles to calibrate the test driver to your needs.
 ####Varibles
 -**_eci**, the eci of the parent or main pico acount used for testing.
+
 -**wrangler_dev**, the ruleset ID of the devlopment ruleset of wrangler, the wrangler to be tested. 
+
 -**wrangler_prod**, the ruleset ID of the production ruleset of wrangler, the current wrangler.
+
 -**bootstrap_rid**, the ruleset ID of the BootStrapping ruleset.
+
 -**testing_rid1**, ruleset ID of a uncomman ruleset for testing ruleset management. 
+
 -**testing_rid2**, ruleset ID of a uncomman ruleset for testing ruleset management. 
 
 ####Dependancys

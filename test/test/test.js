@@ -634,14 +634,25 @@ describe('Main Tests', function() {
         });
        });
       });
-      it('should return a single channel');
-    });
+      it('should return a single channel from name'+channel_for_testing3.name,function(done){
+        childSkyQuery.get("/channel")
+        .query({ _eci: child_testing_pico[0][0], id : channel_for_testing3.name})
+        .expect(200)
+        .end(function(err,res){
+          response = res.text;
+          response = JSON.parse(response);
+          assert.equal(true,response.status);
+          console.log("channel",response);
+          done();
+        });
+      });
    describe('list channels', function() {
       // pending test below
       it('should return all channels');
       it('should return a single channel');
     });
   });   
+});
 
   // subscriptions 
   //     -list subscriptions - all & by collection & by filtered collection 

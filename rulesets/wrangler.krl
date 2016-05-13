@@ -588,7 +588,7 @@ ruleset b507803x0 {
   rule installRulesets {
     select when wrangler install_rulesets_requested
     pre { 
-      eci = meta:eci();
+     // eci = meta:eci();
       rids = event:attr("rids").defaultsTo("",standardError(" "));
       // this will never get an array from a url/event ?
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
@@ -607,7 +607,7 @@ ruleset b507803x0 {
   rule uninstallRulesets { // should this handle multiple uninstalls ??? 
     select when wrangler uninstall_rulesets_requested
     pre {
-      eci = meta:eci();
+     // eci = meta:eci();
       rids = event:attr("rids").defaultsTo("", ">>  >> ").klog(">> rids attribute <<");
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }

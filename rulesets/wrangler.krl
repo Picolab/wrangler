@@ -161,7 +161,7 @@ ruleset b507803x0 {
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       
-      single_channel = function(id,channels){
+      single_channel = function(value,channels){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'cid' |
@@ -193,22 +193,20 @@ ruleset b507803x0 {
         'Policy' : results
       };
     }
-    channelType = function(eci) { // put this as an issue in kre engine for pci function. old accounts may have different structure as there types, "type : types"
-      my_channels = channel().defaultsTo("error",">> undefined >>");
 
-      getType = function(eci,my_channels) { // change varible names
-        channels = my_channels{"channels"}.defaultsTo("undefined",standardError("undefined"));
-        channel = channels.filter( function(channel){channel{"cid"} eq eci } ).defaultsTo( "error",standardError("undefined"));
-        chan = channel[0];
-        type = chan{"type"};
-        temp = (type.typeof() eq "str" ) => type | type.typeof() eq "array" => type[0] |  type.keys();
-        type2 = (temp.typeof() eq "array") => temp[0] | temp;   
-        type2;
+    channelType = function(eci) { // old accounts may have different structure as there types, "type : types"
+      getType = function(eci) { 
+        type = pci:get_eci_type(eci).defaultsTo("error",standardError("undefined"));
+        // this code below belongs higher up in software layer
+       // temp = (type.typeof() eq "str" ) => type | type.typeof() eq "array" => type[0] |  type.keys();
+       // type2 = (temp.typeof() eq "array") => temp[0] | temp;   
+       // type2;
+        type;
       };
-      type = ((my_channels{"status"}) && (channels neq {} )) => getType() | "error";
+      type = getType();
       {
         'status'   : (type neq "error"),
-        'channels' : channels
+        'Type' : type
       };
     }
     updateAttributes = defaction(value, attributes){

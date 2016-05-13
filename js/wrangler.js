@@ -89,7 +89,7 @@
        callback = callback || function(){};
 
        var eci = check_eci(options.eci);
-           var eid = Math.floor(Math.random() * 9999999); // whats the event id used for and do we need it?
+           var eid = Math.floor(Math.random() * 9999999); 
            //url constructor
            var esl = mkEsl(
             //['sky/event',

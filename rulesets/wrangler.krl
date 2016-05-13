@@ -161,12 +161,12 @@ ruleset b507803x0 {
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       
-      single_channel = function(value,channels){
+      single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'cid' |
                 'name';
-        channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
+        channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){
           (channel{attribute} eq value);}); 
         result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));

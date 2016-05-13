@@ -715,27 +715,25 @@
               done();
             });
           });
-          it('should return a single channel from name'+channel_for_testing3.channel_name,function(done){
+          it('should return a single channel from name '+channel_for_testing3.channel_name,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing3.channel_name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
               response = JSON.parse(response);
-              assert.equal(true,response.status);
-              console.log("channel",response);
+              //assert.equal(true,response.status);
+              //console.log("channel",response);
               //console.log("logs",logs(child_testing_pico[0][0],done));
-              assert.equal(1,response.channels.length,1);
-              assert.equal(channel_for_testing3.channel_name,response.channels[0].name);
-              assert.equal(channel_for_testing3.channel_type,response.channels[0].type);
-              assert.equal(channel_for_testing1.attributes,response.channels[0].attributes.channel_attributes);
-              assert.equal(channel_for_testing1.policy,response.channels[0].policy.policy);
+              //assert.equal(1,response.channels.length,1); chould be type not length check
+              assert.equal(channel_for_testing3.channel_name,response.channels.name);
+              assert.equal(channel_for_testing3.channel_type,response.channels.type);
+              assert.equal(channel_for_testing3.attributes,response.channels.attributes.channel_attributes);
+              assert.equal(channel_for_testing3.policy,response.channels.policy.policy);
               done();
             });
-            console.log("current state ", this.ctx.currentTest);
-            console.log("event id ", _eid);
           });
-          it('should return a single channel from id' + channel_for_testing1_cid_channel.cid ,function(done){
+          it('should return a single channel from id ' + channel_for_testing1_cid_channel.cid ,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id : channel_for_testing1_cid_channel.cid})
             .expect(200)
@@ -743,12 +741,12 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              console.log("channel",response);
-              assert.equal(1,response.channels.length,1);
-              assert.equal(channel_for_testing3.channel_name,response.channels[0].name);
-              assert.equal(channel_for_testing3.channel_type,response.channels[0].type);
-              assert.equal(channel_for_testing1.attributes,response.channels[0].attributes.channel_attributes);
-              assert.equal(channel_for_testing1.policy,response.channels[0].policy.policy);
+              //console.log("channel",response);
+              //assert.equal(1,response.channels.length,1);
+              assert.equal(channel_for_testing1.channel_name,response.channels.name);
+              assert.equal(channel_for_testing1.channel_type,response.channels.type);
+              assert.equal(channel_for_testing1.attributes,response.channels.attributes.channel_attributes);
+              assert.equal(channel_for_testing1.policy,response.channels.policy.policy);
               done();
             });
           });

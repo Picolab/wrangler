@@ -155,7 +155,6 @@ ruleset b507803x0 {
               eciFromName(value);
       eci;       
     }
-    //combine with channel and only switch on value(change to id) parameter
     channel = function(id) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
@@ -169,7 +168,7 @@ ruleset b507803x0 {
         channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){
           (channel{attribute} eq value);}); 
-        result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
+        result = filtered_channels.head().defaultsTo({},standardError("no channel found, by .head()"));
         (result);
       };
 
@@ -183,14 +182,14 @@ ruleset b507803x0 {
       results = pci:get_eci_attributes(eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
-        'Attributes' : results
+        'attributes' : results
       };
     }
     channelPolicy = function(eci) {
       results = pci:get_eci_policy(eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
-        'Policy' : results
+        'policy' : results
       };
     }
 
@@ -206,7 +205,7 @@ ruleset b507803x0 {
       type = getType();
       {
         'status'   : (type neq "error"),
-        'Type' : type
+        'type' : type
       };
     }
     updateAttributes = defaction(value, attributes){
@@ -224,6 +223,7 @@ ruleset b507803x0 {
       set_type = pci:set_eci_type(eci, type); 
       send_directive("updated channel type for #{eci}");
     }
+    // should delete all channels with that name.
     deleteChannel = defaction(value) {
       eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               value |
@@ -231,7 +231,6 @@ ruleset b507803x0 {
       deleteeci = pci:delete_eci(eci);
       send_directive("deleted channel #{eci}");
     }
-    // add a defaultsto
     createChannel = defaction(options){
       configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
@@ -666,6 +665,26 @@ ruleset b507803x0 {
 
   }
 
+
+  rule updateChannelType {
+    select when wrangler update_channel_type_requested 
+    pre {
+      eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
+      type = event:attr("type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
+    }
+    if(eci neq "" && type neq "error") then { // check?? redundant?? whats better??
+      updateType(eci, type);
+    }
+    fired {
+      log (standardOut("success updated channel #{eci} type"));
+      log(">> successfully  >>");
+    }
+    else {
+      log(">> could not update channel #{eci} type >>");
+    }
+
+  }
+
   rule deleteChannel {
     select when wrangler channel_deletion_requested
     pre {
@@ -1083,7 +1102,7 @@ ruleset b507803x0 {
         "name_space"    : name_space,
         "relationship" : my_role +"<->"+ your_role, 
         "my_role" : my_role,
-        "target_role" : your_role,
+        "subscriber_role" : your_role,
         "target_eci"  : target_eci, // this will remain after accepted
         "status" : "outbound", // should this be passed in from out side? I dont think so.
         "attributes" : attributes
@@ -1108,7 +1127,7 @@ ruleset b507803x0 {
           "name_space"    : name_space,
           "relationship" : your_role +"<->"+ my_role ,
           "my_role" : your_role,
-          "target_role" : my_role,
+          "subscriber_role" : my_role,
           "event_eci"  : eciFromName(unique_name), 
           "status" : "inbound",
           "channel_type" : channel_type,
@@ -1141,7 +1160,7 @@ ruleset b507803x0 {
             "name_space"    : event:attr("name_space").defaultsTo("", standardError("name_space")),
             "relationship" : event:attr("relationship").defaultsTo("", standardError("relationship")),
             "my_role" : event:attr("my_role").defaultsTo("", standardError("my_role")),
-            "target_role" : event:attr("target_role").defaultsTo("", standardError("target_role")),
+            "subscriber_role" : event:attr("subscriber_role").defaultsTo("", standardError("subscriber_role")),
             "event_eci"  : event:attr("event_eci").defaultsTo("", standardError("event_eci")),
             "status"  : event:attr("status").defaultsTo("", standardError("status")),
             "attributes" : event:attr("attributes").defaultsTo("", standardError("attributes"))
@@ -1171,7 +1190,7 @@ ruleset b507803x0 {
             and channel_name = unique_name
             and name_space = pending_subscriptions{'name_space'}
             and relationship = pending_subscriptions{'relationship'}
-            and target_role = pending_subscriptions{'target_role'}
+            and subscriber_role = pending_subscriptions{'subscriber_role'}
             and my_role = pending_subscriptions{'my_role'}
             and attributes = pending_subscriptions{'attributes'}
             and event_eci = pending_subscriptions{'event_eci'}

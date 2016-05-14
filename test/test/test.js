@@ -615,6 +615,7 @@
       //     -remove channel
       describe('channel management', function() {
         var channel_for_testing1_cid_channel = {};
+        var channel_for_testing3_cid_channel = {};
 
         describe('list channel, create channel, list channel and confirms creation', function() {
           var first_response;
@@ -715,6 +716,7 @@
               done();
             });
           });
+          // add a type check for single channel and all channels 
           it('should return a single channel from name '+channel_for_testing3.channel_name,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing3.channel_name})
@@ -726,6 +728,7 @@
               //console.log("channel",response);
               //console.log("logs",logs(child_testing_pico[0][0],done));
               //assert.equal(1,response.channels.length,1); chould be type not length check
+              channel_for_testing3_cid_channel = response.channels;
               assert.equal(channel_for_testing3.channel_name,response.channels.name);
               assert.equal(channel_for_testing3.channel_type,response.channels.type);
               assert.equal(channel_for_testing3.attributes,response.channels.attributes.channel_attributes);
@@ -733,7 +736,7 @@
               done();
             });
           });
-          it('should return a single channel from id ' + channel_for_testing1_cid_channel.cid ,function(done){
+          it('should return a single channel from id ' + (channel_for_testing1_cid_channel.cid) ,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id : channel_for_testing1_cid_channel.cid})
             .expect(200)
@@ -750,6 +753,156 @@
               done();
             });
           });
+        describe('channel attributes', function() {
+          var channel_variable_results;
+
+          it('get channel type',function(done){
+            childSkyQuery.get("/channelType")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing1.channel_type,response.type);
+              done();
+            });
+          });
+
+          it('update channel type', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/update_channel_type_requested')
+           .set('Accept', 'application/json')
+           .query({type:channel_for_testing3.channel_type,eci:channel_for_testing1_cid_channel.cid})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+
+          it('confirm updated channel type ',function(done){
+            childSkyQuery.get("/channelType")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing3.channel_type,response.type);
+              done();
+            });
+          });
+           it('get channel policy ',function(done){
+            childSkyQuery.get("/channelPolicy")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing1.policy,response.policy);
+              done();
+            });
+          });
+          it('update channel policy', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/update_channel_policy_requested')
+           .set('Accept', 'application/json')
+           .query({policy:channel_for_testing3.policy,eci:channel_for_testing1_cid_channel.cid})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+          it('confirm updated channel policy',function(done){
+            childSkyQuery.get("/channelPolicy")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing3.policy,response.policy);
+              done();
+            });
+          });
+          it('get channel attributes',function(done){
+            childSkyQuery.get("/channelAttributes")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing1.attributes,response.attributes);
+              done();
+            });
+          });
+          it('update channel attributes', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/update_channel_attributes_requested')
+           .set('Accept', 'application/json')
+           .query({attributes:channel_for_testing3.attributes,eci:channel_for_testing1_cid_channel.cid})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+          it('confirm updated channel attributes',function(done){
+            childSkyQuery.get("/channelAttributes")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing3.attributes,response.attributes);
+              done();
+            });
+          });
+        it('delete channel with ID '+channel_for_testing1_cid_channel.cid, function(done) {
+           EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
+           .set('Accept', 'application/json')
+           .query({eci:channel_for_testing1_cid_channel.cid})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+
+        it('delete channel with name '+channel_for_testing3_cid_channel.name, function(done) {
+           EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
+           .set('Accept', 'application/json')
+           .query({name:channel_for_testing3.name})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+        it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal({},response.channels);
+              assert(response.channels.name).to.not.equal(channel_for_testing1_cid_channel.name);
+              done();
+            });
+          });
+
+        it('confirm channel deleted with name '+channel_for_testing3_cid_channel.name,function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing3_cid_channel.name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal({},response.channels);
+              assert(response.channels.name).to.not.equal(channel_for_testing3.channel_name);
+              done();
+            });
+          });
+
+        });
         });
       });   
 

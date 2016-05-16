@@ -175,21 +175,21 @@ ruleset b507803x0 {
       results = (id.isnull()) => channels | single_channel(id,channels);
       {
         'status'   : (channels neq "error"),
-        'channels' : results
+        'channels' : results.klog("channels")
       };
     }
     channelAttributes = function(eci) {
       results = pci:get_eci_attributes(eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
-        'attributes' : results
+        'attributes' : results.klog("attributes")
       };
     }
     channelPolicy = function(eci) {
       results = pci:get_eci_policy(eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
-        'policy' : results
+        'policy' : results.klog("policy")
       };
     }
 
@@ -205,7 +205,7 @@ ruleset b507803x0 {
       type = getType();
       {
         'status'   : (type neq "error"),
-        'type' : type
+        'type' : type.klog("type")
       };
     }
     updateAttributes = defaction(value, attributes){

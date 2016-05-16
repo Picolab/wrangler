@@ -22,6 +22,7 @@
           childSkyQuery = supertest("https://kibdev.kobj.net/sky/cloud/"+wrangler_dev),
           child_testing_pico={},
           _eid=0;
+          _eid_before=0;
           channel_for_testing1 = {
             channel_name:"Time Wizard",
             channel_type:"TestDriver",
@@ -41,12 +42,14 @@
             policy: "drive on ward"
           };
           function eid(){
+            _eid_before = _eid;
             _eid = Math.floor(Math.random() * 9999999);
             return _eid;
           };
           //function EventApi(eci, domain = 'wrangler') {
             function EventApi(eci, domain) {
               domain = domain || "wrangler";
+              _eid_before = _eid;
               _eid = Math.floor(Math.random() * 9999999);
               return supertest("https://kibdev.kobj.net/sky/event/"+eci+"/"+_eid+"/"+domain);
             };
@@ -71,7 +74,10 @@
 
         afterEach(function() { // build a list of logs to print at the end of test.
           //console.log("current event ID",_eid);
-            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined') { _log_eid.push(_eid);};
+            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined') {
+             _log_eid.push(_eid);
+             _log_eid.push(_eid_before);
+           };
           
         //console.log("eid list", _log_eid);
         });       
@@ -853,7 +859,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing3.attributes,response.attributes);
+              assert.equal(channel_for_testing3.attributes,response.attributes.channel_attributes);
               done();
             });
           });

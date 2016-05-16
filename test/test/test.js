@@ -826,7 +826,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing3.policy,response.policy);
+              assert.equal(channel_for_testing3.policy,response.policy.policy);
               done();
             });
           });
@@ -838,7 +838,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing1.attributes,response.attributes);
+              assert.equal(channel_for_testing1.attributes,response.attributes.attributes);
               done();
             });
           });
@@ -866,7 +866,7 @@
         it('delete channel with ID '+channel_for_testing1_cid_channel.cid, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
            .set('Accept', 'application/json')
-           .query({eci:channel_for_testing1_cid_channel.cid})
+           .query({eci : channel_for_testing1_cid_channel.cid})
            .expect(200)
            .end(function(err,res){
             done();
@@ -876,12 +876,13 @@
         it('delete channel with name '+channel_for_testing3_cid_channel.name, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
            .set('Accept', 'application/json')
-           .query({name:channel_for_testing3.name})
+           .query({name : channel_for_testing3.name})
            .expect(200)
            .end(function(err,res){
             done();
           });
          });
+
         it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})

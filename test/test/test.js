@@ -29,19 +29,19 @@
             channel_name:"Time Wizard",
             channel_type:"TestDriver",
             attributes: "time warping",
-            policy: stringify({"policy" :"never take prisoners, never be taken alive"})
+            policy: stringify({policy :'never take prisoners, never be taken alive'})
           };
           channel_for_testing2 = {
             channel_name:"Chimera",
             channel_type:"TestDriver",
             attributes: "fire-breathing",
-            policy: stringify({"policy" :"no wasted parts"})
+            policy: stringify({policy :'no wasted parts'})
           };
           channel_for_testing3 = {
             channel_name:"Hippocampus",
             channel_type:"TestDriver",
             attributes: "wave surfing",
-            policy: stringify({"policy" : "drive on ward"})
+            policy: stringify({policy : 'drive on ward'})
           };
           function eid(){
             _eid_before = _eid;
@@ -457,7 +457,7 @@
           var first_response;
           var second_response;
 
-          before(function(done) {
+          it('stores initial list to confirm installed ruleset',function(done) {
             childSkyQuery.get("/rulesets")
             .query({ _eci: child_testing_pico[0][0],_eid: eid() })
             .expect(200)
@@ -480,7 +480,7 @@
               done();
             });
          });
-          afterEach('install ruleset',function(done) {
+          it('stores list to confirm installed ruleset',function(done) {
            this.retries(2);
            childSkyQuery.get("/rulesets")
            .query({ _eci: child_testing_pico[0][0],_eid: eid() })
@@ -510,7 +510,7 @@
           });
         });
         describe('uninstall single rulesets', function() {
-          before(function(done){
+          it('stores initial list to confirm uninstalled rulesets',function(done){
             EventApi(child_testing_pico[0][0]).get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1 })
@@ -539,7 +539,7 @@
           var first_response;
           var second_response;
 
-          before(function(done) {
+          it('stores initial list to confirm installed rulesets',function(done) {
             childSkyQuery.get("/rulesets")
             .query({ _eci: child_testing_pico[0][0] ,_eid: eid()})
             .expect(200)
@@ -562,7 +562,7 @@
               done();
             });
          });
-          afterEach('install rulesets',function(done) {
+          it('stores list to confirm installed rulesets',function(done) {
            this.retries(2);
            childSkyQuery.get("/rulesets")
            .query({ _eci: child_testing_pico[0][0],_eid: eid() })
@@ -595,7 +595,7 @@
         });
 
         describe('uninstalling a multiple ruleset', function() {
-          before(function(done){
+          it('stores initial list to confirm uninstalled rulesets',function(done){
             EventApi(child_testing_pico[0][0]).get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1+';'+testing_rid2 })
@@ -646,7 +646,7 @@
         describe('list channel, create channel, list channel and confirms creation', function() {
           var first_response;
           var second_response;
-          before(function(done) {
+          it('stores initial list to confirm created channel',function(done) {
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid() })
             .expect(200)
@@ -668,7 +668,7 @@
           });
          });
 
-          afterEach('create channel',function(done) {
+          it('confirms created channel',function(done) {
            this.retries(2);
            childSkyQuery.get("/channel")
            .query({ _eci: child_testing_pico[0][0],_eid: eid() })

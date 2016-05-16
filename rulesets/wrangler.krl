@@ -716,13 +716,13 @@ ruleset b507803x0 {
       attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode();
+      decoded_policy = policy.decode().klog('decoded_policy');
       options = {
         'name' : channel_name,
         'eci_type' : type,
         'attributes' : {"channel_attributes" : attributes},
         'policy' : decoded_policy//{"policy" : policy}
-      };
+      }.klog('options for channel cration');
           }
           // do we need to check the format of name? is it wrangler's job?
     if(channel_name.match(re/\w[\w-]*/)) then 

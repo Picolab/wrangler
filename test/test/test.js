@@ -7,6 +7,8 @@
           //diff = require('deep-diff').diff,
           _ = require('underscore'),
           supertest = require('supertest'),
+          stringify = require('node-stringify'),
+          //json = require('json'),
 
           _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1",
           _log_eid= [], 
@@ -27,19 +29,19 @@
             channel_name:"Time Wizard",
             channel_type:"TestDriver",
             attributes: "time warping",
-            policy: "never take prisoners, never be taken alive"
+            policy: stringify({"policy" :"never take prisoners, never be taken alive"})
           };
           channel_for_testing2 = {
             channel_name:"Chimera",
             channel_type:"TestDriver",
             attributes: "fire-breathing",
-            policy: "no wasted parts"
+            policy: stringify({"policy" :"no wasted parts"})
           };
           channel_for_testing3 = {
             channel_name:"Hippocampus",
             channel_type:"TestDriver",
             attributes: "wave surfing",
-            policy: "drive on ward"
+            policy: stringify({"policy" : "drive on ward"})
           };
           function eid(){
             _eid_before = _eid;
@@ -68,6 +70,10 @@
 
               return results;
             }
+// ********************************************************************************************
+// ***                                 Wrangle Test Driver                                  ***
+// ********************************************************************************************
+
       describe('Wrangler Test Driver', function() {
 
         this.slow(100000);// this might take some time.
@@ -81,9 +87,11 @@
           
         //console.log("eid list", _log_eid);
         });       
+// ********************************************************************************************
+// ***                               Initialize Testing Environment                         ***
+// ********************************************************************************************
 
-
-        describe('Initailize Testing environment ', function() {
+        describe('Initialize Testing Environment ', function() {
       //check if list children works for creatChild test. 
       describe('children(_eci)', function() {
         it('array of child tuples errors if not 200', function(done) {
@@ -177,11 +185,12 @@
 
       });
 
-      //Check if uninstall ruleset works for creatChild test. 
 
-      //create Child pico for testing in 
+// ********************************************************************************************
+// ***                               CreateChild Pico For Testing                           ***
+// ********************************************************************************************
 
-      describe('createChild Pico for testing', function() {
+      describe('CreateChild Pico For Testing', function() {
         var first_response;
         var second_response;
         var new_pico;
@@ -342,10 +351,18 @@
 
     });
 
+// ********************************************************************************************
+// ***                               Main Tests                                             ***
+// ********************************************************************************************
 
 
       describe('Main Tests', function() {
       this.slow(100000);// this might take some time.
+
+
+// ********************************************************************************************
+// ***                               Rulesets Management                                    ***
+// ********************************************************************************************
 
       // registering rulesets ------> in devtools.krl
       //     -list registered -multiple & single 
@@ -358,7 +375,7 @@
       //     -list installed ruleset
       //     -install new ruleset
       //     -uninstall ruleset
-      describe('rulesets management', function() {
+      describe('Rulesets Management', function() {
         describe('get ruleset meta', function() {
           it('rulesetsInfo('+wrangler_dev+ ') should return a single ruleset meta data',function(done){
             this.retries(2);
@@ -607,6 +624,9 @@
     });
     });
 
+// ********************************************************************************************
+// ***                               Channel mMnagement                                     ***
+// ********************************************************************************************
 
       //     
       // channel management
@@ -619,7 +639,7 @@
       //     -update channel policy
       //     -update channel attributes 
       //     -remove channel
-      describe('channel management', function() {
+      describe('Channel mMnagement', function() {
         var channel_for_testing1_cid_channel = {};
         var channel_for_testing3_cid_channel = {};
 
@@ -805,11 +825,12 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing1.policy,response.policy);
+              assert.equal(channel_for_testing1.policy,response.policy.policy);
               done();
             });
           });
           it('update channel policy', function(done) {
+
            EventApi(child_testing_pico[0][0]).get('/update_channel_policy_requested')
            .set('Accept', 'application/json')
            .query({policy:channel_for_testing3.policy,eci:channel_for_testing1_cid_channel.cid})
@@ -838,7 +859,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing1.attributes,response.attributes.attributes);
+              assert.equal(channel_for_testing1.attributes,response.attributes.channel_attributes);
               done();
             });
           });
@@ -912,6 +933,9 @@
         });
         });
       });   
+// ********************************************************************************************
+// ***                               subscriptions Management                               ***
+// ********************************************************************************************
 
       // subscriptions 
       //     -list subscriptions - all & by collection & by filtered collection 
@@ -934,6 +958,15 @@
       //     -name given & no prototype given
       //     -name given & prototype given
       //     -broken prototype // does it matter??
+// ********************************************************************************************
+// ***                               Pico Creation With Prototypes                          ***
+// ********************************************************************************************
+
+
+// ********************************************************************************************
+// ***                               Clean UP                                               ***
+// ********************************************************************************************
+
       describe('Logs',function(done){
         it('print logs from failures',function(done){
         var eids = _log_eid.join(';');

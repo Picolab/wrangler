@@ -81,7 +81,9 @@ ruleset b507803x0 {
               (status eq "200" && not is_bad_response) => response_content | error
           };
 
-	
+// ********************************************************************************************
+// ***                                      Rulesets                                        ***
+// ********************************************************************************************
   //-------------------- Rulesets --------------------
     rulesets = function() {
       eci = meta:eci()
@@ -118,6 +120,11 @@ ruleset b507803x0 {
       deleted = pci:delete_ruleset(eci, rids);
       send_directive("uninstalled #{rids}");
     }
+
+// ********************************************************************************************
+// ***                                      Channels                                        ***
+// ******************************************************************************************** 
+  
   //-------------------- Channels --------------------
   /* can be deleted after channel testing.
     internalChannel = function (value){
@@ -237,7 +244,9 @@ ruleset b507803x0 {
       new_eci = pci:new_eci(eci, options);
       send_directive("created channel #{new_eci}");
     }
-
+// ********************************************************************************************
+// ***                                      Picos                                           ***
+// ******************************************************************************************** 
   //-------------------- Picos --------------------
    /// should children and parent functions return a map instead of an array??
 	children = function() {
@@ -450,6 +459,9 @@ ruleset b507803x0 {
       with attrs = attributes
   }
 
+// ********************************************************************************************
+// ***                                      Subscriptions                                   ***
+// ******************************************************************************************** 
 
   //-------------------- Subscriptions ----------------------
     // name subscriptions and add results status 
@@ -502,7 +514,7 @@ ruleset b507803x0 {
       {
         'status' : (subscriptions neq "error"),
         'subscriptions'  : return2
-      };
+      }.klog('return: ');
 
     };
     // subscriptions collected By attribute name provided// combine with "by filter"// combine with subscriptions
@@ -534,6 +546,7 @@ ruleset b507803x0 {
           chan = channel();
           //channels = channels(); worse bug ever!!!!!!!!!!!!!!!!!!!!!!!!!!!
           // in our meetings we said to check name_space, how is that done?
+          
           /*{
           "last_active": 1426286486,
           "name": "Oauth Developer ECI",
@@ -567,6 +580,10 @@ ruleset b507803x0 {
                                         ;
     vehicle_ecis_by_backchannel{bc} || {}
      };*/
+
+// ********************************************************************************************
+// ***                                      Utilities                                       ***
+// ******************************************************************************************** 
   //-------------------- error handling ----------------------
     standardOut = function(message) {
       msg = ">> " + message + " results: >>";
@@ -587,7 +604,15 @@ ruleset b507803x0 {
   // string or array return array 
   // string or array return string
 
+// ********************************************************************************************
+// ***                                      Rules                                           ***
+// ********************************************************************************************
 
+
+
+// ********************************************************************************************
+// ***                                      Rulesets                                        ***
+// ********************************************************************************************
   //------------------------------------------------------------------------------------Rules
   //-------------------- Rulesets --------------------
   
@@ -629,6 +654,9 @@ ruleset b507803x0 {
     }
   }
  
+// ********************************************************************************************
+// ***                                      Channels                                        ***
+// ********************************************************************************************
  //-------------------- Channels --------------------
  // we should add a append / modifie channel attributes rule set.
  //  takes in new and modified values and puts them in.
@@ -750,7 +778,11 @@ ruleset b507803x0 {
           }
     }
   
-  
+// ********************************************************************************************
+// ***                                      Picos                                           ***
+// ********************************************************************************************
+
+
   //-------------------- Picos ----------------------
 	rule createChild { // must pass list of rids to install in child and domain / type for init event.
 		select when wrangler child_creation
@@ -1062,6 +1094,10 @@ ruleset b507803x0 {
 			log "deletion failed because no child was specified";
 		}
 	}
+
+// ********************************************************************************************
+// ***                                      Subscriptions                                   ***
+// ********************************************************************************************
 
   //-------------------- Subscriptions ----------------------http://developer.kynetx.com/display/docs/Subscriptions+in+the+wrangler+Service
   /* 

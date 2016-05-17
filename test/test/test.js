@@ -1,3 +1,6 @@
+// ********************************************************************************************
+// ***                                 Wrangle Test Driver  Globals & Dependencies          ***
+// ********************************************************************************************
       // Require chai.js expect module for assertions
       var chai = require('chai'),
           //expect = chai.expect,
@@ -26,6 +29,7 @@
           child_testing_pico={},
           _eid=0;
           _eid_before=0;
+//*************************** Channels *****************************
           policy_string1 ='never take prisoners, never be taken alive';
           channel_for_testing1 = {
             channel_name:"Time Wizard",
@@ -47,6 +51,23 @@
             attributes: "wave surfing",
             policy: JSON.stringify({policy : policy_string3})
           };
+//*************************** Subscriptions *****************************
+          subscriptions_for_testing1 = {
+            name: "subscription1",
+            name_space: 'test',
+            my_role: 'child',
+            your_role: 'parent',
+            target_eci: _eci,
+            channel_type: 'test',
+            attrs: 'attributes'
+          };
+
+          subscriptions_for_testing2 = {};
+          subscriptions_for_testing3 = {};
+          
+
+
+
           function eid(){
             _eid_before = _eid;
             _eid = Math.floor(Math.random() * 9999999);
@@ -74,6 +95,8 @@
 
               return results;
             }
+
+
 // ********************************************************************************************
 // ***                                 Wrangle Test Driver                                  ***
 // ********************************************************************************************
@@ -380,6 +403,7 @@
       //     -list installed ruleset
       //     -install new ruleset
       //     -uninstall ruleset
+      
       describe('Rulesets Management', function() {
         describe('get ruleset meta', function() {
           it('rulesetsInfo('+wrangler_dev+ ') should return a single ruleset meta data',function(done){
@@ -400,6 +424,7 @@
                 done();
               });
           });
+
         /*  it('rulesetsInfo([b507803x0.dev]) should return a single ruleset meta data',function(done){
             this.retries(2);
             childSkyQuery.get('/rulesetsInfo')
@@ -417,6 +442,7 @@
               done();
             });
           });*/
+
           it('rulesetsInfo('+testing_rid1+';' + wrangler_dev+') should return a multiple ruleset meta data',function(done){
             this.retries(2);
             childSkyQuery.get('/rulesetsInfo')
@@ -715,6 +741,8 @@
             });
         });
 
+// **********************************list channels*******************************************
+
         describe('list channels', function() {
           // pending test below
           it('create channel', function(done) {
@@ -784,8 +812,13 @@
               done();
             });
           });
+
+// **********************************channel attributes*******************************************
+// 
         describe('channel attributes', function() {
           var channel_variable_results;
+
+// ********************************** Type *******************************************
 
           it('get channel type',function(done){
             childSkyQuery.get("/channelType")
@@ -846,6 +879,7 @@
             });
           });
 
+// ********************************** Policy *******************************************
 
            it('get channel policy ',function(done){
             childSkyQuery.get("/channelPolicy")
@@ -904,6 +938,8 @@
             });
           });
 
+// ********************************** Attributes *******************************************
+
           it('get channel attributes',function(done){
             childSkyQuery.get("/channelAttributes")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
@@ -958,6 +994,8 @@
               done();
             });
           });
+
+// ********************************** Delete *******************************************
 
         it('delete channel with ID '+channel_for_testing1_cid_channel.cid, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
@@ -1018,26 +1056,124 @@
       //     -list subscriptions - all & by collection & by filtered collection 
       //     -eci from name - not sure how yet!!!!!!!
       //     -subscriptions attributes. 
+      describe('Subscriptions Management', function() {
+        var testing1_subscription_cid_ = {};
+        var testing3_subscription_cid_ = {};
+        describe('list subscriptions, create subscriptions, list subscriptions and confirms creation', function() {
+          var first_response;
+          var second_response;
+          it('stores initial list to confirm created pending subscription',function(done) {
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid() })
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              first_response = JSON.parse(response);
+              assert.equal(true,first_response.status);
+              done();
+            });
+          });
+
+          it('create subscriptions', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/subscription')
+           .set('Accept', 'application/json')
+           .query(subscriptions_for_testing1) // subscription request to parent 
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+
+          it('confirms created subscription request',function(done) {
+           this.retries(2);
+           childSkyQuery.get("/subscriptions")
+           .query({ _eci: child_testing_pico[0][0],_eid: eid() })
+           .expect(200)
+           .end(function(err,res){
+            response = res.text;
+            second_response = JSON.parse(response);
+            assert.equal(true,second_response.status);
+            done();
+          }); 
+         });
+
+          it('list should differ by one if new subscription request created.', function() {
+            first_response = first_response.subscriptions =="error" ? []: first_response.subscriptions;
+            second_response = second_response.subscriptions =="error" ? []: second_response.subscriptions;
+            var first_response_cid = _.map(first_response, function(subscription){ return subscription.cid; });
+            var second_response_cid = _.map(second_response, function(subscription){ return subscription.cid; });
+            var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
+            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.cid == new_subscription_cid; });
+          var new_subscription =  new_subscriptions[0];  
+          testing1_subscription_cid_ = new_subscription;
+          if (new_subscription.length != 1){
+            console.log("first_response:",first_response);
+            console.log("second_response:",second_response);
+            console.log("first_response mapped:",first_response_cid);
+            console.log("second_response mapped:",second_response_cid);
+            console.log("difference:",new_subscription_cid);
+            console.log("second_response filtered:",new_subscription);
+          } 
+          console.log("new_subscription :", new_subscriptions[0]);
+          assert.isAbove(new_subscription.length,0,"no channels created");
+          assert.isBelow(new_subscription.length,2,"multiple channel created");
+          assert.equal(1,new_subscription.length,1);
+              //assert.deepEqual(new_channel,channel_for_testing1,"should be the same has " + channel_for_testing1);
+       //       assert.equal(subscriptions_for_testing1.channel_name,new_subscription.name);
+       //       assert.equal(subscriptions_for_testing1.channel_type,new_subscription.type);
+         //     assert.equal(subscriptions_for_testing1.attributes,new_subscription.attributes.channel_attributes);
+              //console.log("new_channel",new_channel);
+      //        assert.equal(policy_string1,new_subscription.policy.policy);
+            });
+        });
+        });
+
+
+
+
+
+
+// ********************************************************************************************
+// ***                               Scheduled events                                       ***
+// ********************************************************************************************
+
       // scheduled events 
       //     -list scheduled
       //     -schedule
       //     -raised scheduled? - using logs???
+
+// ********************************************************************************************
+// ***                               Client Manager                                         ***
+// ********************************************************************************************
+
       // client Manager
       //     -add client
       //     -update client info
       //     -remove client 
-      // prototypes management 
-      //     -list prototypes
-      //     -add prototypes
-      //     -update prototypes
+
+   
+// ********************************************************************************************
+// ***                               Pico Creation With Prototypes                          ***
+// ********************************************************************************************
+
       // pico creation from prototypes
       //     -no name given & no prototype given - name defaults to random uniqe name, prototyp to core. 
       //     -name given & no prototype given
       //     -name given & prototype given
       //     -broken prototype // does it matter??
+  
 // ********************************************************************************************
-// ***                               Pico Creation With Prototypes                          ***
+// ***                               Prototypes management                                  ***
 // ********************************************************************************************
+
+      // prototypes management 
+      //     -list prototypes
+      //     -add prototypes
+      //     -update prototypes
+
+
+
+
 
 
 // ********************************************************************************************

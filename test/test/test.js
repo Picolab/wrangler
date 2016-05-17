@@ -859,8 +859,7 @@
               done();
             });
           });
-          it('update channel policy', function(done) {
-
+          it('update channel policy by eci', function(done) {
            EventApi(child_testing_pico[0][0]).get('/update_channel_policy_requested')
            .set('Accept', 'application/json')
            .query({policy:channel_for_testing3.policy,eci:channel_for_testing1_cid_channel.cid})
@@ -869,7 +868,7 @@
             done();
           });
          });
-          it('confirm updated channel policy',function(done){
+          it('confirm updated channel policy by eci',function(done){
             childSkyQuery.get("/channelPolicy")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
@@ -881,6 +880,30 @@
               done();
             });
           });
+
+          it('update channel policy by name', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/update_channel_policy_requested')
+           .set('Accept', 'application/json')
+           .query({policy:channel_for_testing1.policy,name:channel_for_testing1_cid_channel.name})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+
+          it('confirm updated channel policy by name',function(done){
+            childSkyQuery.get("/channelPolicy")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(policy_string1,response.policy.policy);
+              done();
+            });
+          });
+
           it('get channel attributes',function(done){
             childSkyQuery.get("/channelAttributes")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
@@ -893,7 +916,7 @@
               done();
             });
           });
-          it('update channel attributes', function(done) {
+          it('update channel attributes by eci', function(done) {
            EventApi(child_testing_pico[0][0]).get('/update_channel_attributes_requested')
            .set('Accept', 'application/json')
            .query({attributes:channel_for_testing3.attributes,eci:channel_for_testing1_cid_channel.cid})
@@ -902,7 +925,7 @@
             done();
           });
          });
-          it('confirm updated channel attributes',function(done){
+          it('confirm updated channel attributes by eci',function(done){
             childSkyQuery.get("/channelAttributes")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
@@ -914,6 +937,28 @@
               done();
             });
           });
+          it('update channel attributes by name', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/update_channel_attributes_requested')
+           .set('Accept', 'application/json')
+           .query({attributes:channel_for_testing1.attributes,name:channel_for_testing1_cid_channel.name})
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+          it('confirm updated channel attributes by name',function(done){
+            childSkyQuery.get("/channelAttributes")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              assert.equal(channel_for_testing1.attributes,response.attributes.channel_attributes);
+              done();
+            });
+          });
+
         it('delete channel with ID '+channel_for_testing1_cid_channel.cid, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
            .set('Accept', 'application/json')

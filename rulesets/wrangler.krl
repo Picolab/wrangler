@@ -626,21 +626,20 @@ ruleset b507803x0 {
     select when wrangler update_channel_attributes_requested
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
-      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force the event to be raised to the eci being updated.
       attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"));
-      attrs = attributes.split(re/;/);
-      //attrs = attributes.decode();
+      //attrs = attributes.split(re/;/);
+      attrs = attributes.decode();
       //channels = Channel();
     }
-    if(eci neq "" && attributes neq "error") then { // check?? redundant????
+    if(value neq "" && attributes neq "error") then { // check?? redundant????
       updateAttributes(value.klog('value: '),attributes);
     }
     fired {
-      log (standardOut("success updated channel #{eci} attributes"));
+      log (standardOut("success updated channel #{value} attributes"));
       log(">> successfully >>");
     } 
     else {
-      log(">> could not update channel #{eci} attributes >>");
+      log(">> could not update channel #{value} attributes >>");
     }
   }
 
@@ -648,19 +647,18 @@ ruleset b507803x0 {
     select when wrangler update_channel_policy_requested // channel_policy_update_requested
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
-      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
       policy_string = event:attr("policy").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
       policy = policy_string.decode();
     }
-    if(eci neq "" && policy neq "error") then { // check?? redundant?? whats better??
+    if(value neq "" && policy neq "error") then { // check?? redundant?? whats better??
       updatePolicy(value.klog('value: '), policy);
     }
     fired {
-      log (standardOut("success updated channel #{eci} policy"));
+      log (standardOut("success updated channel #{value} policy"));
       log(">> successfully  >>");
     }
     else {
-      log(">> could not update channel #{eci} policy >>");
+      log(">> could not update channel #{value} policy >>");
     }
 
   }
@@ -715,13 +713,14 @@ ruleset b507803x0 {
       channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"));
       type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"));
       attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
+      attrs = attributes.decode();
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
       decoded_policy = policy.decode().klog('decoded_policy');
       options = {
         'name' : channel_name,
         'eci_type' : type,
-        'attributes' : {"channel_attributes" : attributes},
+        'attributes' : {"channel_attributes" : attrs},
         'policy' : decoded_policy//{"policy" : policy}
       }.klog('options for channel cration');
           }

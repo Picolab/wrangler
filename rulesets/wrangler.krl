@@ -225,7 +225,7 @@ ruleset b507803x0 {
     }
     // should delete all channels with that name.
     deleteChannel = defaction(value) {
-      eci = alwaysEci(value)
+      eci = alwaysEci(value);
       deleteeci = pci:delete_eci(eci);
       send_directive("deleted channel #{eci}");
     }
@@ -633,7 +633,7 @@ ruleset b507803x0 {
       //channels = Channel();
     }
     if(eci neq "" && attributes neq "error") then { // check?? redundant????
-      updateAttributes(value,attributes);
+      updateAttributes(value.klog('value: '),attributes);
     }
     fired {
       log (standardOut("success updated channel #{eci} attributes"));
@@ -653,7 +653,7 @@ ruleset b507803x0 {
       policy = policy_string.decode();
     }
     if(eci neq "" && policy neq "error") then { // check?? redundant?? whats better??
-      updatePolicy(value, policy);
+      updatePolicy(value.klog('value: '), policy);
     }
     fired {
       log (standardOut("success updated channel #{eci} policy"));
@@ -674,7 +674,7 @@ ruleset b507803x0 {
       type = event:attr("type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
     }
     if(eci neq "" && type neq "error") then { // check?? redundant?? whats better??
-      updateType(value, type);
+      updateType(value.klog('value: '), type);
     }
     fired {
       log (standardOut("success updated channel #{eci} type"));

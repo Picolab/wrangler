@@ -2,6 +2,7 @@
       var chai = require('chai'),
           //expect = chai.expect,
           assert = chai.assert,
+          expect = chai.expect,
           //assert = require('chai').assert, 
           should = chai.should(),
           //diff = require('deep-diff').diff,
@@ -896,7 +897,19 @@
             done();
           });
          });
-
+        it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              //assert.equal({},response.channels);
+              expect((response.channels)).to.be.empty;
+              assert(response.channels.name).to.not.exist;
+              done();
+            });
+          });
         it('delete channel with name '+channel_for_testing3_cid_channel.name, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
            .set('Accept', 'application/json')
@@ -907,18 +920,7 @@
           });
          });
 
-        it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
-            childSkyQuery.get("/channel")
-            .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})
-            .expect(200)
-            .end(function(err,res){
-              response = res.text;
-              response = JSON.parse(response);
-              assert.equal({},response.channels);
-              assert(response.channels.name).to.not.equal(channel_for_testing1_cid_channel.name);
-              done();
-            });
-          });
+
 
         it('confirm channel deleted with name '+channel_for_testing3_cid_channel.name,function(done){
             childSkyQuery.get("/channel")
@@ -927,8 +929,9 @@
             .end(function(err,res){
               response = res.text;
               response = JSON.parse(response);
-              assert.equal({},response.channels);
-              assert(response.channels.name).to.not.equal(channel_for_testing3.channel_name);
+              expect(response.channels).to.be.empty;
+              //assert.equal({},response.channels);
+              assert(response.channels.name).to.not.exist;
               done();
             });
           });

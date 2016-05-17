@@ -691,7 +691,7 @@ ruleset b507803x0 {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
     }
     {
-      deleteChannel(value);
+      deleteChannel(value.klog('value: '));
     }
     fired {
       log (standardOut("success deleted channel #{value}"));

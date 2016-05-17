@@ -621,14 +621,15 @@ ruleset b507803x0 {
   }
  
  //-------------------- Channels --------------------
- // we should add a append / modifie channel attributes rule set. takes in new and modified values and puts them in.
+ // we should add a append / modifie channel attributes rule set.
+ //  takes in new and modified values and puts them in.
   rule updateChannelAttributes {
     select when wrangler update_channel_attributes_requested
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
       attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"));
       //attrs = attributes.split(re/;/);
-      attrs = attributes.decode();
+      attrs = attributes.decode() || attributes;
       //channels = Channel();
     }
     if(value neq "" && attributes neq "error") then { // check?? redundant????
@@ -648,7 +649,7 @@ ruleset b507803x0 {
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
       policy_string = event:attr("policy").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
-      policy = policy_string.decode();
+      policy = policy_string.decode()|| policy_string;
     }
     if(value neq "" && policy neq "error") then { // check?? redundant?? whats better??
       updatePolicy(value.klog('value: '), policy);
@@ -713,10 +714,10 @@ ruleset b507803x0 {
       channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"));
       type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"));
       attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
-      attrs = attributes.decode();
+      attrs = attributes.decode() || attributes;
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy');
+      decoded_policy = policy.decode().klog('decoded_policy') || policy;
       options = {
         'name' : channel_name,
         'eci_type' : type,

@@ -579,10 +579,8 @@ ruleset b507803x0 {
     }
     decodeDefaults = function(value) {
       decoded_value = value.decode().klog('decoded_value: ');
-      //array_value = [].put(value).klog('array structure: ');
-      //return = (decoded_value{'error'} eq array_value ).klog('switch statement: ') => value | decoded_value;
       error = decoded_value{'error'};
-      return = error[0].defaultsTo(decoded_value,'decoded: ');
+      return = (error.typeof() eq "array") =>  error[0].defaultsTo(decoded_value,'decoded: ') | decoded_value;
       return.klog('return: ');
     }
   }
@@ -658,7 +656,7 @@ ruleset b507803x0 {
   rule updateChannelPolicy {
     select when wrangler update_channel_policy_requested // channel_policy_update_requested
     pre {
-      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
+      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci &| name")), standardError("looking for name instead of eci."));
       policy_string = event:attr("policy").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
       policy = decodeDefaults(policy_string);
     }

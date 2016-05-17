@@ -803,7 +803,7 @@
           it('update channel type by eci', function(done) {
            EventApi(child_testing_pico[0][0]).get('/update_channel_type_requested')
            .set('Accept', 'application/json')
-           .query({type:channel_for_testing3.channel_type,eci:channel_for_testing1_cid_channel.cid})
+           .query({channel_type:channel_for_testing3.channel_type,eci:channel_for_testing1_cid_channel.cid})
            .expect(200)
            .end(function(err,res){
             done();
@@ -826,7 +826,7 @@
           it('update channel type by name', function(done) {
            EventApi(child_testing_pico[0][0]).get('/update_channel_type_requested')
            .set('Accept', 'application/json')
-           .query({type:channel_for_testing3.channel_type, name: (channel_for_testing1_cid_channel.name) })
+           .query({channel_type:channel_for_testing1.channel_type, name: (channel_for_testing1_cid_channel.name) })
            .expect(200)
            .end(function(err,res){
             done();
@@ -835,13 +835,13 @@
 
         it('confirm updated channel type by name',function(done){
             childSkyQuery.get("/channelType")
-            .query({ _eci: child_testing_pico[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.name})
+            .query({ _eci: child_testing_pico[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing3.channel_type,response.type);
+              assert.equal(channel_for_testing1.channel_type,response.type);
               done();
             });
           });

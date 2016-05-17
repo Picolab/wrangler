@@ -681,7 +681,7 @@ ruleset b507803x0 {
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
       //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
-      type = event:attr("type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
+      type = event:attr("channel_type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
     }
     if(eci neq "" && type neq "error") then { // check?? redundant?? whats better??
       updateType(value.klog('value: '), type);

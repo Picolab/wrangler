@@ -576,7 +576,7 @@ ruleset b507803x0 {
     }
     decodeDefaults = function(value) {
       decoded_value = value.decode();
-      value = (decoded_value{'error'} == [value]) => value | decoded_value;
+      value = (decoded_value{'error'} eq [value]) => value | decoded_value;
       value;
     }
   }

@@ -7,7 +7,7 @@
           //diff = require('deep-diff').diff,
           _ = require('underscore'),
           supertest = require('supertest'),
-          stringify = require('node-stringify'),
+          //stringify = require('node-stringify'),
           //json = require('json'),
 
           _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1",
@@ -25,23 +25,26 @@
           child_testing_pico={},
           _eid=0;
           _eid_before=0;
+          policy_string1 ='never take prisoners, never be taken alive';
           channel_for_testing1 = {
             channel_name:"Time Wizard",
             channel_type:"TestDriver",
             attributes: "time warping",
-            policy: stringify({policy :'never take prisoners, never be taken alive'})
+            policy: JSON.stringify({policy :policy_string1})
           };
+          policy_string2 = 'no wasted parts';
           channel_for_testing2 = {
             channel_name:"Chimera",
             channel_type:"TestDriver",
             attributes: "fire-breathing",
-            policy: stringify({policy :'no wasted parts'})
+            policy: JSON.stringify({policy :policy_string2})
           };
+          policy_string3 = 'drive on ward';
           channel_for_testing3 = {
             channel_name:"Hippocampus",
             channel_type:"TestDriver",
             attributes: "wave surfing",
-            policy: stringify({policy : 'drive on ward'})
+            policy: JSON.stringify({policy : policy_string3})
           };
           function eid(){
             _eid_before = _eid;
@@ -625,7 +628,7 @@
     });
 
 // ********************************************************************************************
-// ***                               Channel mMnagement                                     ***
+// ***                               Channel Management                                     ***
 // ********************************************************************************************
 
       //     
@@ -639,7 +642,7 @@
       //     -update channel policy
       //     -update channel attributes 
       //     -remove channel
-      describe('Channel mMnagement', function() {
+      describe('Channel Management', function() {
         var channel_for_testing1_cid_channel = {};
         var channel_for_testing3_cid_channel = {};
 
@@ -706,7 +709,7 @@
               assert.equal(channel_for_testing1.channel_type,new_channel.type);
               assert.equal(channel_for_testing1.attributes,new_channel.attributes.channel_attributes);
               //console.log("new_channel",new_channel);
-              assert.equal(channel_for_testing1.policy,new_channel.policy.policy);
+              assert.equal(policy_string1,new_channel.policy.policy);
             });
         });
 
@@ -758,7 +761,7 @@
               assert.equal(channel_for_testing3.channel_name,response.channels.name);
               assert.equal(channel_for_testing3.channel_type,response.channels.type);
               assert.equal(channel_for_testing3.attributes,response.channels.attributes.channel_attributes);
-              assert.equal(channel_for_testing3.policy,response.channels.policy.policy);
+              assert.equal(policy_string3,response.channels.policy.policy);
               done();
             });
           });
@@ -775,7 +778,7 @@
               assert.equal(channel_for_testing1.channel_name,response.channels.name);
               assert.equal(channel_for_testing1.channel_type,response.channels.type);
               assert.equal(channel_for_testing1.attributes,response.channels.attributes.channel_attributes);
-              assert.equal(channel_for_testing1.policy,response.channels.policy.policy);
+              assert.equal(policy_string1,response.channels.policy.policy);
               done();
             });
           });
@@ -825,7 +828,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing1.policy,response.policy.policy);
+              assert.equal(policy_string1,response.policy.policy);
               done();
             });
           });
@@ -847,7 +850,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
-              assert.equal(channel_for_testing3.policy,response.policy.policy);
+              assert.equal(policy_string3,response.policy.policy);
               done();
             });
           });

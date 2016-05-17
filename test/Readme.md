@@ -2,7 +2,7 @@
 Wrangler test driver works by creating a child Pico, removing the production wrangler and installing the development version to be evaluated. 
 
 ##Running
-Make sure you have node.js installed.  Install mocha if you havent already (npm install -g mocha) as well as stringigy(npm install node-stringify --save).  Clone repo, navagate to wrangler/test directory and type mocha.
+Make sure you have node.js installed.  Install mocha if you havent already (npm install -g mocha).  Clone repo, navagate to wrangler/test directory and type mocha.
 
 ###Global Varibles & Dependancys
 At the top of test.js you will find dependancys and global varibles used for testing.

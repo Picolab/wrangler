@@ -210,7 +210,7 @@ ruleset b507803x0 {
     }
     updateAttributes = defaction(value, attributes){
       eci = alwaysEci(value);
-      set_eci = pci:set_eci_attributes(eci, attributes);
+      set_eci = pci:set_eci_attributes(eci, {"channel_attributes" : attributes});
       send_directive("updated channel attributes for #{eci}");
     }
     updatePolicy = defaction(value, policy){

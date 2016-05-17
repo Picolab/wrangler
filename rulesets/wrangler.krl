@@ -178,22 +178,25 @@ ruleset b507803x0 {
         'channels' : results
       }.klog("channels");
     }
-    channelAttributes = function(eci) {
-      results = pci:get_eci_attributes(eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
+    channelAttributes = function(eci,name) {
+      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
+      results = pci:get_eci_attributes(Eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
         'attributes' : results
       }.klog("attributes");
     }
-    channelPolicy = function(eci) {
-      results = pci:get_eci_policy(eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
+    channelPolicy = function(eci,name) {
+      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
+      results = pci:get_eci_policy(Eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
         'policy' : results
       }.klog("policy");
     }
 
-    channelType = function(eci) { // old accounts may have different structure as there types, "type : types"
+    channelType = function(eci,name) { // old accounts may have different structure as there types, "type : types"
+      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
       getType = function(eci) { 
         type = pci:get_eci_type(eci).defaultsTo("error",standardError("undefined"));
         // this code below belongs higher up in software layer
@@ -202,7 +205,7 @@ ruleset b507803x0 {
        // type2;
         type;
       };
-      type = getType();
+      type = getType(Eci);
       {
         'status'   : (type neq "error"),
         'type' : type

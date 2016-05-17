@@ -84,8 +84,8 @@
 
         afterEach(function() { // build a list of logs to print at the end of test.
           //console.log("current event ID",_eid);
-            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined') {
-              console.log("currentTest",this.currentTest);
+            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' && this.currentTest.timedOut != true) {
+             // console.log("currentTest",this.currentTest);
              _log_eid.push(_eid);
              _log_eid.push(_eid_before);
            };

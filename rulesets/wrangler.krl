@@ -579,8 +579,10 @@ ruleset b507803x0 {
     }
     decodeDefaults = function(value) {
       decoded_value = value.decode().klog('decoded_value: ');
-      array_value = [].put(value).klog('array structure: ');
-      return = (decoded_value{'error'} eq array_value ).klog('switch statement: ') => value | decoded_value;
+      //array_value = [].put(value).klog('array structure: ');
+      //return = (decoded_value{'error'} eq array_value ).klog('switch statement: ') => value | decoded_value;
+      error = decoded_value{'error'};
+      return = error[0].defaultsTo(decoded_value,'decoded: ');
       return.klog('return: ');
     }
   }

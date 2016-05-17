@@ -225,9 +225,7 @@ ruleset b507803x0 {
     }
     // should delete all channels with that name.
     deleteChannel = defaction(value) {
-      eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-              value |
-              eciFromName(value);
+      eci = alwaysEci(value)
       deleteeci = pci:delete_eci(eci);
       send_directive("deleted channel #{eci}");
     }
@@ -627,14 +625,15 @@ ruleset b507803x0 {
   rule updateChannelAttributes {
     select when wrangler update_channel_attributes_requested
     pre {
-      eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force the event to be raised to the eci being updated.
+      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
+      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force the event to be raised to the eci being updated.
       attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"));
       attrs = attributes.split(re/;/);
       //attrs = attributes.decode();
       //channels = Channel();
     }
     if(eci neq "" && attributes neq "error") then { // check?? redundant????
-      updateAttributes(eci,attributes);
+      updateAttributes(value,attributes);
     }
     fired {
       log (standardOut("success updated channel #{eci} attributes"));
@@ -648,12 +647,13 @@ ruleset b507803x0 {
   rule updateChannelPolicy {
     select when wrangler update_channel_policy_requested // channel_policy_update_requested
     pre {
-      eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
+      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
+      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
       policy_string = event:attr("policy").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
       policy = policy_string.decode();
     }
     if(eci neq "" && policy neq "error") then { // check?? redundant?? whats better??
-      updatePolicy(eci, policy);
+      updatePolicy(value, policy);
     }
     fired {
       log (standardOut("success updated channel #{eci} policy"));
@@ -669,11 +669,12 @@ ruleset b507803x0 {
   rule updateChannelType {
     select when wrangler update_channel_type_requested 
     pre {
-      eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
+      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
+      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
       type = event:attr("type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
     }
     if(eci neq "" && type neq "error") then { // check?? redundant?? whats better??
-      updateType(eci, type);
+      updateType(value, type);
     }
     fired {
       log (standardOut("success updated channel #{eci} type"));

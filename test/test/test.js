@@ -85,6 +85,7 @@
         afterEach(function() { // build a list of logs to print at the end of test.
           //console.log("current event ID",_eid);
             if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined') {
+              console.log("currentTest",this.currentTest.state);
              _log_eid.push(_eid);
              _log_eid.push(_eid_before);
            };
@@ -897,6 +898,7 @@
             done();
           });
          });
+
         it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})
@@ -906,21 +908,20 @@
               response = JSON.parse(response);
               //assert.equal({},response.channels);
               expect((response.channels)).to.be.empty;
-              assert(response.channels.name).to.not.exist;
+              //assert(response.channels.name).to.not.exist;
               done();
             });
           });
-        it('delete channel with name '+channel_for_testing3_cid_channel.name, function(done) {
+
+        it('delete channel with name '+channel_for_testing3.channel_name, function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_deletion_requested')
            .set('Accept', 'application/json')
-           .query({name : channel_for_testing3.name})
+           .query({name: channel_for_testing3.channel_name})
            .expect(200)
            .end(function(err,res){
             done();
           });
          });
-
-
 
         it('confirm channel deleted with name '+channel_for_testing3_cid_channel.name,function(done){
             childSkyQuery.get("/channel")
@@ -931,7 +932,7 @@
               response = JSON.parse(response);
               expect(response.channels).to.be.empty;
               //assert.equal({},response.channels);
-              assert(response.channels.name).to.not.exist;
+              //assert(response.channels.name).to.not.exist;
               done();
             });
           });

@@ -327,8 +327,8 @@ ruleset b507803x0 {
                                   "name"          : "corePrototypeName",
                                   "name_space"    : "corePrototypeNameSpace",
                                   "my_role"       : "son",
-                                  "your_role"     : "test",
-                                  "target_eci"    : "1654165",
+                                  "subscriber_role"     : "test",
+                                  "outbound_eci"    : "1654165",
                                   "channel_type"  : "ProtoType",
                                   "attrs"         : "nogiven"
                                 }],
@@ -462,7 +462,7 @@ ruleset b507803x0 {
 // ********************************************************************************************
 // ***                                      Subscriptions                                   ***
 // ******************************************************************************************** 
-
+// 
   //-------------------- Subscriptions ----------------------
     // name subscriptions and add results status 
     allSubscriptions = function (){// slow, whats a better way to prevent channel call, bigO(n^2)
@@ -479,9 +479,9 @@ ruleset b507803x0 {
         isSubscription(channel).klog("isSubscriptions(): ");
 
       }); 
-      // reconstruct list, to have a backchannel in attributes.
+      // reconstruct list, to have a inbound in attributes.
       subs = filtered_channels.map( function(channel){
-           channel.put(["attributes","back_channel"],channel{"cid"})
+           channel.put(["attributes","inbound"],channel{"cid"})
                   .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash
@@ -501,7 +501,7 @@ ruleset b507803x0 {
       {"18:floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
       */
-     //types = ['name','channel_name','back_channel','name_space','relationship',....] could check imput for validness. 
+     //types = ['name','channel_name','inbound','name_space','relationship',....] could check imput for validness. 
       type = function(sub){ // takes a subscription and returns its status.
         value = sub.values(); // array of values [attributes]
         attributes = value.head(); // get attributes
@@ -571,14 +571,14 @@ ruleset b507803x0 {
     } 
 
 
-    /*findVehicleByBackchannel = function (bc) {
+    /*findVehicleByinbound = function (bc) {
        garbage = bc.klog(">>>> back channel <<<<<");
        vehicle_ecis = wrangler:subscriptionList(common:namespace(),"Vehicle");
-        vehicle_ecis_by_backchannel = vehicle_ecis
-                                        .collect(function(x){x{"backChannel"}})
+        vehicle_ecis_by_inbound = vehicle_ecis
+                                        .collect(function(x){x{"inbound"}})
                                      .map(function(k,v){v.head()})
                                         ;
-    vehicle_ecis_by_backchannel{bc} || {}
+    vehicle_ecis_by_inbound{bc} || {}
      };*/
 
 // ********************************************************************************************
@@ -741,7 +741,7 @@ ruleset b507803x0 {
       log(">> could not create channels #{channel_name} >>");
           }
     }
-    
+
  // we should add a append / modifie channel attributes rule set.
  //  takes in new and modified values and puts them in.
   rule updateChannelAttributes {
@@ -1149,8 +1149,8 @@ ruleset b507803x0 {
   //-------------------- Subscriptions ----------------------http://developer.kynetx.com/display/docs/Subscriptions+in+the+wrangler+Service
   /* 
    ========================================================================
-   No Persistent Variables for subscriptions, subscriptions information is stored in the "backChannel" Channels attributes varible
-    backChannel : {
+   No Persistent Variables for subscriptions, subscriptions information is stored in the "inbound" Channels attributes varible
+    inbound : {
         type: <string>
         name: <string>
         policy: ?? // not used.
@@ -1159,7 +1159,7 @@ ruleset b507803x0 {
            "name"  : <string>,
            "name_space": <string>,
            "relationship" : <string>,
-           "target_eci": <string>, // this is only stored in the origanal requestie
+           "outbound_eci": <string>, // this is only stored in the origanal requestie
            "event_eci" : <string>,
            "attributes" : <string>, // this will be a object(mostlikely an array) that has been encoded as a string. 
            "status": <string> // discribes subscription status, incouming, outgoing, subscribed
@@ -1172,23 +1172,23 @@ ruleset b507803x0 {
   // my_role
   // subscriber_role
 
-   // creates back_channel and sends event for other pico to create back_channel.
+   // creates inbound and sends event for other pico to create inbound.
   rule subscribe {// need to change varibles to snake case.
     select when wrangler subscription
    pre {
-      // attributes for back_channel attrs
+      // attributes for inbound attrs
       name   = event:attr("name").defaultsTo("standard", standardError("channel_name"));
       name_space     = event:attr("name_space").defaultsTo("shared", standardError("name_space"));
       my_role  = event:attr("my_role").defaultsTo("peer", standardError("my_role"));
-      your_role  = event:attr("your_role").defaultsTo("peer", standardError("your_role"));
-      target_eci = event:attr("target_eci").defaultsTo("no_target_eci", standardError("target_eci"));
+      subscriber_role  = event:attr("subscriber_role").defaultsTo("peer", standardError("subscriber_role"));
+      outbound_eci = event:attr("outbound_eci").defaultsTo("no_outbound_eci", standardError("outbound_eci"));
       channel_type      = event:attr("channel_type").defaultsTo("subs", standardError("type"));
       //status      = event:attr("status").defaultsTo("status", standardError("status ")); 
       attributes = event:attr("attrs").defaultsTo("status", standardError("status "));
 
      // // destination for external event
       subscription_map = {
-            "cid" : target_eci
+            "cid" : outbound_eci
       };
       // create unique_name for channel
       unique_name = randomName(name_space);
@@ -1198,10 +1198,10 @@ ruleset b507803x0 {
       pending_entry = {
         "subscription_name"  : name,
         "name_space"    : name_space,
-        "relationship" : my_role +"<->"+ your_role, 
+        "relationship" : my_role +"<->"+ subscriber_role, 
         "my_role" : my_role,
-        "subscriber_role" : your_role,
-        "target_eci"  : target_eci, // this will remain after accepted
+        "subscriber_role" : subscriber_role,
+        "outbound_eci"  : outbound_eci, // this will remain after accepted
         "status" : "outbound", // should this be passed in from out side? I dont think so.
         "attributes" : attributes
       }; 
@@ -1213,7 +1213,7 @@ ruleset b507803x0 {
           //'policy' : ,
       };
     }
-    if(target_eci neq "no_target_eci") // check if we have someone to send a request too
+    if(outbound_eci neq "no_outbound_eci") // check if we have someone to send a request too
     then
     {
 
@@ -1223,8 +1223,8 @@ ruleset b507803x0 {
         with attrs = {
           "name"  : name,
           "name_space"    : name_space,
-          "relationship" : your_role +"<->"+ my_role ,
-          "my_role" : your_role,
+          "relationship" : subscriber_role +"<->"+ my_role ,
+          "my_role" : subscriber_role,
           "subscriber_role" : my_role,
           "event_eci"  : eciFromName(unique_name), 
           "status" : "inbound",
@@ -1305,11 +1305,11 @@ ruleset b507803x0 {
     pre{
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
       results = channel(channel_name);
-      back_channel = results{'channels'};
-      back_channel_eci = back_channel{'cid'}; // this is why we call channel and not subscriptionAttributes.
-      attributes = back_channel{'attributes'};
+      inbound = results{'channels'};
+      inbound_eci = inbound{'cid'}; // this is why we call channel and not subscriptionAttributes.
+      attributes = inbound{'attributes'};
       status = attributes{'status'};
-      //back_channel_eci = eciFromName(channel_name).klog("back eci: ");
+      //inbound_eci = eciFromName(channel_name).klog("back eci: ");
       event_eci = attributes{'event_eci'}; // whats better?
       subscription_map = {
             "cid" : event_eci
@@ -1318,7 +1318,7 @@ ruleset b507803x0 {
     if (event_eci neq "no event_eci") then
     {
       event:send(subscription_map, "wrangler", "pending_subscription_approved") // pending_subscription_approved..
-       with attrs = {"event_eci" : back_channel_eci , 
+       with attrs = {"event_eci" : inbound_eci , 
                       "status" : "outbound"}
     }
     fired 
@@ -1383,13 +1383,13 @@ ruleset b507803x0 {
       channel_name = event:attr("channel_name").defaultsTo( "No channel_name", standardError("channel_name"));
       //get channel from name
       results = channel(channel_name);
-      back_channel = results{'channels'};
+      inbound = results{'channels'};
       // look up back channel for canceling outbound.
-      back_channel_eci = back_channel{'cid'}.klog("back_channel_eci: "); // this is why we call channel and not subscriptionAttributes.
+      inbound_eci = inbound{'cid'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
-      attributes = back_channel{'attributes'};
+      attributes = inbound{'attributes'};
       // get event_eci for subscription_map // who we will notify
-      event_eci = attributes{'event_eci'}.defaultsTo(attributes{'target_eci'}, " target_eci used."); // whats better?
+      event_eci = attributes{'event_eci'}.defaultsTo(attributes{'outbound_eci'}, " outbound_eci used."); // whats better?
       // send remove event to event_eci
       // raise remove event to self with eci from name .
 
@@ -1402,14 +1402,14 @@ ruleset b507803x0 {
       event:send(subscription_map, "wrangler", "subscription_removal")
         with attrs = {
           // this will catch the problem with canceling outbound
-          "eci"  : back_channel_eci, // tabo to pass this but other pico has no other way to know ...
+          "eci"  : inbound_eci, // tabo to pass this but other pico has no other way to know ...
           "status": status//"outbound"
         };
     }
     fired {
       log (standardOut("success"));
       raise wrangler event subscription_removal 
-        with eci = eciFromName(channel_name) // this probly could be back_channel_eci to save on computations
+        with eci = eciFromName(channel_name) // this probly could be inbound_eci to save on computations
         and status = "internal"; 
           } 
     else {
@@ -1442,7 +1442,7 @@ ruleset b507803x0 {
 
       eci = ( status eq "inbound_subscription_rejection" || status eq "subscription_cancellation" ) => meta:eci() |
              (status eq "outbound_subscription_cancellation") => eciLookUpFromEvent( passedEci ) |
-                passedEci; // passed is used to deleted backchannel on self 
+                passedEci; // passed is used to deleted inbound on self 
 
       channel_name = nameFromEci(eci); // for event to nothing
 

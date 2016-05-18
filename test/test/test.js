@@ -745,7 +745,8 @@
 
         describe('list channels', function() {
           // pending test below
-          it('create channel', function(done) {
+          it('create channel with eci', function(done) {
+            channel_for_testing2.eci = child_testing_pico[0][0];
            EventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing2)
@@ -771,11 +772,11 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
+              expect(response.channels).to.be.an('array');
               assert.isAtLeast(response.channels.length,3,"should have at least 3 channels listed.");
               done();
             });
           });
-          // add a type check for single channel and all channels 
           it('should return a single channel from name '+channel_for_testing3.channel_name,function(done){
             childSkyQuery.get("/channel")
             .query({ _eci: child_testing_pico[0][0],_eid: eid(), id: channel_for_testing3.channel_name})
@@ -788,6 +789,7 @@
               //console.log("logs",logs(child_testing_pico[0][0],done));
               //assert.equal(1,response.channels.length,1); chould be type not length check
               channel_for_testing3_cid_channel = response.channels;
+              expect(channel_for_testing3_cid_channel).to.be.an('object');
               assert.equal(channel_for_testing3.channel_name,response.channels.name);
               assert.equal(channel_for_testing3.channel_type,response.channels.type);
               assert.equal(channel_for_testing3.attributes,response.channels.attributes.channel_attributes);
@@ -1092,6 +1094,7 @@
            .end(function(err,res){
             response = res.text;
             second_response = JSON.parse(response);
+          console.log("second_response :", second_response);
             assert.equal(true,second_response.status);
             done();
           }); 
@@ -1100,11 +1103,12 @@
           it('list should differ by one if new subscription request created.', function() {
             first_response = first_response.subscriptions =="error" ? []: first_response.subscriptions;
             second_response = second_response.subscriptions =="error" ? []: second_response.subscriptions;
-            var first_response_cid = _.map(first_response, function(subscription){ return subscription.cid; });
-            var second_response_cid = _.map(second_response, function(subscription){ return subscription.cid; });
+            var first_response_cid = _.map(first_response, function(subscription){ return subscription.back_channel; });
+            var second_response_cid = _.map(second_response, function(subscription){ return subscription.back_channel; });
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
-            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.cid == new_subscription_cid; });
+            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.back_channel == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
+          console.log("new_subscription :", new_subscriptions);
           testing1_subscription_cid_ = new_subscription;
           if (new_subscription.length != 1){
             console.log("first_response:",first_response);
@@ -1114,7 +1118,6 @@
             console.log("difference:",new_subscription_cid);
             console.log("second_response filtered:",new_subscription);
           } 
-          console.log("new_subscription :", new_subscriptions[0]);
           assert.isAbove(new_subscription.length,0,"no channels created");
           assert.isBelow(new_subscription.length,2,"multiple channel created");
           assert.equal(1,new_subscription.length,1);

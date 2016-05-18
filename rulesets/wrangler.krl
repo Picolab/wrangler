@@ -658,6 +658,90 @@ ruleset b507803x0 {
 // ***                                      Channels                                        ***
 // ********************************************************************************************
  //-------------------- Channels --------------------
+  rule createChannelFromMetaEci {
+    select when wrangler channel_creation_requested where eci.isnull() eq true
+    pre {
+      event_attributes = event:attrs();
+      //eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided"));
+     // eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided"));
+    /*  <eci options>
+    name     : <string>        // default is "Generic ECI channel" 
+    eci_type : <string>        // default is "PCI"
+    attributes: <array>
+    policy: <map>  */
+      channel_name = event:attr("channel_name").defaultsTo('', standardError("missing event attr channels"));
+      type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"));
+      attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
+      attrs =  decodeDefaults(attributes);
+      policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
+      // do we need to check if we need to decode ?? what would we check?
+      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      options = {
+        'name' : channel_name,
+        'eci_type' : type,
+        'attributes' : {"channel_attributes" : attrs},
+        'policy' : decoded_policy//{"policy" : policy}
+      }.klog('options for channel cration');
+          }
+          // do we need to check the format of name? is it wrangler's job?
+    if(checkName(channel_name)) then  //channel_name.match(re/\w[\w-]*/)) then 
+          { 
+      createChannel(options);
+          }
+    fired {
+      log (standardOut("success created channels #{channel_name}"));
+      log(">> successfully  >>");
+      raise wrangler event 'channel_created' // event to nothing  
+            attributes event_attributes;
+          } 
+    else {
+      error warn "douplicate name, failed to create channel"+channel_name;
+      log(">> could not create channels #{channel_name} >>");
+          }
+    }
+
+  rule createChannelFromGivenEci {
+    select when wrangler channel_creation_requested where eci.isnull() eq false
+    pre {
+      event_attributes = event:attrs();
+      //eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided"));
+      eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided")); // should never default 
+    /*  <eci options>
+    name     : <string>        // default is "Generic ECI channel" 
+    eci_type : <string>        // default is "PCI"
+    attributes: <array>
+    policy: <map>  */
+      channel_name = event:attr("channel_name").defaultsTo('', standardError("missing event attr channels"));
+      type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"));
+      attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
+      attrs =  decodeDefaults(attributes);
+      policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
+      // do we need to check if we need to decode ?? what would we check?
+      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      options = {
+        'name' : channel_name,
+        'eci_type' : type,
+        'attributes' : {"channel_attributes" : attrs},
+        'policy' : decoded_policy//{"policy" : policy}
+      }.klog('options for channel cration');
+          }
+          // do we need to check the format of name? is it wrangler's job?
+    if(checkName(channel_name)) then  //channel_name.match(re/\w[\w-]*/)) then 
+          { 
+      createChannel(options) with eci = eci;
+          }
+    fired {
+      log (standardOut("success created channels #{channel_name}"));
+      log(">> successfully  >>");
+      raise wrangler event 'channel_created' // event to nothing  
+            attributes event_attributes;
+          } 
+    else {
+      error warn "douplicate name, failed to create channel"+channel_name;
+      log(">> could not create channels #{channel_name} >>");
+          }
+    }
+    
  // we should add a append / modifie channel attributes rule set.
  //  takes in new and modified values and puts them in.
   rule updateChannelAttributes {
@@ -739,44 +823,7 @@ ruleset b507803x0 {
    //    }
   }
   
-  rule createChannel {
-    select when wrangler channel_creation_requested
-    pre {
-      event_attributes = event:attrs();
-    /*  <eci options>
-    name     : <string>        // default is "Generic ECI channel" 
-    eci_type : <string>        // default is "PCI"
-    attributes: <array>
-    policy: <map>  */
-      channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"));
-      type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"));
-      attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"));
-      attrs =  decodeDefaults(attributes);
-      policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
-      // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy') || policy;
-      options = {
-        'name' : channel_name,
-        'eci_type' : type,
-        'attributes' : {"channel_attributes" : attrs},
-        'policy' : decoded_policy//{"policy" : policy}
-      }.klog('options for channel cration');
-          }
-          // do we need to check the format of name? is it wrangler's job?
-    if(channel_name.match(re/\w[\w-]*/)) then 
-          { 
-      createChannel(options);
-          }
-    fired {
-      log (standardOut("success created channels #{channel_name}"));
-      log(">> successfully  >>");
-      raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
-          } 
-    else {
-      log(">> could not create channels #{channel_name} >>");
-          }
-    }
+
   
 // ********************************************************************************************
 // ***                                      Picos                                           ***
@@ -1120,6 +1167,10 @@ ruleset b507803x0 {
     }
     ========================================================================
    */
+  // inbound not backchannel 
+  // outbound not target 
+  // my_role
+  // subscriber_role
 
    // creates back_channel and sends event for other pico to create back_channel.
   rule subscribe {// need to change varibles to snake case.

@@ -328,7 +328,7 @@ ruleset b507803x0 {
                                   "name_space"    : "corePrototypeNameSpace",
                                   "my_role"       : "son",
                                   "subscriber_role"     : "test",
-                                  "outbound_eci"    : "1654165",
+                                  "subscriber_eci"    : "1654165",
                                   "channel_type"  : "ProtoType",
                                   "attrs"         : "nogiven"
                                 }],
@@ -1159,8 +1159,8 @@ ruleset b507803x0 {
            "name"  : <string>,
            "name_space": <string>,
            "relationship" : <string>,
-           "outbound_eci": <string>, // this is only stored in the origanal requestie
-           "event_eci" : <string>,
+           "subscriber_eci": <string>, // this is only stored in the origanal requestie
+           "outbound_eci" : <string>,
            "attributes" : <string>, // this will be a object(mostlikely an array) that has been encoded as a string. 
            "status": <string> // discribes subscription status, incouming, outgoing, subscribed
         }
@@ -1181,14 +1181,14 @@ ruleset b507803x0 {
       name_space     = event:attr("name_space").defaultsTo("shared", standardError("name_space"));
       my_role  = event:attr("my_role").defaultsTo("peer", standardError("my_role"));
       subscriber_role  = event:attr("subscriber_role").defaultsTo("peer", standardError("subscriber_role"));
-      outbound_eci = event:attr("outbound_eci").defaultsTo("no_outbound_eci", standardError("outbound_eci"));
+      subscriber_eci = event:attr("subscriber_eci").defaultsTo("no_subscriber_eci", standardError("subscriber_eci"));
       channel_type      = event:attr("channel_type").defaultsTo("subs", standardError("type"));
       //status      = event:attr("status").defaultsTo("status", standardError("status ")); 
       attributes = event:attr("attrs").defaultsTo("status", standardError("status "));
 
      // // destination for external event
       subscription_map = {
-            "cid" : outbound_eci
+            "cid" : subscriber_eci
       };
       // create unique_name for channel
       unique_name = randomName(name_space);
@@ -1201,7 +1201,7 @@ ruleset b507803x0 {
         "relationship" : my_role +"<->"+ subscriber_role, 
         "my_role" : my_role,
         "subscriber_role" : subscriber_role,
-        "outbound_eci"  : outbound_eci, // this will remain after accepted
+        "subscriber_eci"  : subscriber_eci, // this will remain after accepted
         "status" : "outbound", // should this be passed in from out side? I dont think so.
         "attributes" : attributes
       }; 
@@ -1213,7 +1213,7 @@ ruleset b507803x0 {
           //'policy' : ,
       };
     }
-    if(outbound_eci neq "no_outbound_eci") // check if we have someone to send a request too
+    if(subscriber_eci neq "no_subscriber_eci") // check if we have someone to send a request too
     then
     {
 
@@ -1226,7 +1226,7 @@ ruleset b507803x0 {
           "relationship" : subscriber_role +"<->"+ my_role ,
           "my_role" : subscriber_role,
           "subscriber_role" : my_role,
-          "event_eci"  : eciFromName(unique_name), 
+          "outbound_eci"  : eciFromName(unique_name), 
           "status" : "inbound",
           "channel_type" : channel_type,
           "attributes" : attributes
@@ -1259,7 +1259,7 @@ ruleset b507803x0 {
             "relationship" : event:attr("relationship").defaultsTo("", standardError("relationship")),
             "my_role" : event:attr("my_role").defaultsTo("", standardError("my_role")),
             "subscriber_role" : event:attr("subscriber_role").defaultsTo("", standardError("subscriber_role")),
-            "event_eci"  : event:attr("event_eci").defaultsTo("", standardError("event_eci")),
+            "outbound_eci"  : event:attr("outbound_eci").defaultsTo("", standardError("outbound_eci")),
             "status"  : event:attr("status").defaultsTo("", standardError("status")),
             "attributes" : event:attr("attributes").defaultsTo("", standardError("attributes"))
           } |
@@ -1291,7 +1291,7 @@ ruleset b507803x0 {
             and subscriber_role = pending_subscriptions{'subscriber_role'}
             and my_role = pending_subscriptions{'my_role'}
             and attributes = pending_subscriptions{'attributes'}
-            and event_eci = pending_subscriptions{'event_eci'}
+            and outbound_eci = pending_subscriptions{'outbound_eci'}
             and channel_type = channel_type;
       log(standardOut("failure >>")) if (channel_name eq "");
     } 
@@ -1310,15 +1310,15 @@ ruleset b507803x0 {
       attributes = inbound{'attributes'};
       status = attributes{'status'};
       //inbound_eci = eciFromName(channel_name).klog("back eci: ");
-      event_eci = attributes{'event_eci'}; // whats better?
+      outbound_eci = attributes{'outbound_eci'}; // whats better?
       subscription_map = {
-            "cid" : event_eci
+            "cid" : outbound_eci
       }.klog("subscription Map: ");
     }// this is a possible place to create a channel for subscription
-    if (event_eci neq "no event_eci") then
+    if (outbound_eci neq "no outbound_eci") then
     {
       event:send(subscription_map, "wrangler", "pending_subscription_approved") // pending_subscription_approved..
-       with attrs = {"event_eci" : inbound_eci , 
+       with attrs = {"outbound_eci" : inbound_eci , 
                       "status" : "outbound"}
     }
     fired 
@@ -1337,10 +1337,10 @@ ruleset b507803x0 {
     select when wrangler pending_subscription_approved
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
-      outGoing = function(event_eci){
+      outGoing = function(outbound_eci){
         attributes = subscriptionAttributes(meta:eci().klog("meta:eci for attributes: ")).klog("outgoing attributes: ");
         attr = attributes.put({"status" : "subscribed"}).klog("put outgoing status: "); // over write original status
-        attrs = attr.put({"event_eci" : event_eci}).klog("put outgoing event_eci: "); // add event_eci
+        attrs = attr.put({"outbound_eci" : outbound_eci}).klog("put outgoing outbound_eci: "); // add outbound_eci
         attrs;
       };
 
@@ -1351,7 +1351,7 @@ ruleset b507803x0 {
       };
 
       attributes = (status eq "outbound" ) => 
-            outGoing(event:attr("event_eci").defaultsTo( "no event_eci", standardError("no event_eci"))) | 
+            outGoing(event:attr("outbound_eci").defaultsTo( "no outbound_eci", standardError("no outbound_eci"))) | 
             incoming(event:attr("channel_name").defaultsTo( "no channel name", standardError("no channel name")));
       
       // get eci to change channel attributes
@@ -1388,16 +1388,16 @@ ruleset b507803x0 {
       inbound_eci = inbound{'cid'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
       attributes = inbound{'attributes'};
-      // get event_eci for subscription_map // who we will notify
-      event_eci = attributes{'event_eci'}.defaultsTo(attributes{'outbound_eci'}, " outbound_eci used."); // whats better?
-      // send remove event to event_eci
+      // get outbound_eci for subscription_map // who we will notify
+      outbound_eci = attributes{'outbound_eci'}.defaultsTo(attributes{'subscriber_eci'}, " subscriber_eci used."); // whats better?
+      // send remove event to outbound_eci
       // raise remove event to self with eci from name .
 
       subscription_map = {
-            "cid" : event_eci
+            "cid" : outbound_eci
       }.klog("subscription_map: ");
     }
-    //if( eci neq "No event_eci") then // always try to notify other party
+    //if( eci neq "No outbound_eci") then // always try to notify other party
     {
       event:send(subscription_map, "wrangler", "subscription_removal")
         with attrs = {
@@ -1421,21 +1421,21 @@ ruleset b507803x0 {
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));
-      eciLookUpFromEvent = function(event_eci){
-          get_event_eci = function(channel){
+      eciLookUpFromEvent = function(outbound_eci){
+          get_outbound_eci = function(channel){
               attributes = channel{'attributes'};
               return = (attributes.isnull()) => 
                   null |
-                  (attributes{'event_eci'} ); 
+                  (attributes{'outbound_eci'} ); 
               return;
           };
           my_channels = channel();
           channel_list = my_channels{"channels"}.defaultsTo("no Channel",standardOut("no channel found, by channels"));
           filtered_channels = channel_list.filter( function (channel) {
-          ( get_event_eci(channel) eq event_eci);
+          ( get_outbound_eci(channel) eq outbound_eci);
           }); 
         result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
-        // a channel with the correct event_eci
+        // a channel with the correct outbound_eci
         return = result{'cid'} // the correct eci to be removed.
         (return);
       };

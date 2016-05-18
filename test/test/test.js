@@ -57,7 +57,7 @@
             name_space: 'test',
             my_role: 'child',
             your_role: 'parent',
-            target_eci: _eci,
+            outbound_eci: _eci,
             channel_type: 'test',
             attrs: 'attributes'
           };
@@ -1061,6 +1061,7 @@
 // ********************************************************************************************
 // ***                               subscriptions Management                               ***
 // ********************************************************************************************
+        this.slow(100000);// this might take some time.
 
       // subscriptions 
       //     -list subscriptions - all & by collection & by filtered collection 
@@ -1109,16 +1110,16 @@
          });
 
           it('list should differ by one if new subscription request created.', function() {
-            first_response = first_response.subscriptions =="error" ? []: first_response.subscriptions;
-            second_response = second_response.subscriptions =="error" ? []: second_response.subscriptions;
-            var first_response_cid = _.map(first_response, function(subscription){ return subscription.back_channel; });
-            var second_response_cid = _.map(second_response, function(subscription){ return subscription.back_channel; });
+            first_response = first_response.subscriptions =="error" ? []: _.map(first_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
+            second_response = second_response.subscriptions =="error" ? []: _.map(second_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
+            var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound; });
+            var second_response_cid = _.map(second_response, function(subscription){ return subscription.inbound; });
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
-            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.back_channel == new_subscription_cid; });
+            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
           console.log("new_subscription :", new_subscriptions);
           testing1_subscription_cid_ = new_subscription;
-          if (new_subscription.length != 1){
+          if (new_subscriptions.length != 1){
             console.log("first_response:",first_response);
             console.log("second_response:",second_response);
             console.log("first_response mapped:",first_response_cid);
@@ -1126,9 +1127,9 @@
             console.log("difference:",new_subscription_cid);
             console.log("second_response filtered:",new_subscription);
           } 
-          assert.isAbove(new_subscription.length,0,"no channels created");
-          assert.isBelow(new_subscription.length,2,"multiple channel created");
-          assert.equal(1,new_subscription.length,1);
+          assert.isAbove(new_subscriptions.length,0,"no channels created");
+          assert.isBelow(new_subscriptions.length,2,"multiple channel created");
+          assert.equal(1,new_subscriptions.length,1);
               //assert.deepEqual(new_channel,channel_for_testing1,"should be the same has " + channel_for_testing1);
        //       assert.equal(subscriptions_for_testing1.channel_name,new_subscription.name);
        //       assert.equal(subscriptions_for_testing1.channel_type,new_subscription.type);

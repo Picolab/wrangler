@@ -744,7 +744,6 @@
 // **********************************list channels*******************************************
 
         describe('list channels', function() {
-          // pending test below
           it('create channel with eci', function(done) {
             channel_for_testing2.eci = child_testing_pico[0][0];
            EventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
@@ -756,6 +755,15 @@
           });
          });
           it('create channel', function(done) {
+           EventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
+           .set('Accept', 'application/json')
+           .query(channel_for_testing3)
+           .expect(200)
+           .end(function(err,res){
+            done();
+          });
+         });
+          it('try to create duplicate channel', function(done) {
            EventApi(child_testing_pico[0][0]).get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing3)
@@ -784,7 +792,7 @@
             .end(function(err,res){
               response = res.text;
               response = JSON.parse(response);
-              //assert.equal(true,response.status);
+              assert.equal(true,response.status);
               //console.log("channel",response);
               //console.log("logs",logs(child_testing_pico[0][0],done));
               //assert.equal(1,response.channels.length,1); chould be type not length check

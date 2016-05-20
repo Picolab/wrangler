@@ -162,7 +162,9 @@ ruleset b507803x0 {
               eciFromName(value);
       eci;       
     }
-    channel = function(id) { 
+    // takes name or eci as id returns single channle . needed for backwards combatablity 
+    //
+    channel = function(collection,filtered,id) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
@@ -175,11 +177,18 @@ ruleset b507803x0 {
         channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){
           (channel{attribute} eq value);}); 
+
         result = filtered_channels.head().defaultsTo({},standardError("no channel found, by .head()"));
         (result);
       };
-
-      results = (id.isnull()) => channels | single_channel(id,channels);
+      type = function(chan){ // takes a chans 
+        group = (chan.typeof() eq 'hash')=> // for robustness check type.
+        chan{collection} | 'error';
+        (group);
+      };
+      return1 = collection.isnull() => channels |  channels.collect(function(chan){(type(chan));}) ;
+      return2 = filtered.isnull() => return1 | return1{filtered};
+      results = (id.isnull()) => return2 | single_channel(id,channels);
       {
         'status'   : (channels neq "error"),
         'channels' : results

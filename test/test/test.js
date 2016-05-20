@@ -77,7 +77,7 @@
           subscriptions_for_testing2 = {};
           subscriptions_for_testing3 = {};
           function eventIDs(){
-            var //suiteName = "",
+            var suiteName = "",
             _parent_log_eid= [], 
             _pico_A_log_eid= [], 
             _pico_B_log_eid= [];
@@ -97,9 +97,9 @@
               parent: function(){
                 return _parent_log_eid;
               },
-             // suiteName: function(){
-             //   return suiteName;
-             // },
+              suiteName: function(){
+                return suiteName;
+              },
               Logs: function(){
                 return suiteLogs;
               },
@@ -122,10 +122,17 @@
                   A:[],
                   B:[]
                 };
-              }//,
-             // updateSuiteName: function(state){
-             //   suiteName = state;
-             // }
+              },
+              resetLogs: function(suite){
+                logs =  { // reset Logs
+                  parent:[],
+                  A:[],
+                  B:[]
+                };
+              },
+              updateSuiteName: function(state){
+                suiteName = state;
+              }
             } 
           };
           var eidLogs = eventIDs();
@@ -174,6 +181,10 @@
         afterEach(function() { // build a list of logs to print at the end of test.
           //console.log("current event ID",_eid);
              // console.log("currentTest",this.currentTest);
+             if(eidLogs.suiteName() != _eid.suite){
+                eidLogs.resetLogs();
+                eidLogs.updateSuiteName(_eid.suite);
+             };
             
              switch(_eid.pico){
                 case 'parent':
@@ -685,6 +696,8 @@
       describe('install rulesets', function() {
 
         describe('install single rulesets', function() {
+          _eid.suite = 'install single rulesets';
+
           var first_response;
           var second_response;
 
@@ -741,6 +754,8 @@
           });
         });
         describe('uninstall single rulesets', function() {
+          _eid.suite = 'uninstall single rulesets';
+
           it('stores initial list to confirm uninstalled rulesets',function(done){
             EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
@@ -767,6 +782,8 @@
 
 
         describe('installing a multiple ruleset', function() {
+          _eid.suite = 'installing a multiple ruleset';
+
           var first_response;
           var second_response;
 
@@ -826,6 +843,7 @@
         });
 
         describe('uninstalling a multiple ruleset', function() {
+          _eid.suite = 'uninstalling a multiple ruleset';
           it('stores initial list to confirm uninstalled rulesets',function(done){
             EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
@@ -875,6 +893,7 @@
         var channel_for_testing3_cid_channel = {};
 
         describe('list channel, create channel, list channel and confirms creation', function() {
+          _eid.suite = 'list channel, create channel, list channel and confirms creation';
           var first_response;
           var second_response;
           it('stores initial list to confirm created channel',function(done) {
@@ -944,6 +963,7 @@
 // **********************************list channels*******************************************
 
         describe('list channels', function() {
+          _eid.suite = 'list channels';
           it('create channel with eci', function(done) {
             channel_for_testing2.eci = pico_A[0][0];
            EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
@@ -1026,6 +1046,7 @@
 // **********************************channel attributes*******************************************
 // 
         describe('channel attributes', function() {
+          _eid.suite = 'channel attributes';
           var channel_variable_results;
 
 // ********************************** Type *******************************************
@@ -1270,8 +1291,7 @@
         var testing1_subscription = {};
         var testing2_subscription = {};
         describe('list subscriptions, create subscriptions, list subscriptions and confirms creation', function() {
-          
-          
+          _eid.suite = 'list subscriptions, create subscriptions, list subscriptions and confirms creation';
           var Pico_A_first_response;
           var Pico_B_first_response;
           var Pico_A_second_response;
@@ -1309,24 +1329,34 @@
             name_space: subscriptions_for_testing1.name_space,
             my_role: subscriptions_for_testing1.my_role,
             subscriber_role: subscriptions_for_testing1.subscriber_role,
-            subscriber_eci : pico_B,
+            subscriber_eci : pico_B[0][0],
             channel_type: subscriptions_for_testing1.channel_type,
             attrs: subscriptions_for_testing1.attrs
            }) // subscription request to parent 
            .expect(200)
-           //.end(function(err,res){
+           .end(function(err,res){
            //   setTimeout(function() { // let pico B handle subscription event. 
-           //     done();
+                done();
            //   }, 6000);
-          //});
+          });
          });
 
         it('should delay for pico_B to handle inbound subscription', function(done){
-          this.timeout(6000);
+          assert.equal(true,true,true);
+          this.timeout(600);
           setTimeout(done, 600);
         });
-
-
+        it('should delay for pico_B to handle inbound subscription', function(done){
+          assert.equal(true,true,true);
+          this.timeout(600);
+          setTimeout(done, 600);
+        });
+        it('should delay for pico_B to handle inbound subscription', function(done){
+          assert.equal(true,true,true);
+          this.timeout(600);
+          setTimeout(done, 600);
+        });
+        this.timeout(50000);
 
 
           it('stores subscriptions to confirm created Outbound subscription request in Pico_A',function(done) {
@@ -1472,6 +1502,8 @@
 // ********************************************************************************************
 
       describe('Logs',function(done){
+        _eid.suite = 'Logs';
+
         // need to have logs from parent 
         // need to have logs from pico B
         it('print logs from Pico_A failures',function(done){

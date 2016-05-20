@@ -1314,12 +1314,20 @@
             attrs: subscriptions_for_testing1.attrs
            }) // subscription request to parent 
            .expect(200)
-           .end(function(err,res){
-              setTimeout(function() { // let pico B handle subscription event. 
-                done();
-              }, 6000);
-          });
+           //.end(function(err,res){
+           //   setTimeout(function() { // let pico B handle subscription event. 
+           //     done();
+           //   }, 6000);
+          //});
          });
+
+        it('should delay for pico_B to handle inbound subscription', function(done){
+          this.timeout(6000);
+          setTimeout(done, 600);
+        });
+
+
+
 
           it('stores subscriptions to confirm created Outbound subscription request in Pico_A',function(done) {
            this.retries(2);

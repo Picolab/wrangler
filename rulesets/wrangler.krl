@@ -482,7 +482,7 @@ ruleset b507803x0 {
       }); 
       // reconstruct list, to have a inbound in attributes.
       subs = filtered_channels.map( function(channel){
-           channel.put(["attributes","inbound"],channel{"cid"})
+           channel.put(["attributes","inbound_eci"],channel{"cid"})
                   .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash

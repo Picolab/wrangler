@@ -15,8 +15,10 @@
           //stringify = require('node-stringify'),
           //json = require('json'),
 
-          _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1",
-          _log_eid= [], 
+         // _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1",
+          _eci =  "F5A29022-1CB5-11E6-9578-D5D5E71C24E1",
+
+          _pico_used='', // can be parent , a , b
           wrangler_dev = "b507805x0.dev", 
           wrangler_prod = 'b507199x5.dev',
           bootstrap_rid = "b507199x1.dev",
@@ -29,8 +31,16 @@
           childSkyQuery = supertest("https://kibdev.kobj.net/sky/cloud/"+wrangler_dev),
           pico_A={},
           pico_B={},
-          _eid=0;
-          _eid_before=0;
+          _eid={
+            eid:0,
+            pico:'parent',
+            suite:'Start'
+          };
+          //_eid_before={
+          //  eid:0,
+          //  pico:'parent',
+          //  suite:''
+          //};
 //*************************** Channels *****************************
           policy_string1 ='never take prisoners, never be taken alive';
           channel_for_testing1 = {
@@ -57,8 +67,8 @@
           subscriptions_for_testing1 = {
             name: "subscription1",
             name_space: 'test',
-            my_role: 'child',
-            subscriber_role: 'parent',
+            my_role: 'Pico_A',
+            subscriber_role: 'Pico_B',
             subscriber_eci: '',
             channel_type: 'test',
             attrs: 'attributes'
@@ -66,17 +76,71 @@
 
           subscriptions_for_testing2 = {};
           subscriptions_for_testing3 = {};
-          
+          function eventIDs(){
+            var //suiteName = "",
+            _parent_log_eid= [], 
+            _pico_A_log_eid= [], 
+            _pico_B_log_eid= [];
+            var Logs = {
+              parent:[],
+              A:[],
+              B:[]
+            };
+            var suiteLogs = []; // array of suite:Logs
+            return {
+              A: function(){
+                return _pico_A_log_eid;
+              },
+              B: function(){
+                return _pico_B_log_eid;
+              },
+              parent: function(){
+                return _parent_log_eid;
+              },
+             // suiteName: function(){
+             //   return suiteName;
+             // },
+              Logs: function(){
+                return suiteLogs;
+              },
+              updateA: function(){
+                Logs.A.push(_eid.eid);
+                //Logs.A.push(_eid_before);
+              },
+              updateB: function(){
+                Logs.B.push(_eid.eid);
+                //Logs.B.push(_eid_before);
+              },
+              updateParent: function(){
+                Logs.parent.push(_eid.eid);
+                //Logs.parent.push(_eid_before);
+              },
+              updateLogs: function(suite){
+                suiteLogs.push({suite : Logs});
+                logs =  { // reset Logs
+                  parent:[],
+                  A:[],
+                  B:[]
+                };
+              }//,
+             // updateSuiteName: function(state){
+             //   suiteName = state;
+             // }
+            } 
+          };
+          var eidLogs = eventIDs();
 
 
-
-          function eid(){
-            _eid_before = _eid;
-            _eid = Math.floor(Math.random() * 9999999);
-            return _eid;
+          function eid(pico){
+            pico = pico || 'parent';
+            _eid.pico = pico;
+            //_eid_before = _eid;
+            _eid.eid = Math.floor(Math.random() * 9999999);
+            return _eid.eid;
           };
           //function EventApi(eci, domain = 'wrangler') {
-            function EventApi(eci, domain) {
+            function EventApi(eci,pico, domain) {
+              pico = pico || 'parent';
               domain = domain || "wrangler";
               _eid_before = _eid;
               _eid = Math.floor(Math.random() * 9999999);
@@ -104,15 +168,27 @@
 // ********************************************************************************************
 
       describe('Wrangler Test Driver', function() {
-
-        this.slow(100000);// this might take some time.
-
+ 
+      //  this.slow(200000);// this might take some time.
+        this.timeout(50000);
         afterEach(function() { // build a list of logs to print at the end of test.
           //console.log("current event ID",_eid);
-            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' && this.currentTest.timedOut != true) {
              // console.log("currentTest",this.currentTest);
-             _log_eid.push(_eid);
-             _log_eid.push(_eid_before);
+            
+             switch(_eid.pico){
+                case 'parent':
+                    eidLogs.updateParent();
+                    break;
+                case 'a':
+                    eidLogs.updateA();
+                    break;
+                case 'b':
+                    eidLogs.updateB();
+                    break;
+             }
+            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
+             // console.log("currentTest",this.currentTest);
+             eidLogs.updateLogs(_eid.suite);
            };
           
         //console.log("eid list", _log_eid);
@@ -121,7 +197,8 @@
 // ***                               Initialize Testing Environment                         ***
 // ********************************************************************************************
 
-        describe('Initialize Testing Environment ', function() {
+        describe('Initialize Testing Environment', function() {
+          _eid.suite = 'Initialize Testing Environment';
       //check if list children works for creatChild test. 
       describe('children(_eci)', function() {
         it('array of child tuples errors if not 200', function(done) {
@@ -137,6 +214,7 @@
       describe('list/install/list/uninstall ruleset('+ testing_rid1+')', function() {
         var first_response;
         var second_response;
+          _eid.suite = 'list/install/list/uninstall ruleset('+ testing_rid1+')';
 
         it('stores list of current rulesets',function(done) {
           sky_query.get("/rulesets")
@@ -223,6 +301,8 @@
         var first_response;
         var second_response;
         var new_pico;
+          _eid.suite = 'CreateChild Pico A & B For Testing';
+
         // get list of children and store for difference check.
         // get list of children to check for new child with the previous list,
         it("stores list of current children",function(done) {
@@ -269,7 +349,7 @@
           var new_Pico_eci = _.difference( second_response_ecis, first_response_ecis  );
           new_pico = _.filter(second_results, function(eci){ return eci[0] == new_Pico_eci; });
           pico_A = new_pico;
-          console.log("Pico_A",Pico_A);
+          console.log("Pico_A",pico_A);
           if (((pico_A.length) != 1 )){
             console.log("first_response:");
             console.log(first_results);
@@ -326,7 +406,7 @@
           var new_Pico_eci = _.difference( second_response_ecis, first_response_ecis  );
           new_pico = _.filter(second_results, function(eci){ return eci[0] == new_Pico_eci; });
           pico_B = new_pico;
-          console.log("Pico_B",Pico_B);
+          console.log("Pico_B",pico_B);
           if (((pico_B.length) != 1 )){
             console.log("first_response:");
             console.log(first_results);
@@ -351,7 +431,7 @@
 //        parallel('install rulesets in picos', function() {
         it('install wrangler.dev('+wrangler_dev+') ruleset in Pico A', function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0]).get('/install_rulesets_requested')
+         EventApi(pico_A[0][0],'a').get('/install_rulesets_requested')
          .set('Accept', 'application/json')
          .query({rids : wrangler_dev })
          .expect(200)
@@ -361,7 +441,7 @@
        });
         it('install wrangler.dev('+wrangler_dev+') ruleset in Pico B', function(done) {
          this.retries(2);
-         EventApi(pico_B[0][0]).get('/install_rulesets_requested')
+         EventApi(pico_B[0][0],'b').get('/install_rulesets_requested')
          .set('Accept', 'application/json')
          .query({rids : wrangler_dev })
          .expect(200)
@@ -371,7 +451,7 @@
        });
         it('install pico logging('+picoLogs+') ruleset in Pico A', function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0]).get('/install_rulesets_requested')
+         EventApi(pico_A[0][0],'a').get('/install_rulesets_requested')
          .set('Accept', 'application/json')
          .query({rids : picoLogs })
          .expect(200)
@@ -381,7 +461,7 @@
        });
         it('install pico logging('+picoLogs+') ruleset in Pico B', function(done) {
          this.retries(2);
-         EventApi(pico_B[0][0]).get('/install_rulesets_requested')
+         EventApi(pico_B[0][0],'b').get('/install_rulesets_requested')
          .set('Accept', 'application/json')
          .query({rids : picoLogs })
          .expect(200)
@@ -392,7 +472,7 @@
 //      });
         it('enables pico A logging', function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0],"picolog").get('/reset')
+         EventApi(pico_A[0][0],'a',"picolog").get('/reset')
          .set('Accept', 'application/json')
          .query({rids : picoLogs })
          .expect(200)
@@ -402,7 +482,7 @@
        });
         it('enables pico B logging', function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0],"picolog").get('/reset')
+         EventApi(pico_A[0][0],'b',"picolog").get('/reset')
          .set('Accept', 'application/json')
          .query({rids : picoLogs })
          .expect(200)
@@ -412,7 +492,7 @@
        });
         it('Pico A uninstall wrangler.prod('+wrangler_prod+') & bootstrapping.prod('+bootstrap_rid+')',function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0]).get('/uninstall_rulesets_requested')
+         EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
          .set('Accept', 'application/json')
          .query({ rids : wrangler_prod+';'+bootstrap_rid })
          .expect(200)
@@ -423,7 +503,7 @@
         it('compares updated list of installed rulesets in Pico A with wrangler.dev, fails if rulesets() is not working or if uninstall failed',function(done) {
          this.retries(2);
          childSkyQuery.get("/rulesets")
-         .query({ _eci: pico_A[0][0] ,_eid: eid()})
+         .query({ _eci: pico_A[0][0] ,_eid: eid('a')})
          .expect(200)
          .end(function(err,res){
           response = res.text;
@@ -442,7 +522,7 @@
        });
         it('Pico B uninstall wrangler.prod('+wrangler_prod+') & bootstrapping.prod('+bootstrap_rid+')',function(done) {
          this.retries(2);
-         EventApi(pico_B[0][0]).get('/uninstall_rulesets_requested')
+         EventApi(pico_B[0][0],'b').get('/uninstall_rulesets_requested')
          .set('Accept', 'application/json')
          .query({ rids : wrangler_prod+';'+bootstrap_rid })
          .expect(200)
@@ -472,7 +552,7 @@
        });*/
         it('ensures Pico A logging is enabled',function(done) { // pico b should be ok if this passes 
          supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/loggingStatus")
-         .query({ _eci: pico_A[0][0],_eid: eid()})
+         .query({ _eci: pico_A[0][0],_eid: eid('a')})
          .expect(200)
          .end(function(err,res){
           response = res.text;
@@ -504,7 +584,6 @@
 
 
       describe('Main Tests', function() {
-      this.slow(100000);// this might take some time.
 
 
 // ********************************************************************************************
@@ -525,11 +604,13 @@
       
       describe('Rulesets Management', function() {
         describe('get ruleset meta', function() {
+          _eid.suite = 'get ruleset meta';
+
           it('rulesetsInfo('+wrangler_dev+ ') should return a single ruleset meta data',function(done){
             this.retries(2);
             childSkyQuery.get('/rulesetsInfo')
             .set('Accept', 'application/json')
-            .query({ _eci: pico_A[0][0],_eid: eid(), rids: wrangler_dev})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), rids: wrangler_dev})
             .expect(200)
             .expect('Content-Type', /json/)
             .end(function(err,res){
@@ -566,7 +647,7 @@
             this.retries(2);
             childSkyQuery.get('/rulesetsInfo')
             .set('Accept', 'application/json')
-            .query({ _eci: pico_A[0][0],_eid: eid(), rids: testing_rid1+";"+wrangler_dev})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), rids: testing_rid1+";"+wrangler_dev})
             .expect(200)
             .expect('Content-Type', /json/)
             .end(function(err,res){
@@ -609,7 +690,7 @@
 
           it('stores initial list to confirm installed ruleset',function(done) {
             childSkyQuery.get("/rulesets")
-            .query({ _eci: pico_A[0][0],_eid: eid() })
+            .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -621,7 +702,7 @@
 
 
           it('install ruleset', function(done) {
-           EventApi(pico_A[0][0]).get('/install_rulesets_requested')
+           EventApi(pico_A[0][0],'a').get('/install_rulesets_requested')
            .set('Accept', 'application/json')
            .query({rids :testing_rid1})
            .expect(200)
@@ -633,7 +714,7 @@
           it('stores list to confirm installed ruleset',function(done) {
            this.retries(2);
            childSkyQuery.get("/rulesets")
-           .query({ _eci: pico_A[0][0],_eid: eid() })
+           .query({ _eci: pico_A[0][0],_eid: eid('a') })
            .expect(200)
            .end(function(err,res){
             response = res.text;
@@ -661,7 +742,7 @@
         });
         describe('uninstall single rulesets', function() {
           it('stores initial list to confirm uninstalled rulesets',function(done){
-            EventApi(pico_A[0][0]).get('/uninstall_rulesets_requested')
+            EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1 })
             .expect(200)
@@ -672,7 +753,7 @@
           });
           it("check list for uninstalled rulesets", function(done){
             childSkyQuery.get("/rulesets")
-            .query({ _eci: pico_A[0][0],_eid: eid() })
+            .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -691,7 +772,7 @@
 
           it('stores initial list to confirm installed rulesets',function(done) {
             childSkyQuery.get("/rulesets")
-            .query({ _eci: pico_A[0][0] ,_eid: eid()})
+            .query({ _eci: pico_A[0][0] ,_eid: eid('a')})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -703,7 +784,7 @@
 
 
           it('install rulesets', function(done) {
-           EventApi(pico_A[0][0]).get('/install_rulesets_requested')
+           EventApi(pico_A[0][0],'a').get('/install_rulesets_requested')
            .set('Accept', 'application/json')
            .query({rids : testing_rid1+';'+testing_rid2})
            .expect(200)
@@ -715,7 +796,7 @@
           it('stores list to confirm installed rulesets',function(done) {
            this.retries(2);
            childSkyQuery.get("/rulesets")
-           .query({ _eci: pico_A[0][0],_eid: eid() })
+           .query({ _eci: pico_A[0][0],_eid: eid('a') })
            .expect(200)
            .end(function(err,res){
             response = res.text;
@@ -746,7 +827,7 @@
 
         describe('uninstalling a multiple ruleset', function() {
           it('stores initial list to confirm uninstalled rulesets',function(done){
-            EventApi(pico_A[0][0]).get('/uninstall_rulesets_requested')
+            EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1+';'+testing_rid2 })
             .expect(200)
@@ -757,7 +838,7 @@
           });
           it("check list for uninstalled rulesets", function(done){
             childSkyQuery.get("/rulesets")
-            .query({ _eci: pico_A[0][0],_eid: eid() })
+            .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -794,12 +875,11 @@
         var channel_for_testing3_cid_channel = {};
 
         describe('list channel, create channel, list channel and confirms creation', function() {
-        this.slow(100000);// this might take some time.
           var first_response;
           var second_response;
           it('stores initial list to confirm created channel',function(done) {
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid() })
+            .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -810,7 +890,7 @@
           });
 
           it('create channel', function(done) {
-           EventApi(pico_A[0][0]).get('/channel_creation_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing1)
            .expect(200)
@@ -822,7 +902,7 @@
           it('confirms created channel',function(done) {
            this.retries(2);
            childSkyQuery.get("/channel")
-           .query({ _eci: pico_A[0][0],_eid: eid() })
+           .query({ _eci: pico_A[0][0],_eid: eid('a') })
            .expect(200)
            .end(function(err,res){
             response = res.text;
@@ -866,7 +946,7 @@
         describe('list channels', function() {
           it('create channel with eci', function(done) {
             channel_for_testing2.eci = pico_A[0][0];
-           EventApi(pico_A[0][0]).get('/channel_creation_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing2)
            .expect(200)
@@ -875,7 +955,7 @@
           });
          });
           it('create channel', function(done) {
-           EventApi(pico_A[0][0]).get('/channel_creation_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing3)
            .expect(200)
@@ -884,7 +964,7 @@
           });
          });
           it('try to create duplicate channel', function(done) {
-           EventApi(pico_A[0][0]).get('/channel_creation_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
            .set('Accept', 'application/json')
            .query(channel_for_testing3)
            .expect(200)
@@ -894,7 +974,7 @@
          });
           it('should return all channels ',function(done){
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid()})
+            .query({ _eci: pico_A[0][0],_eid: eid('a')})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -907,7 +987,7 @@
           });
           it('should return a single channel from name '+channel_for_testing3.channel_name,function(done){
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid(), id: channel_for_testing3.channel_name})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: channel_for_testing3.channel_name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -927,7 +1007,7 @@
           });
           it('should return a single channel from id ' + (channel_for_testing1_cid_channel.cid) ,function(done){
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid(), id : channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id : channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -952,7 +1032,7 @@
 
           it('get channel type',function(done){
             childSkyQuery.get("/channelType")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -964,7 +1044,7 @@
           });
 
           it('update channel type by eci', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_type_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_type_requested')
            .set('Accept', 'application/json')
            .query({channel_type:channel_for_testing3.channel_type,eci:channel_for_testing1_cid_channel.cid})
            .expect(200)
@@ -975,7 +1055,7 @@
 
           it('confirm updated channel type by eci ',function(done){
             childSkyQuery.get("/channelType")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -987,7 +1067,7 @@
           });
 
           it('update channel type by name', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_type_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_type_requested')
            .set('Accept', 'application/json')
            .query({channel_type:channel_for_testing1.channel_type, name: (channel_for_testing1_cid_channel.name) })
            .expect(200)
@@ -998,7 +1078,7 @@
 
         it('confirm updated channel type by name',function(done){
             childSkyQuery.get("/channelType")
-            .query({ _eci: pico_A[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),name:channel_for_testing1_cid_channel.name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1013,7 +1093,7 @@
 
            it('get channel policy ',function(done){
             childSkyQuery.get("/channelPolicy")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1024,7 +1104,7 @@
             });
           });
           it('update channel policy by eci', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_policy_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_policy_requested')
            .set('Accept', 'application/json')
            .query({policy:channel_for_testing3.policy,eci:channel_for_testing1_cid_channel.cid})
            .expect(200)
@@ -1034,7 +1114,7 @@
          });
           it('confirm updated channel policy by eci',function(done){
             childSkyQuery.get("/channelPolicy")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1046,7 +1126,7 @@
           });
 
           it('update channel policy by name', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_policy_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_policy_requested')
            .set('Accept', 'application/json')
            .query({policy:channel_for_testing1.policy,name:channel_for_testing1_cid_channel.name})
            .expect(200)
@@ -1057,7 +1137,7 @@
 
           it('confirm updated channel policy by name',function(done){
             childSkyQuery.get("/channelPolicy")
-            .query({ _eci: pico_A[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),name:channel_for_testing1_cid_channel.name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1072,7 +1152,7 @@
 
           it('get channel attributes',function(done){
             childSkyQuery.get("/channelAttributes")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1083,7 +1163,7 @@
             });
           });
           it('update channel attributes by eci', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_attributes_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_attributes_requested')
            .set('Accept', 'application/json')
            .query({attributes:channel_for_testing3.attributes,eci:channel_for_testing1_cid_channel.cid})
            .expect(200)
@@ -1093,7 +1173,7 @@
          });
           it('confirm updated channel attributes by eci',function(done){
             childSkyQuery.get("/channelAttributes")
-            .query({ _eci: pico_A[0][0],_eid: eid(),eci:channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1104,7 +1184,7 @@
             });
           });
           it('update channel attributes by name', function(done) {
-           EventApi(pico_A[0][0]).get('/update_channel_attributes_requested')
+           EventApi(pico_A[0][0],'a').get('/update_channel_attributes_requested')
            .set('Accept', 'application/json')
            .query({attributes:channel_for_testing1.attributes,name:channel_for_testing1_cid_channel.name})
            .expect(200)
@@ -1114,7 +1194,7 @@
          });
           it('confirm updated channel attributes by name',function(done){
             childSkyQuery.get("/channelAttributes")
-            .query({ _eci: pico_A[0][0],_eid: eid(),name:channel_for_testing1_cid_channel.name})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'),name:channel_for_testing1_cid_channel.name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1128,7 +1208,7 @@
 // ********************************** Delete *******************************************
 
         it('delete channel with ID '+channel_for_testing1_cid_channel.cid, function(done) {
-           EventApi(pico_A[0][0]).get('/channel_deletion_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_deletion_requested')
            .set('Accept', 'application/json')
            .query({eci : channel_for_testing1_cid_channel.cid})
            .expect(200)
@@ -1139,7 +1219,7 @@
 
         it('confirm channel deleted with ID '+channel_for_testing1_cid_channel.cid,function(done){
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid(), id: channel_for_testing1_cid_channel.cid})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: channel_for_testing1_cid_channel.cid})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1152,7 +1232,7 @@
           });
 
         it('delete channel with name '+channel_for_testing3.channel_name, function(done) {
-           EventApi(pico_A[0][0]).get('/channel_deletion_requested')
+           EventApi(pico_A[0][0],'a').get('/channel_deletion_requested')
            .set('Accept', 'application/json')
            .query({name: channel_for_testing3.channel_name})
            .expect(200)
@@ -1163,7 +1243,7 @@
 
         it('confirm channel deleted with name '+channel_for_testing3_cid_channel.name,function(done){
             childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid(), id: channel_for_testing3_cid_channel.name})
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: channel_for_testing3_cid_channel.name})
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1181,7 +1261,6 @@
 // ********************************************************************************************
 // ***                               subscriptions Management                               ***
 // ********************************************************************************************
-        this.slow(100000);// this might take some time.
 
       // subscriptions 
       //     -list subscriptions - all & by collection & by filtered collection 
@@ -1192,7 +1271,6 @@
         var testing2_subscription = {};
         describe('list subscriptions, create subscriptions, list subscriptions and confirms creation', function() {
           
-          this.slow(100000);// this might take some time.
           
           var Pico_A_first_response;
           var Pico_B_first_response;
@@ -1200,7 +1278,7 @@
           var Pico_B_second_response;
           it('stores initial list in Pico_A to confirm created pending subscription',function(done) {
             childSkyQuery.get("/subscriptions")
-            .query({ _eci: pico_A[0][0],_eid: eid() })
+            .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1212,7 +1290,7 @@
 
           it('stores initial list in Pico_B to confirm created pending subscription',function(done) {
             childSkyQuery.get("/subscriptions")
-            .query({ _eci: pico_B[0][0],_eid: eid() })
+            .query({ _eci: pico_B[0][0],_eid: eid('b') })
             .expect(200)
             .end(function(err,res){
               response = res.text;
@@ -1224,7 +1302,7 @@
 
           it('create subscriptions from Pico_A', function(done) {
           //subscriptions_for_testing1.subscriber_eci = pico_B;// was not working , dont know why?
-           EventApi(pico_A[0][0]).get('/subscription')
+           EventApi(pico_A[0][0],'a').get('/subscription')
            .set('Accept', 'application/json')
            .query({
             name: subscriptions_for_testing1.name,
@@ -1244,14 +1322,17 @@
           it('stores subscriptions to confirm created Outbound subscription request in Pico_A',function(done) {
            this.retries(2);
            childSkyQuery.get("/subscriptions")
-           .query({ _eci: pico_A[0][0],_eid: eid() })
+           .query({ _eci: pico_A[0][0],_eid: eid('a') })
            .expect(200)
            .end(function(err,res){
             response = res.text;
             Pico_A_second_response = JSON.parse(response);
           console.log("second_response :", Pico_A_second_response);
             assert.equal(true, Pico_A_second_response.status);
-            done();
+            setTimeout(function() { // let pico B handle subscription event. 
+              done();
+            }, 5000);
+            //done();
           }); 
          });
 
@@ -1263,7 +1344,7 @@
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
             var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
-          //console.log("new_subscription :", new_subscriptions);
+          console.log("new_subscription :", new_subscription);
           testing1_subscription = new_subscription;
           if (new_subscriptions.length != 1){
             console.log("first_response:",first_response);
@@ -1273,33 +1354,32 @@
             console.log("difference:",new_subscription_cid);
             console.log("second_response filtered:",new_subscription);
           } 
-          assert.isAbove(new_subscriptions.length,0,"no channels created");
-          assert.isBelow(new_subscriptions.length,2,"multiple channel created");
+          assert.isAbove(new_subscriptions.length,0,"no subscription created");
+          assert.isBelow(new_subscriptions.length,2,"multiple subscriptions created");
           assert.equal(1,new_subscriptions.length,1);
-              //assert.deepEqual(new_channel,channel_for_testing1,"should be the same has " + channel_for_testing1);
           assert.equal(new_subscription.status,"outbound");
-       //       assert.equal(subscriptions_for_testing1.channel_type,new_subscription.type);
-         //     assert.equal(subscriptions_for_testing1.attributes,new_subscription.attributes.channel_attributes);
-              //console.log("new_channel",new_channel);
-      //        assert.equal(policy_string1,new_subscription.policy.policy);
-            });
+          assert.equal(new_subscription.name_space,subscriptions_for_testing1.name_space);
+          assert.equal(new_subscription.outbound_eci,pico_B[0][0]);
+          assert.equal(new_subscription.my_role,subscriptions_for_testing1.my_role);
+          assert.equal(new_subscription.subscription_name,subscriptions_for_testing1.name);
+          assert.equal(new_subscription.attributes,subscriptions_for_testing1.attrs);
 
+          });
 
           it('stores subscriptions to confirm created Inbound subscription request in Pico_B',function(done) {
-           this.retries(2);
            childSkyQuery.get("/subscriptions")
-           .query({ _eci: pico_B[0][0],_eid: eid() })
+           .query({ _eci: pico_B[0][0],_eid: eid('b') })
            .expect(200)
            .end(function(err,res){
             response = res.text;
             Pico_B_second_response = JSON.parse(response);
-          console.log("second_response :", second_response);
             assert.equal(true, Pico_A_second_response.status);
-            done();
+             done();
           }); 
          });
 
           it('list should differ by one if new subscription request created.', function() {
+          console.log("second_response :", Pico_B_second_response);
             first_response = Pico_B_first_response.subscriptions =="error" ? []: _.map(Pico_B_first_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             second_response = Pico_B_second_response.subscriptions =="error" ? []: _.map(Pico_B_second_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound; });
@@ -1307,7 +1387,7 @@
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
             var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
-          //console.log("new_subscription :", new_subscriptions);
+          console.log("new_subscription :", new_subscription);
           testing2_subscription = new_subscription;
           if (new_subscriptions.length != 1){
             console.log("first_response:",first_response);
@@ -1321,12 +1401,11 @@
           assert.isBelow(new_subscriptions.length,2,"multiple channel created");
           assert.equal(1,new_subscriptions.length,1);
           assert.equal(new_subscription.status,"inbound");
-              //assert.deepEqual(new_channel,channel_for_testing1,"should be the same has " + channel_for_testing1);
-       //       assert.equal(subscriptions_for_testing1.channel_name,new_subscription.name);
-       //       assert.equal(subscriptions_for_testing1.channel_type,new_subscription.type);
-         //     assert.equal(subscriptions_for_testing1.attributes,new_subscription.attributes.channel_attributes);
-              //console.log("new_channel",new_channel);
-      //        assert.equal(policy_string1,new_subscription.policy.policy);
+          assert.equal(new_subscription.name_space,subscriptions_for_testing1.name_space);
+          assert.equal(new_subscription.outbound_eci,pico_A[0][0]);
+          assert.equal(new_subscription.my_role,subscriptions_for_testing1.subscriber_role);
+          assert.equal(new_subscription.subscription_name,subscriptions_for_testing1.name);
+          assert.equal(new_subscription.attributes,subscriptions_for_testing1.attrs);
             });
 
         });
@@ -1388,10 +1467,12 @@
         // need to have logs from parent 
         // need to have logs from pico B
         it('print logs from Pico_A failures',function(done){
-        var eids = _log_eid.join(';');
-       // console.log("list to get ", _log_eid);
+        //var eids = _log_eid.join(';');
+        logs = eidLogs.Logs();
+        console.log("list to get ", logs);
+        done();
         //console.log('eids to send',eids);
-          supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
+          /*supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
           .query({ _eci: pico_A[0][0],_eid: eid(),eids:eids})
           .expect(200)
           .end(function(err,res){
@@ -1407,7 +1488,7 @@
               console.log("logs of failed operations",response);
             }
             done();
-          });
+          });*/
         });
       });
 

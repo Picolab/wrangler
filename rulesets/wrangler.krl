@@ -1227,7 +1227,7 @@ ruleset b507803x0 {
           "my_role" : subscriber_role,
           "subscriber_role" : my_role,
           "outbound_eci"  : eciFromName(unique_name), 
-          "status" : "inbound",
+          "status" : "inbound_eci",
           "channel_type" : channel_type,
           "attributes" : attributes
         };

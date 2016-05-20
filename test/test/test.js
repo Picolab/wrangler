@@ -349,7 +349,7 @@
           var new_Pico_eci = _.difference( second_response_ecis, first_response_ecis  );
           new_pico = _.filter(second_results, function(eci){ return eci[0] == new_Pico_eci; });
           pico_A = new_pico;
-          console.log("Pico_A",pico_A);
+          //console.log("Pico_A",pico_A);
           if (((pico_A.length) != 1 )){
             console.log("first_response:");
             console.log(first_results);
@@ -406,7 +406,7 @@
           var new_Pico_eci = _.difference( second_response_ecis, first_response_ecis  );
           new_pico = _.filter(second_results, function(eci){ return eci[0] == new_Pico_eci; });
           pico_B = new_pico;
-          console.log("Pico_B",pico_B);
+          //console.log("Pico_B",pico_B);
           if (((pico_B.length) != 1 )){
             console.log("first_response:");
             console.log(first_results);
@@ -1315,7 +1315,9 @@
            }) // subscription request to parent 
            .expect(200)
            .end(function(err,res){
-            done();
+              setTimeout(function() { // let pico B handle subscription event. 
+                done();
+              }, 6000);
           });
          });
 
@@ -1327,22 +1329,19 @@
            .end(function(err,res){
             response = res.text;
             Pico_A_second_response = JSON.parse(response);
-          console.log("second_response :", Pico_A_second_response);
+            console.log("second_response :", Pico_A_second_response);
             assert.equal(true, Pico_A_second_response.status);
-            setTimeout(function() { // let pico B handle subscription event. 
-              done();
-            }, 5000);
-            //done();
+            done();
           }); 
          });
 
           it('list should differ by one if new subscription request created.', function() {
             first_response = Pico_A_first_response.subscriptions =="error" ? []: _.map(Pico_A_first_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             second_response = Pico_A_second_response.subscriptions =="error" ? []: _.map(Pico_A_second_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
-            var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound; });
-            var second_response_cid = _.map(second_response, function(subscription){ return subscription.inbound; });
+            var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound_eci; });
+            var second_response_cid = _.map(second_response, function(subscription){ return subscription.inbound_eci; });
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
-            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound == new_subscription_cid; });
+            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound_eci == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
           console.log("new_subscription :", new_subscription);
           testing1_subscription = new_subscription;
@@ -1359,7 +1358,7 @@
           assert.equal(1,new_subscriptions.length,1);
           assert.equal(new_subscription.status,"outbound");
           assert.equal(new_subscription.name_space,subscriptions_for_testing1.name_space);
-          assert.equal(new_subscription.outbound_eci,pico_B[0][0]);
+          assert.equal(new_subscription.subscriber_eci,pico_B[0][0]);
           assert.equal(new_subscription.my_role,subscriptions_for_testing1.my_role);
           assert.equal(new_subscription.subscription_name,subscriptions_for_testing1.name);
           assert.equal(new_subscription.attributes,subscriptions_for_testing1.attrs);
@@ -1382,10 +1381,10 @@
           console.log("second_response :", Pico_B_second_response);
             first_response = Pico_B_first_response.subscriptions =="error" ? []: _.map(Pico_B_first_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             second_response = Pico_B_second_response.subscriptions =="error" ? []: _.map(Pico_B_second_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
-            var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound; });
-            var second_response_cid = _.map(second_response, function(subscription){ return subscription.inbound; });
+            var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound_eci; });
+            var second_response_cid = _.map(second_response, function(subscription){ return subscription.inbound_eci; });
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
-            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound == new_subscription_cid; });
+            var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound_eci == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
           console.log("new_subscription :", new_subscription);
           testing2_subscription = new_subscription;
@@ -1402,7 +1401,8 @@
           assert.equal(1,new_subscriptions.length,1);
           assert.equal(new_subscription.status,"inbound");
           assert.equal(new_subscription.name_space,subscriptions_for_testing1.name_space);
-          assert.equal(new_subscription.outbound_eci,pico_A[0][0]);
+          assert.equal(new_subscription.outbound_eci,testing1_subscription.inbound_eci);
+          assert.equal(testing2_subscription.inbound_eci,testing1_subscription.outbound_eci);
           assert.equal(new_subscription.my_role,subscriptions_for_testing1.subscriber_role);
           assert.equal(new_subscription.subscription_name,subscriptions_for_testing1.name);
           assert.equal(new_subscription.attributes,subscriptions_for_testing1.attrs);

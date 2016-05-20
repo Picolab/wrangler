@@ -463,6 +463,7 @@ ruleset b507803x0 {
 // ***                                      Subscriptions                                   ***
 // ******************************************************************************************** 
 // 
+// this comment could break the kre server.
   //-------------------- Subscriptions ----------------------
     // name subscriptions and add results status 
     allSubscriptions = function (){// slow, whats a better way to prevent channel call, bigO(n^2)

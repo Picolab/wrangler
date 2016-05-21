@@ -186,6 +186,10 @@
           //console.log("current event ID",_eid);
              // console.log("currentTest",this.currentTest);
              if(eidLogs.suiteName() != _eid.suite){
+              if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
+                 // console.log("currentTest",this.currentTest);
+                 eidLogs.updateLogs(_eid.suite);
+               };
                 eidLogs.resetLogs();
                 eidLogs.updateSuiteName(_eid.suite);
              };
@@ -201,10 +205,7 @@
                     eidLogs.updateB();
                     break;
              }
-            if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
-             // console.log("currentTest",this.currentTest);
-             eidLogs.updateLogs(_eid.suite);
-           };
+            
           
         //console.log("eid list", _log_eid);
         });       

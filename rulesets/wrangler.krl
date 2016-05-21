@@ -164,7 +164,7 @@ ruleset b507803x0 {
     }
     // takes name or eci as id returns single channle . needed for backwards combatablity 
     //
-    channel = function(collection,filtered,id) { 
+    channel = function(id,collection,filtered) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid

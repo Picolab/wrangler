@@ -186,10 +186,7 @@
           //console.log("current event ID",_eid);
              // console.log("currentTest",this.currentTest);
              if(eidLogs.suiteName() != _eid.suite){
-              if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
-                 // console.log("currentTest",this.currentTest);
-                 eidLogs.updateLogs(_eid.suite);
-               };
+  
                 eidLogs.resetLogs();
                 eidLogs.updateSuiteName(_eid.suite);
              };
@@ -205,7 +202,10 @@
                     eidLogs.updateB();
                     break;
              }
-            
+              if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
+                 // console.log("currentTest",this.currentTest);
+                 eidLogs.updateLogs(_eid.suite);
+              };
           
         //console.log("eid list", _log_eid);
         });       
@@ -1005,6 +1005,7 @@
               response = res.text;
               response = JSON.parse(response);
               assert.equal(true,response.status);
+              //console.log("channel",response);
               expect(response.channels).to.be.an('array');
               assert.isAtLeast(response.channels.length,3,"should have at least 3 channels listed.");
               done();
@@ -1047,7 +1048,38 @@
               done();
             });
           });
-
+          it('should return a collection of channels from type' ,function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "type"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("channel",response);
+              collection = response.channels;
+              expect(collection).to.include.keys('devlog');
+              expect(collection).to.include.keys('PCI');
+              expect(collection).to.include.keys('TestDriver');
+              done();
+            });
+          });
+          it('should return a collection of channels from type filtered on TestDriver' ,function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "type",filtered : 'TestDriver'})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("channel",response);
+              collection = response.channels;
+              //expect(collection).to.include('devlog');
+              //expect(collection).to.include('PCI');
+              expect(collection).to.be.an('array');
+              done();
+            });
+          });
 // **********************************channel attributes*******************************************
 // 
         describe('channel attributes', function() {
@@ -1445,11 +1477,13 @@
         });
         describe('Accept Inbound subscription',function(done){
           it('Accept Inbound Subscription in pico_B',function(done){
+          name = testing2_subscription.channel_name;
+          console.log('name : ',name);
           _eid.suite = 'Accept Inbound subscription';
           EventApi(pico_B[0][0],'b').get('/pending_subscription_approval')
            .set('Accept', 'application/json')
            .query({
-            channel_name : testing2_subscription.channel_name
+            channel_name : name
            }) 
            .expect(200)
            .end(function(err,res){
@@ -1467,10 +1501,27 @@
             response = res.text;
             Pico_B_second_response = JSON.parse(response);
             assert.equal(true, Pico_A_second_response.status);
+            subscription =  _.values(Pico_B_second_response.subscriptions[0])[0];
+            console.log("subscription",subscription);
+            assert.equal(subscription.status,'subscribed');
              done();
           }); 
          });
-
+          it('stores subscriptions to confirm created accepted subscription request in Pico_A',function(done) {
+           Pico_A_first_response = Pico_A_second_response;
+           childSkyQuery.get("/subscriptions")
+           .query({ _eci: pico_A[0][0],_eid: eid('a') })
+           .expect(200)
+           .end(function(err,res){
+            response = res.text;
+            Pico_A_second_response = JSON.parse(response);
+            assert.equal(true, Pico_A_second_response.status);
+            subscription =  _.values(Pico_A_second_response.subscriptions[0])[0];
+            console.log("subscription",subscription);
+            assert.equal(subscription.status,'subscribed');
+             done();
+          }); 
+         });
         });
         });
 
@@ -1535,6 +1586,9 @@
         _eid.suite = 'Logs';
         //var eids = _log_eid.join(';');
         logs = eidLogs.Logs();
+        logs = _.map(logs,function(value,key){
+          return value.A;
+        });
         console.log("list to get ", logs);
         done();
         //console.log('eids to send',eids);

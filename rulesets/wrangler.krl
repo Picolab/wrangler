@@ -1314,7 +1314,7 @@ ruleset b507803x0 {
     select when wrangler pending_subscription_approval
     pre{
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
-      results = channel(channel_name);
+      results = channel(channel_name,null,null);
       inbound = results{'channels'};
       inbound_eci = inbound{'cid'}; // this is why we call channel and not subscriptionAttributes.
       attributes = inbound{'attributes'};

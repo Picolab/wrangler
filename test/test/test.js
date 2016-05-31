@@ -1,3 +1,6 @@
+
+// to optimize code structure use module.exports to split test suites into different files. 
+
 // ********************************************************************************************
 // ***                                 Wrangle Test Driver  Globals & Dependencies          ***
 // ********************************************************************************************
@@ -34,7 +37,8 @@
           _eid={
             eid:0,
             pico:'parent',
-            suite:'Start'
+            suite:'Start',
+            state:'passed'
           };
           //_eid_before={
           //  eid:0,
@@ -104,33 +108,40 @@
                 return suiteLogs;
               },
               updateA: function(){
+                if (_eid.eid!= ''){
                 Logs.A.push(_eid.eid);
                 //Logs.A.push(_eid_before);
+                } 
               },
               updateB: function(){
+                if (_eid.eid!= ''){
                 Logs.B.push(_eid.eid);
                 //Logs.B.push(_eid_before);
+                } 
               },
               updateParent: function(){
-                Logs.parent.push(_eid.eid);
+                if (_eid.eid!= ''){
+                  Logs.parent.push(_eid.eid);
+                } 
                 //Logs.parent.push(_eid_before);
               },
               updateLogs: function(suite){
                 param = {};
                 param[suite] = Logs;
                 suiteLogs.push( param );
-                logs =  { // reset Logs
+                Logs =  { // reset Logs
                   parent:[],
                   A:[],
                   B:[]
                 };
               },
               resetLogs: function(suite){
-                logs =  { // reset Logs
+                Logs =  { // reset Logs
                   parent:[],
                   A:[],
                   B:[]
                 };
+                _eid.eid = '';
               },
               updateSuiteName: function(state){
                 suiteName = state;
@@ -177,38 +188,42 @@
 // ***                                 Wrangle Test Driver                                  ***
 // ********************************************************************************************
 
-      describe('Wrangler Test Driver', function() {
- 
+describe('Wrangler Test Driver', function() {
+
       //  this.slow(200000);// this might take some time.
-        this.timeout(50000);
-        this.retries(4);
+      this.timeout(50000);
+      this.retries(4);
         afterEach(function() { // build a list of logs to print at the end of test.
-          //console.log("current event ID",_eid);
+          console.log("current event ID",_eid);
              // console.log("currentTest",this.currentTest);
-             if(eidLogs.suiteName() != _eid.suite){
-  
-                eidLogs.resetLogs();
-                eidLogs.updateSuiteName(_eid.suite);
-             };
-            
-             switch(_eid.pico){
-                case 'parent':
-                    eidLogs.updateParent();
-                    break;
-                case 'a':
-                    eidLogs.updateA();
-                    break;
-                case 'b':
-                    eidLogs.updateB();
-                    break;
-             }
-              if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
-                 // console.log("currentTest",this.currentTest);
-                 eidLogs.updateLogs(_eid.suite);
-              };
-          
+          if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
+              _eid.state = this.currentTest.state;
+          };
+          if(eidLogs.suiteName() != _eid.suite){ // entered a new suite
+             // console.log('>>>>>>>>>>>New SUITE ',this);
+            if (_eid.state == 'failed' || _eid.state == 'undefined' ) {
+                eidLogs.updateLogs(eidLogs.suiteName());
+            };
+            eidLogs.resetLogs();
+            eidLogs.updateSuiteName(_eid.suite);
+
+            _eid.state = "passed"; // reset suite state. 
+          };
+          switch(_eid.pico){
+            case 'parent':
+              eidLogs.updateParent();
+              break;
+            case 'a':
+              eidLogs.updateA();
+              break;
+            case 'b':
+              eidLogs.updateB();
+              break;
+            }
+
+
         //console.log("eid list", _log_eid);
-        });       
+      });       
 // ********************************************************************************************
 // ***                               Initialize Testing Environment                         ***
 // ********************************************************************************************
@@ -216,8 +231,14 @@
         describe('Initialize Testing Environment', function() {
       //check if list children works for creatChild test. 
       describe('children(_eci)', function() {
-        it('array of child tuples errors if not 200', function(done) {
+        
+        it('update suite variable ',function(done) {
           _eid.suite = 'Initialize Testing Environment';
+          done();
+        });
+        
+        it('array of child tuples errors if not 200', function(done) {
+          
           sky_query.get('/children')
           .set('Accept', 'application/json')
           .query({ _eci: _eci, _eid: eid()})
@@ -230,9 +251,12 @@
       describe('list/install/list/uninstall ruleset('+ testing_rid1+')', function() {
         var first_response;
         var second_response;
+        it('update suite variable ',function(done) {
+          _eid.suite = 'list/install/list/uninstall ruleset('+ testing_rid1+')';
+          done();
+        });
 
         it('stores list of current rulesets',function(done) {
-          _eid.suite = 'list/install/list/uninstall ruleset('+ testing_rid1+')';
           sky_query.get("/rulesets")
           .query({ _eci: _eci,_eid: eid()})
           .expect(200)
@@ -320,8 +344,12 @@
 
         // get list of children and store for difference check.
         // get list of children to check for new child with the previous list,
-        it("stores list of current children",function(done) {
+        it('update suite variable ',function(done) {
           _eid.suite = 'CreateChild Pico A & B For Testing';
+          done();
+        });
+
+        it("stores list of current children",function(done) {
           sky_query.get('/children')
           .set('Accept', 'application/json')
           .query({ _eci: _eci ,_eid: eid()})
@@ -620,9 +648,12 @@
       
       describe('Rulesets Management', function() {
         describe('get ruleset meta', function() {
+          it('update suite variable ',function(done) {
+          _eid.suite = 'get ruleset meta';
+          done();
+          });
 
           it('rulesetsInfo('+wrangler_dev+ ') should return a single ruleset meta data',function(done){
-          _eid.suite = 'get ruleset meta';
             this.retries(2);
             childSkyQuery.get('/rulesetsInfo')
             .set('Accept', 'application/json')
@@ -637,6 +668,7 @@
                 assert.property(object_response,"description",'return object should have a description.');
                 assert.property(object_response.description,wrangler_dev,"Should have "+wrangler_dev+" meta data.");
                 assert.include(object_response.description[wrangler_dev].description,"Wrangler","Should have the word wrangler in description.");
+            assert.equal(false,object_response.status);
                 done();
               });
           });
@@ -705,8 +737,12 @@
           var first_response;
           var second_response;
 
-          it('stores initial list to confirm installed ruleset',function(done) {
+        it('update suite variable ',function(done) {
           _eid.suite = 'install single rulesets';
+          done();
+        });
+
+          it('stores initial list to confirm installed ruleset',function(done) {
             childSkyQuery.get("/rulesets")
             .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
@@ -738,6 +774,7 @@
             response = res.text;
             second_response = JSON.parse(response);
             assert.equal(true,second_response.status);
+            assert.equal(false,second_response.status);
             done();
           }); 
          });
@@ -759,9 +796,11 @@
           });
         });
         describe('uninstall single rulesets', function() {
-
+          it('update suite variable ',function(done) {
+            _eid.suite = 'uninstall single rulesets';
+            done();
+          });
           it('stores initial list to confirm uninstalled rulesets',function(done){
-          _eid.suite = 'uninstall single rulesets';
             EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1 })
@@ -791,8 +830,12 @@
           var first_response;
           var second_response;
 
+          it('update suite variable ',function(done) {
+            _eid.suite = 'installing a multiple ruleset';
+            done();
+          });
+
           it('stores initial list to confirm installed rulesets',function(done) {
-          _eid.suite = 'installing a multiple ruleset';
             childSkyQuery.get("/rulesets")
             .query({ _eci: pico_A[0][0] ,_eid: eid('a')})
             .expect(200)
@@ -848,8 +891,13 @@
         });
 
         describe('uninstalling a multiple ruleset', function() {
+
+          it('update suite variable ',function(done) {
+            _eid.suite = 'uninstalling a multiple ruleset';
+            done();
+          });
+
           it('stores initial list to confirm uninstalled rulesets',function(done){
-          _eid.suite = 'uninstalling a multiple ruleset';
             EventApi(pico_A[0][0],'a').get('/uninstall_rulesets_requested')
             .set('Accept', 'application/json')
             .query({rids : testing_rid1+';'+testing_rid2 })
@@ -877,7 +925,7 @@
 
     });
     });
-
+/*
 // ********************************************************************************************
 // ***                               Channel Management                                     ***
 // ********************************************************************************************
@@ -900,8 +948,12 @@
         describe('list channel, create channel, list channel and confirms creation', function() {
           var first_response;
           var second_response;
-          it('stores initial list to confirm created channel',function(done) {
+          it('update suite variable ',function(done) {
           _eid.suite = 'list channel, create channel, list channel and confirms creation';
+            done();
+          });
+
+          it('stores initial list to confirm created channel',function(done) {
             childSkyQuery.get("/channel")
             .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
@@ -968,8 +1020,11 @@
 // **********************************list channels*******************************************
 
         describe('list channels', function() {
+          it('update suite variable ',function(done) {
+           _eid.suite = 'list channels';
+            done();
+          });
           it('create channel with eci', function(done) {
-          _eid.suite = 'list channels';
             channel_for_testing2.eci = pico_A[0][0];
            EventApi(pico_A[0][0],'a').get('/channel_creation_requested')
            .set('Accept', 'application/json')
@@ -1085,10 +1140,12 @@
         describe('channel attributes', function() {
           var channel_variable_results;
 
-// ********************************** Type *******************************************
-
-          it('get channel type',function(done){
+          it('update suite variable ',function(done) {
           _eid.suite = 'channel attributes';
+            done();
+          });
+// ********************************** Type *******************************************
+          it('get channel type',function(done){
             childSkyQuery.get("/channelType")
             .query({ _eci: pico_A[0][0],_eid: eid('a'),eci:channel_for_testing1_cid_channel.cid})
             .expect(200)
@@ -1332,9 +1389,12 @@
         var Pico_A_second_response;
         var Pico_B_second_response;
         describe('list subscriptions, create subscriptions, list subscriptions and confirms creation', function() {
+          it('update suite variable ',function(done) {
+          _eid.suite = 'list subscriptions, create subscriptions, list subscriptions and confirms creation';
+            done();
+          });
 
           it('stores initial list in Pico_A to confirm created pending subscription',function(done) {
-          _eid.suite = 'list subscriptions, create subscriptions, list subscriptions and confirms creation';
             childSkyQuery.get("/subscriptions")
             .query({ _eci: pico_A[0][0],_eid: eid('a') })
             .expect(200)
@@ -1476,10 +1536,15 @@
 
         });
         describe('Accept Inbound subscription',function(done){
+
+          it('update suite variable ',function(done) {
+          _eid.suite = 'Accept Inbound subscription';
+            done();
+          });
+
           it('Accept Inbound Subscription in pico_B',function(done){
           name = testing2_subscription.channel_name;
           console.log('name : ',name);
-          _eid.suite = 'Accept Inbound subscription';
           EventApi(pico_B[0][0],'b').get('/pending_subscription_approval')
            .set('Accept', 'application/json')
            .query({
@@ -1526,7 +1591,7 @@
         });
 
 
-
+*/
 
 
 
@@ -1582,18 +1647,33 @@
 
         // need to have logs from parent 
         // need to have logs from pico B
-        it('print logs from Pico_A failures',function(done){
-        _eid.suite = 'Logs';
+        it('update suite variable ',function(done) {
+          _eid.suite = 'Logs';
+            done();
+        });
+          
+        it('store logs eid for A',function(done){
         //var eids = _log_eid.join(';');
         logs = eidLogs.Logs();
-        logs = _.map(logs,function(value,key){
-          return value.A;
-        });
-        console.log("list to get ", logs);
-        done();
-        //console.log('eids to send',eids);
-          /*supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
-          .query({ _eci: pico_A[0][0],_eid: eid(),eids:eids})
+        //console.log("list to get ", logs);
+      //  console.log("list to get ", logs[0]);
+        var eids =[]; 
+
+        for (var i = 0; i < logs.length; i++) { // suite
+            var value;
+            for(var key in logs[i]) { // only loop once on suite key 
+              value = logs[i][key]; // get values 
+            }
+        console.log("Log ", logs[i]);
+        console.log("values ", value);
+
+            eids = eids.concat(value.A);
+        }
+        console.log("eids  ", eids);
+        eids = eids.join(";");
+        console.log("eids  ", eids);
+        supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
+          .query({ _eci: pico_A[0][0],_eid: eid('a'),eids:eids})
           .expect(200)
           .end(function(err,res){
             response = res.text;
@@ -1604,11 +1684,20 @@
              // console.log("logs",response);
              // console.log("contains check.",_.contains(_log_eid,log.eid));
               //return _.contains(_log_eid,log.eid);});
+            //console.log("logs of failed operations",response);
+            for (var i = 0; i < response.length; i++) {
+              for (var k = 0; k < response[i].log_items.length; k++) {
+                response[i].log_items[k] = _.rest(response[i].log_items[k].split(/\s+/),5); // cut off extra first 6 columns 
+                response[i].log_items[k] = response[i].log_items[k].join(' '); // join last columns back together 
+                //console.log("shortened ",response[i].log_items[k]);
+              }
+            }
+            //console.log("logs of failed operations",response);
             if ( response.length > 0){
-              console.log("logs of failed operations",response);
+              console.log("failed logs on Pico_A operations",response);
             }
             done();
-          });*/
+          });
         });
       });
 

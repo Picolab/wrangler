@@ -214,7 +214,7 @@ ruleset b507803x0 {
     }
     updateAttributes = defaction(value, attributes){
       eci = alwaysEci(value);
-      set_eci = pci:set_eci_attributes(eci, {"channel_attributes" : attributes});
+      set_eci = pci:set_eci_attributes(eci, attributes);
       send_directive("updated channel attributes for #{eci}");
     }
     updatePolicy = defaction(value, policy){
@@ -745,10 +745,11 @@ ruleset b507803x0 {
       attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"));
       //attrs = attributes.split(re/;/);
       attrs =  decodeDefaults(attributes);
+      attrs_two = {"channel_attributes" : attrs};
       //channels = Channel();
     }
     if(value neq "" && attributes neq "error") then { // check?? redundant????
-      updateAttributes(value.klog('value: '),attrs);
+      updateAttributes(value.klog('value: '),attrs_two);
     }
     fired {
       log (standardOut("success updated channel #{value} attributes"));

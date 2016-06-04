@@ -194,7 +194,7 @@ describe('Wrangler Test Driver', function() {
       this.timeout(50000);
       this.retries(4);
         afterEach(function() { // build a list of logs to print at the end of test.
-          console.log("current event ID",_eid);
+          //console.log("current event ID",_eid);
              // console.log("currentTest",this.currentTest);
           if (this.currentTest.state == 'failed' || this.currentTest.state == 'undefined' ) {
               _eid.state = this.currentTest.state;
@@ -526,7 +526,7 @@ describe('Wrangler Test Driver', function() {
        });
         it('enables pico B logging', function(done) {
          this.retries(2);
-         EventApi(pico_A[0][0],'b',"picolog").get('/reset')
+         EventApi(pico_B[0][0],'b',"picolog").get('/reset')
          .set('Accept', 'application/json')
          .query({rids : picoLogs })
          .expect(200)
@@ -668,7 +668,6 @@ describe('Wrangler Test Driver', function() {
                 assert.property(object_response,"description",'return object should have a description.');
                 assert.property(object_response.description,wrangler_dev,"Should have "+wrangler_dev+" meta data.");
                 assert.include(object_response.description[wrangler_dev].description,"Wrangler","Should have the word wrangler in description.");
-            assert.equal(false,object_response.status);
                 done();
               });
           });
@@ -774,7 +773,6 @@ describe('Wrangler Test Driver', function() {
             response = res.text;
             second_response = JSON.parse(response);
             assert.equal(true,second_response.status);
-            assert.equal(false,second_response.status);
             done();
           }); 
          });
@@ -925,7 +923,6 @@ describe('Wrangler Test Driver', function() {
 
     });
     });
-/*
 // ********************************************************************************************
 // ***                               Channel Management                                     ***
 // ********************************************************************************************
@@ -1542,6 +1539,21 @@ describe('Wrangler Test Driver', function() {
             done();
           });
 
+          it('should return all channels ',function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: pico_A[0][0],_eid: eid('a')})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              console.log("channel",JSON.stringify(response));
+              expect(response.channels).to.be.an('array');
+              assert.isAtLeast(response.channels.length,3,"should have at least 3 channels listed.");
+              done();
+            });
+          });
+
           it('Accept Inbound Subscription in pico_B',function(done){
           name = testing2_subscription.channel_name;
           console.log('name : ',name);
@@ -1569,29 +1581,38 @@ describe('Wrangler Test Driver', function() {
             subscription =  _.values(Pico_B_second_response.subscriptions[0])[0];
             console.log("subscription",subscription);
             assert.equal(subscription.status,'subscribed');
-             done();
+                          setTimeout(function() { // let pico A handle subscription event. 
+                done();
+              }, 6000);
           }); 
          });
           it('stores subscriptions to confirm created accepted subscription request in Pico_A',function(done) {
            Pico_A_first_response = Pico_A_second_response;
+           consoleLogEid = eid('a');
            childSkyQuery.get("/subscriptions")
-           .query({ _eci: pico_A[0][0],_eid: eid('a') })
+           .query({ _eci: pico_A[0][0],_eid: consoleLogEid })
            .expect(200)
            .end(function(err,res){
             response = res.text;
+            console.log("subscriptions ",response);
+
             Pico_A_second_response = JSON.parse(response);
+
             assert.equal(true, Pico_A_second_response.status);
             subscription =  _.values(Pico_A_second_response.subscriptions[0])[0];
             console.log("subscription",subscription);
+            console.log("eid",consoleLogEid);
+            
             assert.equal(subscription.status,'subscribed');
-             done();
+                          setTimeout(function() { // let pico A handle subscription event. 
+                done();
+              }, 6000);
           }); 
          });
         });
         });
 
 
-*/
 
 
 
@@ -1699,6 +1720,55 @@ describe('Wrangler Test Driver', function() {
             done();
           });
         });
+      
+      it('store logs eid for B',function(done){
+        //var eids = _log_eid.join(';');
+        logs = eidLogs.Logs();
+        //console.log("list to get ", logs);
+      //  console.log("list to get ", logs[0]);
+        var eids =[]; 
+
+        for (var i = 0; i < logs.length; i++) { // suite
+            var value;
+            for(var key in logs[i]) { // only loop once on suite key 
+              value = logs[i][key]; // get values 
+            }
+        console.log("Log ", logs[i]);
+        console.log("values ", value);
+
+            eids = eids.concat(value.B);
+        }
+        console.log("eids  ", eids);
+        eids = eids.join(";");
+        console.log("eids  ", eids);
+        supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
+          .query({ _eci: pico_B[0][0],_eid: eid('b')})//,eids:eids})
+          .expect(200)
+          .end(function(err,res){
+            response = res.text;
+            response = JSON.parse(response);
+            //var response_eids = _.map(response, function(log){ return log.; });
+
+          //  response = _.filter(response, function(log){ 
+              console.log("logs",response);
+             // console.log("contains check.",_.contains(_log_eid,log.eid));
+              //return _.contains(_log_eid,log.eid);});
+            console.log("logs of failed operations",response);
+            for (var i = 0; i < response.length; i++) {
+              for (var k = 0; k < response[i].log_items.length; k++) {
+                response[i].log_items[k] = _.rest(response[i].log_items[k].split(/\s+/),5); // cut off extra first 6 columns 
+                response[i].log_items[k] = response[i].log_items[k].join(' '); // join last columns back together 
+                console.log("eid ",response[i].eid);
+              }
+            }
+            //console.log("logs of failed operations",response);
+            if ( response.length > 0){
+              console.log("failed logs on Pico_B operations",response);
+            }
+            done();
+          });
+        });
+
       });
 
       describe('Clean up',function(done){

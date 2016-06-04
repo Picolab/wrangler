@@ -1,20 +1,5 @@
-
-// varibles 
-// ent:my_picos
-// ent:picos_attributes
-
-
 // operators are camel case, variables are snake case.
-
-
-// questions
-// standard state change raiseevent post function??
-// when should we use klogs?
-// when registering a ruleset if you pass empty peramiters what happens
-
-//whats the benifit of forking a ruleset vs creating a new one?
-//pci: lacks abillity to change channel type 
-
+    
 ruleset b507803x0 {
   meta {
     name "wrangler"
@@ -484,7 +469,7 @@ ruleset b507803x0 {
         isSubscription = function(channel) {
             attributes = channel{'attributes'};
             (attributes.isnull()) => null |
-            (attributes{'subscription_name'}.isnull() eq false); // how do u use not in krl?
+            (attributes{'subscription_name'}.isnull() eq false); 
           };
         isSubscription(channel).klog("isSubscriptions(): ");
 
@@ -570,14 +555,13 @@ ruleset b507803x0 {
 
     }
     // takes name or eci 
-    subscriptionAttributes = function (name_or_eci){
-      v = name_or_eci; // we dont need this right? // remove when you can test
+    subscriptionAttributes = function (name_or_eci){ // should be named different, missleading, its more like parameters
       eci = (name_or_eci.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               name_or_eci |
               eciFromName(name_or_eci);
-
-      attributes = channelAttributes(eci);
-      attributes{'Attributes'};
+      results = channelAttributes(eci,unknownName);
+      attributes = results{'attributes'};
+      attributes;
     } 
 
 
@@ -1314,7 +1298,7 @@ ruleset b507803x0 {
     select when wrangler pending_subscription_approval
     pre{
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
-      results = channel(channel_name,null,null);
+      results = channel(channel_name,undefined,undefined);
       inbound = results{'channels'};
       inbound_eci = inbound{'cid'}; // this is why we call channel and not subscriptionAttributes.
       attributes = inbound{'attributes'};

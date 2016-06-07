@@ -507,7 +507,7 @@ ruleset b507803x0 {
 
       single_subscription = function(value,subs){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
-        parts = value.split(re/:/);
+        parts = value.split(re/:/).klog('parts of id');
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'cid' |
                 (parts.length() > 1) => // channel name of subscriptions are namespace:uniqename 
@@ -515,7 +515,7 @@ ruleset b507803x0 {
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
-          attr_value = type(subscription,attribute);
+          attr_value = type(subscription,attribute).klog('types function: ');
           (attr_value eq value);
           }); 
 

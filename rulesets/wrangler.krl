@@ -515,7 +515,7 @@ ruleset b507803x0 {
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
-          attr_value = type(subscription,attribute.klog('attribute')).klog('types function: ');
+          attr_value = type(subscription,attribute.klog('attribute ')).klog('types function: ');
           (attr_value eq value).klog('found ? ');
           }); 
 
@@ -530,7 +530,7 @@ ruleset b507803x0 {
       results = (id.isnull()) => return2 | single_subscription(id,subsript);
       {
         'status' : (subscriptions neq "error"),
-        'subscriptions'  : return2
+        'subscriptions'  : results
       }.klog('return: ');
 
     };

@@ -515,11 +515,13 @@ ruleset b507803x0 {
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
-          attr_value = type(subscription,attribute).klog('types function: ');
-          (attr_value eq value);
+          attr_value = type(subscription,attribute.klog('attribute')).klog('types function: ');
+          (attr_value eq value).klog('found ? ');
           }); 
 
-        result = filtered_subscriptions.head().defaultsTo({},standardError("no subscription found, by .head()"));
+        result = filtered_subscriptions.klog('filtered_subscriptions: ')
+                .head().klog('head: ') 
+                .defaultsTo({},standardError("no subscription found, by .head()"));
         (result);
       };
 

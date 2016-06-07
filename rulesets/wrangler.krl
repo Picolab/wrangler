@@ -490,38 +490,48 @@ ruleset b507803x0 {
       subsript;
     };
 
-    subscriptions = function(collection,filtered) { 
+    subscriptions = function(id,collection,filtered) { 
       subsript = allSubscriptions();
       /*  
       {"18:floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
       */
      //types = ['name','channel_name','inbound','name_space','relationship',....] could check imput for validness. 
-      type = function(sub){ // takes a subscription and returns its status.
+      type = function(sub,collection_parameter){ // takes a subscription and returns its status.
         value = sub.values(); // array of values [attributes]
         attributes = value.head(); // get attributes
         group = (attributes.typeof() eq 'hash')=> // for robustness check type.
-        attributes{collection} | 'error';
+        attributes{collection_parameter} | 'error';
         (group);
       };
-      return1 = collection.isnull() => subsript |  subsript.collect(function(sub){(type(sub));}) ;
+
+      single_subscription = function(value,subs){
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+        parts = value.split(re/:/);
+        attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
+                'cid' |
+                (parts.length() > 1) => // channel name of subscriptions are namespace:uniqename 
+                   "channel_name" // is channel name
+                   | "subscription_name";  // is subscription name
+        subscription_list = subs;
+        filtered_subscriptions = subscription_list.filter(function(subscription){
+          attr_value = type(subscription,attribute);
+          (attr_value eq value);
+          }); 
+
+        result = filtered_subscriptions.head().defaultsTo({},standardError("no subscription found, by .head()"));
+        (result);
+      };
+
+      return1 = collection.isnull() => subsript |  subsript.collect(function(sub){(type(sub,collection));}) ;
       return2 = filtered.isnull() => return1 | return1{filtered};
+      results = (id.isnull()) => return2 | single_subscription(id,subsript);
       {
         'status' : (subscriptions neq "error"),
         'subscriptions'  : return2
       }.klog('return: ');
 
     };
-    // subscriptions collected By attribute name provided// combine with "by filter"// combine with subscriptions
-    subscriptionsByCollection = function (attribute_name){
-      true;
-
-    };
-    // takes an attribute(name,type,relationship, etc.) and a value(what you want like, tedrub, work , slave<=>master , etc)returns subscriptions of that attribute and value.
-  //  subscriptionsByFilter = function (attr,value){
-
-   //};
-
 
     randomName = function(namespace){
         n = 5;

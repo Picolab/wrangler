@@ -299,7 +299,7 @@ ruleset b507803x0 {
                 "discription": "Wrangler base prototype"
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ "b507199x5.dev",
+      "rids": [ //"b507199x5.dev",
                 "b507199x8.dev", // pds
                 "b507805x0.dev"
                  //"a169x625"
@@ -430,8 +430,8 @@ ruleset b507803x0 {
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to core.
-  createChild = defaction(name){ 
-    configure using protype_name = "devtools"; // core must be installed by default for prototypeing to work 
+  createChild = defaction(name,protype_name){ 
+    //configure using protype_name = "devtools"; // core must be installed by default for prototypeing to work 
     results = prototype(); // get prototype from ent varible and default to core if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");
@@ -446,9 +446,8 @@ ruleset b507803x0 {
     newPicoEci = newPicoInfo{"cid"};// store child eci
     // bootstrap child
     //combine new_ruleset calls 
-    a = pci:new_ruleset(newPicoEci, corePrototype{"rids"}); // install core rids (bootstrap child) 
-    // bootstrap prototype
-    b = pci:new_ruleset(newPicoEci, rids);// install protypes 
+    joined_rids_to_install = corePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
+    a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install core/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
     event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
@@ -848,7 +847,7 @@ ruleset b507803x0 {
 		}
 
 		{
-			createChild(name) with protype_name = prototype; 
+			createChild(name,prototype); //with protype_name = prototype; 
 		}
 		always {
 			log(standardOut("pico created with name #{name}"));

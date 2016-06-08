@@ -509,7 +509,7 @@ ruleset b507803x0 {
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         parts = value.split(re/:/).klog('parts of id');
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-                'cid' |
+                'inbound_eci' |
                 (parts.length() > 1) => // channel name of subscriptions are namespace:uniqename 
                    "channel_name" // is channel name
                    | "subscription_name";  // is subscription name

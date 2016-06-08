@@ -1244,7 +1244,14 @@ ruleset b507803x0 {
       log(">> successful >>");
       raise wrangler event pending_subscription
         with status = pending_entry{'status'}
-        and channel_name = unique_name;
+        and channel_name = unique_name
+        and subscription_name = pending_entry{'subscription_name'}
+        and name_space = pending_entry{'name_space'}
+        and relationship = pending_entry{'relationship'}  
+        and my_role = pending_entry{'my_role'}
+        and subscriber_role = pending_entry{'subscriber_role'}
+        and subscriber_eci  = pending_entry{'subscriber_eci'}
+        and attributes = pending_entry{'attributes'};
       log(standardOut("failure")) if (unique_name eq "");
     } 
     else {
@@ -1289,8 +1296,8 @@ ruleset b507803x0 {
     }
     fired { 
       log(standardOut("successful pending incoming"));
-      raise wrangler event inbound_pending_subscription_added // event to nothing
-          with status = pending_subscriptions{'status'}
+      raise wrangler event 'inbound_pending_subscription_added' // event to nothing
+          with status = pending_subscriptions{'status'} // could this be replaced with all of the attrs pasted in?
             and name = pending_subscriptions{'subscription_name'}
             and channel_name = unique_name
             and name_space = pending_subscriptions{'name_space'}
@@ -1304,7 +1311,8 @@ ruleset b507803x0 {
     } 
     else { 
       log (standardOut("success pending outgoing >>"));
-      raise wrangler event outbound_pending_subscription_added; // event to nothing
+      raise wrangler event 'outbound_pending_subscription_added' // event to nothing
+        attributes event:attrs();
     }
   }
   rule approvePendingSubscription { // used to notify both picos to add subscription request

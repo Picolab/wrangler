@@ -294,7 +294,7 @@ ruleset b507803x0 {
 		send_directive("deleted pico #{eci}");
 	}
 	
-  corePrototype = {
+  basePrototype = {
       "meta" : {
                 "discription": "Wrangler base prototype"
                 },
@@ -319,8 +319,8 @@ ruleset b507803x0 {
                     ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
                     // belongs in relationManager 
       "subscriptions_request": [{
-                                  "name"          : "corePrototypeName",
-                                  "name_space"    : "corePrototypeNameSpace",
+                                  "name"          : "basePrototypeName",
+                                  "name_space"    : "basePrototypeNameSpace",
                                   "my_role"       : "son",
                                   "subscriber_role"     : "test",
                                   "subscriber_eci"    : "1654165",
@@ -329,28 +329,28 @@ ruleset b507803x0 {
                                 }],
       "Prototype_events" : [{
                               'domain': 'wrangler',
-                              'type'  : 'core_prototype_event1',
+                              'type'  : 'base_prototype_event1',
                               'attrs' : {'attr1':'1',
                                           'attr2':'2'
                                         }
                             },
                             {
                               'domain': 'wrangler',
-                              'type'  : 'core_prototype_event2',
+                              'type'  : 'base_prototype_event2',
                               'attrs' : {'attr1':'1',
                                           'attr2':'2'
                                         }
                             },
                             {
                               'domain': 'wrangler',
-                              'type'  : 'core_prototype_event3',
+                              'type'  : 'base_prototype_event3',
                               'attrs' : {'attr1':'1',
                                           'attr2':'2'
                                         }
                             }
                             ], // array of maps
       "PDS" : {
-                "profile" : {"name":"core"},
+                "profile" : {"name":"base"},
                 "general" : {"test":{"subtest":"just a test"}},
                 "settings": {"b507798x0.dev":{
                                               "name":"wrangler",
@@ -417,7 +417,7 @@ ruleset b507803x0 {
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
     init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype };// if no prototypes set to map so we can use put()
-    prototypes = init_prototypes.put(['core'],corePrototype);
+    prototypes = init_prototypes.put(['base'],basePrototype);
     {
       'status' : true,
       'prototypes' : prototypes
@@ -429,10 +429,10 @@ ruleset b507803x0 {
 // then wrangle in the child will handle the creation of the pico and its prototypes
 // protype has a meta, rids, channels, events( creation events ) 
 
-// create child from protype will take the name with a option of a prototype with a default to core.
+// create child from protype will take the name with a option of a prototype with a default to base.
   createChild = defaction(name,protype_name){ 
-    //configure using protype_name = "devtools"; // core must be installed by default for prototypeing to work 
-    results = prototype(); // get prototype from ent varible and default to core if not found.
+    //configure using protype_name = "devtools"; // base must be installed by default for prototypeing to work 
+    results = prototype(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");
     rids = prototype{"rids"};
@@ -446,8 +446,8 @@ ruleset b507803x0 {
     newPicoEci = newPicoInfo{"cid"};// store child eci
     // bootstrap child
     //combine new_ruleset calls 
-    joined_rids_to_install = corePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
-    a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install core/prototype rids (bootstrap child) 
+    joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
+    a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
     event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
@@ -873,9 +873,9 @@ ruleset b507803x0 {
     }
   }
 // prototype channels creation 
-  rule initializeCoreChannels {
+  rule initializeBaseChannels {
     select when wrangler init_events 
-      foreach corePrototype{'channels'}.klog("Prototype core channels : ") setting (PT_channel)
+      foreach basePrototype{'channels'}.klog("Prototype base channels : ") setting (PT_channel)
     pre {
       attrs = {
                   "channel_name" : PT_channel{"name"},
@@ -893,7 +893,7 @@ ruleset b507803x0 {
             attributes attrs.klog("attributes : ")
     }
   }
-// core channels creation
+// base channels creation
   rule initializePrototypeChannels {
     select when wrangler init_events 
       foreach ent:prototypes{['at_creation','channels']}.klog("Prototype_channels : ") setting (PT_channel)
@@ -914,10 +914,10 @@ ruleset b507803x0 {
             attributes attrs.klog("attributes : ")
     }
   }
-// core subscription creation 
-  rule initializeCoreSubscriptions {
+// base subscription creation 
+  rule initializebaseSubscriptions {
     select when wrangler init_events 
-      foreach corePrototype{'subscriptions_request'}.klog("Prototype core subscriptions_request: ") setting (subscription)
+      foreach basePrototype{'subscriptions_request'}.klog("Prototype base subscriptions_request: ") setting (subscription)
     pre {
       attrs = subscription;
     }
@@ -951,7 +951,7 @@ ruleset b507803x0 {
   rule initializeProfile {// this rule should build pds data structure
     select when wrangler init_events
     pre {
-      attrs = corePrototype{['PDS','profile']};
+      attrs = basePrototype{['PDS','profile']};
     }
     {
       noop();
@@ -963,7 +963,7 @@ ruleset b507803x0 {
   }
   rule initializeGeneral {
     select when wrangler init_events 
-      foreach corePrototype{['PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
+      foreach basePrototype{['PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
     pre {
       key_array = namespace.keys();
       mapedvalues = namespace.values();
@@ -985,7 +985,7 @@ ruleset b507803x0 {
   rule initializePdsSettings {// this rule should build pds data structure
     select when wrangler init_events
     pre {
-      attrs = corePrototype{['PDS','profile']};
+      attrs = basePrototype{['PDS','profile']};
     }
     {
       noop();
@@ -996,7 +996,7 @@ ruleset b507803x0 {
     }
   }
 
-  rule initializedBarrier{// after core pds is initialize update prototype pds and raise prototype events
+  rule initializedBarrier{// after base pds is initialize update prototype pds and raise prototype events
     select when pds new_map_added // general inited
             and pds profile_updated // profile inited
             and pds settings_added // settings inited
@@ -1058,9 +1058,9 @@ ruleset b507803x0 {
             attributes attrs
     }
   }
-  rule raiseCoreEvents {
+  rule raiseBaseEvents {
     select when wrangler pds_inited
-    foreach corePrototype{['Prototype_events']} setting (Prototype_event)
+    foreach basePrototype{['Prototype_events']} setting (Prototype_event)
     pre {
       Prototype_domain = Prototype_event{'domain'};
       Prototype_type = Prototype_event{'type'};

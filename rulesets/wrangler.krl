@@ -568,18 +568,24 @@ ruleset b507803x0 {
     }    
     checkSubscriptionName = function(name){
           sub = subscriptions(name,null,null);
-          /*{
-          "last_active": 1426286486,
-          "name": "Oauth Developer ECI",
-          "type": "OAUTH",
-          "cid": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
-          "attributes": null}
-          */
-          subs = sub{"subscriptions"}.defaultsTo(sub:{},standardOut("no subscriptions found"));
-          subscription = subs.values();
+          subs = sub{"subscriptions"}.defaultsTo({},standardOut("no subscriptions found"));
           (subscription eq {});
 
     }
+    randomSubscriptionName = function(){
+        n = 5;
+        array = (0).range(n).map(function(n){
+          (random:word());
+          });
+        names= array.collect(function(name){
+          (checkSubscriptionName( name )) => "unique" | "taken";
+        });
+        name = names{"unique"} || [];
+
+        unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
+        (unique_name);
+    }
+
     // takes name or eci 
     subscriptionAttributes = function (name_or_eci){ // should be named different, missleading, its more like parameters
       eci = (name_or_eci.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
@@ -1229,8 +1235,29 @@ ruleset b507803x0 {
   // subscriber_role
 
    // creates inbound and sends event for other pico to create inbound.
-  rule subscribe {// need to change varibles to snake case.
+  rule subscribeNameCheck {
     select when wrangler subscription
+    pre {
+      name   = event:attr("name").defaultsTo(randomSubscriptionName(), standardError("channel_name"));
+      attributes = event:attrs();
+      attrs = attributes.put({"name":name});
+    }
+    if(checkSubscriptionName(name)) then
+    {
+      noop();
+    }
+    fired{
+      raise wrangler event 'checked_name_subscription'
+       attributes attrs;
+    }
+    else{
+      error warn "douplicate subscription name, failed to send request "+name;
+      log(">> could not send request #{name} >>");
+    }
+  }
+
+  rule subscribe {// need to change varibles to snake case.
+    select when wrangler checked_name_subscription
    pre {
       // attributes for inbound attrs
       name   = event:attr("name").defaultsTo("standard", standardError("channel_name"));

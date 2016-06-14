@@ -1239,8 +1239,8 @@ ruleset b507803x0 {
     select when wrangler subscription
     pre {
       name   = event:attr("name").defaultsTo(randomSubscriptionName(), standardError("channel_name"));
-      attributes = event:attrs();
-      attrs = attributes.put({"name":name});
+      attr = event:attrs();
+      attrs = attr.put({"name":name});
     }
     if(checkSubscriptionName(name)) then
     {
@@ -1248,7 +1248,7 @@ ruleset b507803x0 {
     }
     fired{
       raise wrangler event 'checked_name_subscription'
-       attributes attrs;
+       attributes attrs
     }
     else{
       error warn "douplicate subscription name, failed to send request "+name;

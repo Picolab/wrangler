@@ -565,6 +565,20 @@ ruleset b507803x0 {
           names = chs.none(function(channel){channel{"name"} eq name});
           (names);
 
+    }    
+    checkSubscriptionName = function(name){
+          sub = subscriptions(name,null,null);
+          /*{
+          "last_active": 1426286486,
+          "name": "Oauth Developer ECI",
+          "type": "OAUTH",
+          "cid": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
+          "attributes": null}
+          */
+          subs = sub{"subscriptions"}.defaultsTo(sub:{},standardOut("no subscriptions found"));
+          subscription = subs.values();
+          (subscription eq {});
+
     }
     // takes name or eci 
     subscriptionAttributes = function (name_or_eci){ // should be named different, missleading, its more like parameters
@@ -837,12 +851,12 @@ ruleset b507803x0 {
 // ********************************************************************************************
 
 
-  //-------------------- Picos ----------------------
-	rule createChild { // must pass list of rids to install in child and domain / type for init event.
+  //-------------------- Picos initializing  ----------------------
+	rule createChild { 
 		select when wrangler child_creation
 		pre {
       attribute = event:attrs();
-      name = event:attr("name");
+      name = event:attr("name").defaultsTo(random:word(),standardError("missing event attr name, random word used instead."));
       prototype = event:attr("prototype").defaultsTo("devtools", standardError("missing event attr prototype"));           
 		}
 
@@ -872,7 +886,12 @@ ruleset b507803x0 {
             attributes {};
     }
   }
-// prototype channels creation 
+
+// ********************************************************************************************
+// ***                                      Base Dependancys                                ***
+// ********************************************************************************************
+
+// ---------------------- base channels creation ----------------------
   rule initializeBaseChannels {
     select when wrangler init_events 
       foreach basePrototype{'channels'}.klog("Prototype base channels : ") setting (PT_channel)
@@ -893,7 +912,27 @@ ruleset b507803x0 {
             attributes attrs.klog("attributes : ")
     }
   }
-// base channels creation
+
+// ---------------------- base subscription creation ----------------------
+  rule initializebaseSubscriptions {
+    select when wrangler init_events 
+      foreach basePrototype{'subscriptions_request'}.klog("Prototype base subscriptions_request: ") setting (subscription)
+    pre {
+      attrs = subscription;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init pds");
+      raise wrangler event "subscription" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+// ********************************************************************************************
+// ***                                      Prototype Depandancies                          ***
+// ********************************************************************************************
+// ---------------------- prototype channels creation -----------------------
   rule initializePrototypeChannels {
     select when wrangler init_events 
       foreach ent:prototypes{['at_creation','channels']}.klog("Prototype_channels : ") setting (PT_channel)
@@ -914,24 +953,7 @@ ruleset b507803x0 {
             attributes attrs.klog("attributes : ")
     }
   }
-// base subscription creation 
-  rule initializebaseSubscriptions {
-    select when wrangler init_events 
-      foreach basePrototype{'subscriptions_request'}.klog("Prototype base subscriptions_request: ") setting (subscription)
-    pre {
-      attrs = subscription;
-    }
-    {
-      noop();
-    }
-    always {
-      log("init pds");
-      raise wrangler event "subscription" 
-            attributes attrs.klog("attributes : ")
-    }
-  }
-
-// prototype subscription creation 
+// ---------------------- prototype subscription creation ----------------------
   rule initializePrototypeSubscriptions {
     select when wrangler init_events 
       foreach ent:prototypes{['at_creation','subscriptions_request']}.klog("Prototype subscriptions_request: ") setting (subscription)
@@ -947,6 +969,9 @@ ruleset b507803x0 {
             attributes attrs.klog("attributes : ")
     }
   }
+// ********************************************************************************************
+// ***                                      PDS  Base Initializing                               ***
+// ********************************************************************************************
 
   rule initializeProfile {// this rule should build pds data structure
     select when wrangler init_events
@@ -957,13 +982,14 @@ ruleset b507803x0 {
       noop();
     }
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+    raise pds event updated_profile 
             attributes attrs
     }
   }
+
   rule initializeGeneral {
     select when wrangler init_events 
-      foreach basePrototype{['PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
+      foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (namespace) 
     pre {
       key_array = namespace.keys();
       mapedvalues = namespace.values();
@@ -982,7 +1008,7 @@ ruleset b507803x0 {
     }
   }
 
-  rule initializePdsSettings {// this rule should build pds data structure
+  rule initializePdsSettings {
     select when wrangler init_events
     pre {
       attrs = basePrototype{['PDS','profile']};
@@ -996,6 +1022,11 @@ ruleset b507803x0 {
     }
   }
 
+// ********************************************************************************************
+// ***                                      Event Barrier                                   ***
+// ********************************************************************************************
+ 
+
   rule initializedBarrier{// after base pds is initialize update prototype pds and raise prototype events
     select when pds new_map_added // general inited
             and pds profile_updated // profile inited
@@ -1006,12 +1037,17 @@ ruleset b507803x0 {
       noop();
     }
     always {
-    raise wrangler event pds_inited// init prototype  // rule in pds needs to be created.
+    raise wrangler event pds_inited  
             attributes {}
     }
   }
 
-  rule updatePrototypeProfile {// this rule should build pds data structure
+// ********************************************************************************************
+// ***                                      PDS  Prototype Updates                          ***
+// ********************************************************************************************
+
+
+  rule updatePrototypeProfile {
     select when wrangler pds_inited
     pre {
       attrs = ent:prototypes{['at_creation','PDS','profile']};
@@ -1026,7 +1062,7 @@ ruleset b507803x0 {
   }
   rule updatePrototypeGeneral {
     select when wrangler pds_inited 
-      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype subscriptions_request: ") setting (namespace) 
+      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype PDS general: ") setting (namespace) 
     pre {
       key_array = namespace.keys();
       mapedvalues = namespace.values();
@@ -1040,7 +1076,7 @@ ruleset b507803x0 {
       noop();
     }
     always {
-      raise pds event map_item // init general  
+      raise pds event map_item  
             attributes attrs
     }
   }
@@ -1048,7 +1084,7 @@ ruleset b507803x0 {
   rule updatePrototypePdsSettings {// this rule should build pds data structure
     select when wrangler pds_inited
     pre {
-      attrs = ent:prototypes{['at_creation','PDS','profile']};
+      attrs = ent:prototypes{['at_creation','PDS','settings']};
     }
     {
       noop();
@@ -1058,6 +1094,12 @@ ruleset b507803x0 {
             attributes attrs
     }
   }
+
+// ********************************************************************************************
+// ***                                   Base Custom Events                                 ***
+// ********************************************************************************************
+
+
   rule raiseBaseEvents {
     select when wrangler pds_inited
     foreach basePrototype{['Prototype_events']} setting (Prototype_event)
@@ -1070,11 +1112,15 @@ ruleset b507803x0 {
       noop();
     }
     always {
-    //raise Prototype_domain event Prototype_type // init prototype  // rule in pds needs to be created.
     raise wrangler event Prototype_type 
             attributes Prototype_attrs
     }
   }
+
+// ********************************************************************************************
+// ***                                    Prototype Custom Events                           ***
+// ********************************************************************************************
+
   rule raisePrototypeEvents {
     select when wrangler pds_inited
     foreach ent:prototypes{['at_creation','Prototype_events']} setting (Prototype_event)
@@ -1087,11 +1133,14 @@ ruleset b507803x0 {
       noop();
     }
     always {
-    //raise Prototype_domain event Prototype_type // init prototype  // rule in pds needs to be created.
     raise wrangler event Prototype_type 
             attributes Prototype_attrs
     }
   }
+
+// ********************************************************************************************
+// ***                                    Prototypes Management                             ***
+// ********************************************************************************************
 
   rule addPrototype {
     select when wrangler add_prototype

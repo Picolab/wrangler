@@ -19,7 +19,7 @@
           //json = require('json'),
 
          // _eci =  "B70F0DBA-13AD-11E6-A0DA-C293E71C24E1",
-          _eci =  "F5A29022-1CB5-11E6-9578-D5D5E71C24E1",
+          _eci =  "5A3F0D2A-326F-11E6-B090-459EE71C24E1",
 
           _pico_used='', // can be parent , a , b
           wrangler_dev = "b507805x0.dev", 
@@ -246,7 +246,6 @@ describe('Wrangler Test Driver', function() {
           .expect('Content-Type', /json/)
         });
       });
-
       //Check if install ruleset works for creatChild test. 
       describe('list/install/list/uninstall ruleset('+ testing_rid1+')', function() {
         var first_response;
@@ -332,7 +331,6 @@ describe('Wrangler Test Driver', function() {
         });
 
       });
-
 
 // ********************************************************************************************
 // ***                               CreateChild Pico A & B For Testing                     ***
@@ -633,7 +631,6 @@ describe('Wrangler Test Driver', function() {
 // ********************************************************************************************
 // ***                               Rulesets Management                                    ***
 // ********************************************************************************************
-
       // registering rulesets ------> in devtools.krl
       //     -list registered -multiple & single 
       //     -register new ruleset
@@ -672,23 +669,23 @@ describe('Wrangler Test Driver', function() {
               });
           });
 
-        /*  it('rulesetsInfo([b507803x0.dev]) should return a single ruleset meta data',function(done){
-            this.retries(2);
-            childSkyQuery.get('/rulesetsInfo')
-            .set('Accept', 'application/json')
-            .query({ _eci: pico_A[0][0], rids: ['b507803x0.dev']})
-            .expect(200)
-            .expect('Content-Type', /json/)
-            .end(function(err,res){
-              response = res.text;
-              object_response = JSON.parse(response);
-              assert.equal(true,object_response.status);
-              assert.property(object_response,"description",'return object should have a description.');
-              assert.property(object_response.description,"b507803x0.dev","Should have b507803x0.dev meta data.");
-              assert.include(object_response.description['b507803x0.dev'].description,"Wrangler","Should have the word wrangler in description.");
-              done();
-            });
-          });*/
+        //  it('rulesetsInfo([b507803x0.dev]) should return a single ruleset meta data',function(done){
+        //    this.retries(2);
+        //    childSkyQuery.get('/rulesetsInfo')
+        //    .set('Accept', 'application/json')
+        //    .query({ _eci: pico_A[0][0], rids: ['b507803x0.dev']})
+        //    .expect(200)
+        //    .expect('Content-Type', /json/)
+        //    .end(function(err,res){
+        //      response = res.text;
+        //      object_response = JSON.parse(response);
+        //      assert.equal(true,object_response.status);
+        //      assert.property(object_response,"description",'return object should have a description.');
+        //      assert.property(object_response.description,"b507803x0.dev","Should have b507803x0.dev meta data.");
+        //      assert.include(object_response.description['b507803x0.dev'].description,"Wrangler","Should have the word wrangler in description.");
+        //      done();
+        //    });
+        //  });
 
           it('rulesetsInfo('+testing_rid1+';' + wrangler_dev+') should return a multiple ruleset meta data',function(done){
             this.retries(2);
@@ -709,25 +706,25 @@ describe('Wrangler Test Driver', function() {
                 done();
               });
           });
-        /*  it('rulesetsInfo([b507706x12.dev,b507803x0.dev]) should return a multiple rulesets meta data',function(done){
-            this.retries(2);
-            childSkyQuery.get('/rulesetsInfo')
-            .set('Accept', 'application/json')
-            .query({ _eci: pico_A[0][0], rids: ['b507706x12.dev','b507803x0.dev']})
-            .expect(200)
-            .expect('Content-Type', /json/)
-            .end(function(err,res){
-              response = res.text;
-              object_response = JSON.parse(response);
-              console.log("meta data",object_response)
-              assert.equal(true,object_response.status);
-              assert.property(object_response,"description",'return object should have a description.');
-              assert.property(object_response.description,"b507803x0.dev","Should have b507803x0.dev meta data.");
-              assert.property(object_response.description,"b507706x12.dev","Should have b507706x12.dev meta data.");
-              assert.include(object_response.description['b507803x0.dev'].description,"Wrangler","Should have the word wrangler in description.");
-              done();
-            });
-          });*/
+        //  it('rulesetsInfo([b507706x12.dev,b507803x0.dev]) should return a multiple rulesets meta data',function(done){
+        //    this.retries(2);
+        //    childSkyQuery.get('/rulesetsInfo')
+        //    .set('Accept', 'application/json')
+        //    .query({ _eci: pico_A[0][0], rids: ['b507706x12.dev','b507803x0.dev']})
+        //    .expect(200)
+        //    .expect('Content-Type', /json/)
+        //    .end(function(err,res){
+        //      response = res.text;
+        //      object_response = JSON.parse(response);
+        //      console.log("meta data",object_response)
+        //      assert.equal(true,object_response.status);
+        //      assert.property(object_response,"description",'return object should have a description.');
+        //      assert.property(object_response.description,"b507803x0.dev","Should have b507803x0.dev meta data.");
+        //      assert.property(object_response.description,"b507706x12.dev","Should have b507706x12.dev meta data.");
+        //      assert.include(object_response.description['b507803x0.dev'].description,"Wrangler","Should have the word wrangler in description.");
+        //      done();
+        //    });
+        //  });
         });
       describe('install rulesets', function() {
 
@@ -923,10 +920,10 @@ describe('Wrangler Test Driver', function() {
 
     });
     });
+
 // ********************************************************************************************
 // ***                               Channel Management                                     ***
 // ********************************************************************************************
-
       //     
       // channel management
       //     -list channel - multiple & single 
@@ -1370,6 +1367,7 @@ describe('Wrangler Test Driver', function() {
         });
         });
       });   
+      
 // ********************************************************************************************
 // ***                               subscriptions Management                               ***
 // ********************************************************************************************
@@ -1452,7 +1450,7 @@ describe('Wrangler Test Driver', function() {
            .end(function(err,res){
             response = res.text;
             Pico_A_second_response = JSON.parse(response);
-            console.log("second_response :", Pico_A_second_response);
+           // console.log("second_response :", Pico_A_second_response);
             assert.equal(true, Pico_A_second_response.status);
             done();
           }); 
@@ -1466,7 +1464,7 @@ describe('Wrangler Test Driver', function() {
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
             var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound_eci == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
-          console.log("new_subscription :", new_subscription);
+         // console.log("new_subscription :", new_subscription);
           testing1_subscription = new_subscription;
           if (new_subscriptions.length != 1){
             console.log("first_response:",first_response);
@@ -1501,7 +1499,7 @@ describe('Wrangler Test Driver', function() {
          });
 
           it('list should differ by one if new subscription request created.', function() {
-          console.log("second_response :", Pico_B_second_response);
+         // console.log("second_response :", Pico_B_second_response);
             first_response = Pico_B_first_response.subscriptions =="error" ? []: _.map(Pico_B_first_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             second_response = Pico_B_second_response.subscriptions =="error" ? []: _.map(Pico_B_second_response.subscriptions,function(subscription){ return _.values(subscription)[0];});
             var first_response_cid = _.map(first_response, function(subscription){ return subscription.inbound_eci; });
@@ -1509,7 +1507,7 @@ describe('Wrangler Test Driver', function() {
             var new_subscription_cid = _.difference( second_response_cid, first_response_cid  );
             var new_subscriptions = _.filter(second_response, function(subscription){ return subscription.inbound_eci == new_subscription_cid; });
           var new_subscription =  new_subscriptions[0];  
-          console.log("new_subscription :", new_subscription);
+         // console.log("new_subscription :", new_subscription);
           testing2_subscription = new_subscription;
           if (new_subscriptions.length != 1){
             console.log("first_response:",first_response);
@@ -1532,6 +1530,9 @@ describe('Wrangler Test Driver', function() {
             });
 
         });
+
+// ********************************** Accept Inbound subscription *******************************************
+
         describe('Accept Inbound subscription',function(done){
 
           it('update suite variable ',function(done) {
@@ -1539,24 +1540,24 @@ describe('Wrangler Test Driver', function() {
             done();
           });
 
-          it('should return all channels ',function(done){
-            childSkyQuery.get("/channel")
-            .query({ _eci: pico_A[0][0],_eid: eid('a')})
-            .expect(200)
-            .end(function(err,res){
-              response = res.text;
-              response = JSON.parse(response);
-              assert.equal(true,response.status);
-              console.log("channel",JSON.stringify(response));
-              expect(response.channels).to.be.an('array');
-              assert.isAtLeast(response.channels.length,3,"should have at least 3 channels listed.");
-              done();
-            });
-          });
+//          it('should return all channels ',function(done){
+//            childSkyQuery.get("/channel")
+//            .query({ _eci: pico_A[0][0],_eid: eid('a')})
+//            .expect(200)
+//            .end(function(err,res){
+//              response = res.text;
+//              response = JSON.parse(response);
+//              assert.equal(true,response.status);
+//              console.log("channel",JSON.stringify(response));
+//              expect(response.channels).to.be.an('array');
+//              assert.isAtLeast(response.channels.length,3,"should have at least 3 channels listed.");
+//              done();
+//            });
+//          });
 
           it('Accept Inbound Subscription in pico_B',function(done){
           name = testing2_subscription.channel_name;
-          console.log('name : ',name);
+          //console.log('name : ',name);
           EventApi(pico_B[0][0],'b').get('/pending_subscription_approval')
            .set('Accept', 'application/json')
            .query({
@@ -1579,7 +1580,7 @@ describe('Wrangler Test Driver', function() {
             Pico_B_second_response = JSON.parse(response);
             assert.equal(true, Pico_A_second_response.status);
             subscription =  _.values(Pico_B_second_response.subscriptions[0])[0];
-            console.log("subscription",subscription);
+            //console.log("subscription",subscription);
             assert.equal(subscription.status,'subscribed');
                           setTimeout(function() { // let pico A handle subscription event. 
                 done();
@@ -1594,14 +1595,14 @@ describe('Wrangler Test Driver', function() {
            .expect(200)
            .end(function(err,res){
             response = res.text;
-            console.log("subscriptions ",response);
+           // console.log("subscriptions ",response);
 
             Pico_A_second_response = JSON.parse(response);
 
             assert.equal(true, Pico_A_second_response.status);
             subscription =  _.values(Pico_A_second_response.subscriptions[0])[0];
-            console.log("subscription",subscription);
-            console.log("eid",consoleLogEid);
+          //  console.log("subscription",subscription);
+         //   console.log("eid",consoleLogEid);
             
             assert.equal(subscription.status,'subscribed');
                           setTimeout(function() { // let pico A handle subscription event. 
@@ -1610,7 +1611,343 @@ describe('Wrangler Test Driver', function() {
           }); 
          });
         });
+// ********************************** list subscription *******************************************
+
+        describe('list subscription',function(done){
+
+          it('update suite variable ',function(done) {
+          _eid.suite = 'list subscription';
+            done();
+          });
+
+        it('create subscriptions from Pico_A', function(done) {
+           EventApi(pico_A[0][0],'a').get('/subscription')
+           .set('Accept', 'application/json')
+           .query({
+            name: subscriptions_for_testing1.name,
+            name_space: subscriptions_for_testing1.name_space,
+            my_role: subscriptions_for_testing1.my_role,
+            subscriber_role: subscriptions_for_testing1.subscriber_role,
+            subscriber_eci : pico_B[0][0],
+            channel_type: subscriptions_for_testing1.channel_type,
+            attrs: subscriptions_for_testing1.attrs
+           }) // subscription request to parent 
+           .expect(200)
+           .end(function(err,res){
+              setTimeout(function() { // let pico B handle subscription event. 
+                done();
+              }, 6000);
+          });
+         });
+        this.timeout(50000);
+
+          it('should return all subscriptions',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a')})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log(" return all subscriptions",response);
+              expect(response.subscriptions).to.be.an('array');
+              assert.isAtLeast(response.subscriptions.length,2,"should have at least 2 subscriptions listed.");
+              done();
+            });
+          });
+          it('should return a single subscription from channel name, ',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: testing1_subscription.channel_name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("single subscription from channel name",response);
+              subscription = response.subscriptions;
+              expect(subscription).to.be.an('object');
+              name = testing1_subscription.channel_name;
+              assert.equal(testing1_subscription.channel_name,subscription[name].channel_name);
+              done();
+            });
+          });
+          it('should return a single subscription from subscription name, ',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: testing1_subscription.subscription_name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("single subscription from subscription name",response);
+              subscription = response.subscriptions;
+              expect(subscription).to.be.an('object');
+              assert.equal(testing1_subscription.channel_name,subscription[testing1_subscription.channel_name].channel_name);
+              done();
+            });
+          });
+          it('should return a single subscription from eci as id',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id : testing1_subscription.inbound_eci})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("single subscription from eci as id",response);
+              subscription = response.subscriptions;
+              expect(subscription).to.be.an('object');
+              assert.equal(testing1_subscription.channel_name,subscription[testing1_subscription.channel_name].channel_name);
+              done();
+            });
+          });
+          it('should return a collection of subscriptions from status' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("collection of subscriptions from status",response);
+              collection = response.subscriptions;
+              expect(collection).to.include.keys('outbound');
+              expect(collection).to.include.keys('subscribed');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+          it('should return a collection of subscriptions from channel_name filtered on channel_name' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "channel_name",filtered : testing1_subscription.channel_name})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("should return a collection of subscriptions from channel_name filtered on channel_name",response);
+              collection = response.subscriptions;
+              expect(collection).to.be.an('array');
+              assert.equal(1,collection.length,1);
+              expect(collection[0]).to.include.keys(testing1_subscription.channel_name);
+              done();
+            });
+          });
+
+
+});
+// ********************************** remove subscription *******************************************
+        describe('remove subscription',function(done){
+          var subscriptions_to_remove={};
+          it('update suite variable ',function(done) {
+          _eid.suite = 'remove subscription';
+            done();
+          });
+
+          it('should store outbound channel_name' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status",filtered : "outbound"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+             // console.log("should return a collection of subscriptions ",response);
+              collection = response.subscriptions;
+              expect(collection).to.be.an('array');
+              assert.equal(1,collection.length,1);
+              subscriptions_to_remove = _.values(collection[0])[0];
+              done();
+            });
+          });
+
+        it('remove subscribed subscription from Pico_A and Pico_B', function(done) {
+           EventApi(pico_A[0][0],'a').get('/subscription_cancellation')
+           .set('Accept', 'application/json')
+           .query({
+                    channel_name: testing1_subscription.channel_name
+                  }) // subscription request to parent 
+           .expect(200)
+           .end(function(err,res){
+              setTimeout(function() { // let pico B handle subscription event. 
+                done();
+              }, 6000);
+          });
+         });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_A' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+            //  console.log("collection of subscriptions from status",response);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).to.include.keys('outbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_B' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_B[0][0],_eid: eid('b'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+           //   console.log("collection of subscriptions from status",response);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).to.include.keys('inbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
+          it('remove outbound subscription from Pico_A and inbound from Pico_B', function(done) {
+           EventApi(pico_A[0][0],'a').get('/outbound_subscription_cancellation')
+           .set('Accept', 'application/json')
+           .query({
+                    channel_name: subscriptions_to_remove.channel_name
+                  }) // subscription request to parent 
+           .expect(200)
+           .end(function(err,res){
+              setTimeout(function() { // let pico B handle subscription event. 
+                done();
+              }, 6000);
+          });
+         });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_A' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+            //  console.log("collection of subscriptions from status Pico_A",response);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).not.to.include.keys('outbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_B' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_B[0][0],_eid: eid('b'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+           //   console.log("collection of subscriptions from status Pico_B",response);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).not.to.include.keys('inbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
+
+          it('create subscriptions from Pico_A', function(done) {
+             EventApi(pico_A[0][0],'a').get('/subscription')
+             .set('Accept', 'application/json')
+             .query({
+              name: subscriptions_for_testing1.name,
+              name_space: subscriptions_for_testing1.name_space,
+              my_role: subscriptions_for_testing1.my_role,
+              subscriber_role: subscriptions_for_testing1.subscriber_role,
+              subscriber_eci : pico_B[0][0],
+              channel_type: subscriptions_for_testing1.channel_type,
+              attrs: subscriptions_for_testing1.attrs
+             }) // subscription request to parent 
+             .expect(200)
+             .end(function(err,res){
+                setTimeout(function() { // let pico B handle subscription event. 
+                  done();
+                }, 6000);
+            });
+           });
+          this.timeout(50000);
+
+          it('should store outbound channel_name' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_B[0][0],_eid: eid('b'), collection : "status",filtered : "inbound"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+           //   console.log("should return a collection of subscriptions ",response);
+              collection = response.subscriptions;
+              expect(collection).to.be.an('array');
+              assert.equal(1,collection.length,1);
+              subscriptions_to_remove = _.values(collection[0])[0];
+              done();
+            });
+          });
+
+          it('remove inbound subscription from Pico_B and outbound from Pico_A', function(done) {
+           //console.log("name",subscriptions_to_remove.channel_name);
+           EventApi(pico_B[0][0],'b').get('/inbound_subscription_rejection')
+           .set('Accept', 'application/json')
+           .query({
+                    channel_name: subscriptions_to_remove.channel_name
+                  }) // subscription request to parent 
+           .expect(200)
+           .end(function(err,res){
+              setTimeout(function() { // let pico B handle subscription event. 
+                done();
+              }, 6000);
+          });
+         });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_A' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+            //  console.log("collection of subscriptions from status Pico_A",response.subscriptions.outbound);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).not.to.include.keys('outbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
+          it('confirm removal by returning a collection of subscriptions from status Pico_B' ,function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_B[0][0],_eid: eid('b'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+            //  console.log("collection of subscriptions from status Pico_B",response.subscriptions.inbound);
+              collection = response.subscriptions;
+              expect(collection).not.to.include.keys('subscribed');
+              expect(collection).not.to.include.keys('inbound');
+              expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+
         });
+});
+
 
 
 
@@ -1635,17 +1972,6 @@ describe('Wrangler Test Driver', function() {
       //     -update client info
       //     -remove client 
 
-   
-// ********************************************************************************************
-// ***                               Pico Creation With Prototypes                          ***
-// ********************************************************************************************
-
-      // pico creation from prototypes
-      //     -no name given & no prototype given - name defaults to random uniqe name, prototyp to core. 
-      //     -name given & no prototype given
-      //     -name given & prototype given
-      //     -broken prototype // does it matter??
-  
 // ********************************************************************************************
 // ***                               Prototypes management                                  ***
 // ********************************************************************************************
@@ -1654,10 +1980,187 @@ describe('Wrangler Test Driver', function() {
       //     -list prototypes
       //     -add prototypes
       //     -update prototypes
+      describe('Prototypes Management', function() {
+
+        describe('list/modify prototypes', function() {
+          it('update suite variable ',function(done) {
+          _eid.suite = 'list/modify prototypes';
+            done();
+          });
+
+          it('should list default prototypes' ,function(done){
+            childSkyQuery.get("/prototypes")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), collection : "status"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              console.log("default prototypes",JSON.stringify(response));
+             // collection = response.subscriptions;
+             // expect(collection).not.to.include.keys('subscribed');
+             // expect(collection).not.to.include.keys('outbound');
+             // expect(subscription).to.be.an('object');
+              done();
+            });
+          });
+          it('should add a prototype');
+          it('should update a prototype');
+      });
+// ********************************************************************************************
+// ***                               Pico Creation With Prototypes                          ***
+// ********************************************************************************************
+
+      // pico creation from prototypes
+      //     -no name given & no prototype given - name defaults to random unique name, prototype to core. 
+      //     -name given & no prototype given
+      //     -name given & prototype given
+      //     -broken prototype // does it matter??
+        describe('Pico Creation With Prototypes', function() {
+          var first_response;
+          var second_response;
+          var new_pico;
+          var prototype_one ={};
+
+          it('update suite variable ',function(done) {
+          _eid.suite = 'Pico Creation With Prototypes';
+            done();
+          });
+
+        it("stores list of current children",function(done) {
+          childSkyQuery.get("/children")
+          .set('Accept', 'application/json')
+          .query({ _eci: pico_A[0][0],_eid: eid('a')})
+          .expect(200)
+          .expect('Content-Type', /json/)
+          .end(function(err,res){
+            response = res.text;
+            first_response = JSON.parse(response);
+          //  console.log("first_response: ",first_response);
+            done();
+          });
+        });
+        // create child
+        it('create child pico with name and no prototype', function(done) {
+           EventApi(pico_A[0][0],'a').get('/child_creation')
+          .set('Accept', 'application/json')
+          .query({ name: 'prototype_one' })
+          .expect(200)
+          .expect('Content-Type', /json/)
+          .end(function(err,res){
+            setTimeout(function() { // let pico B handle subscription event. 
+              done();
+            }, 24000);
+         });
+        }); 
+        it('store updated children picos',function(done) {
+          childSkyQuery.get("/children")
+          .set('Accept', 'application/json')
+          .query({ _eci: pico_A[0][0],_eid: eid('a')})
+          .expect(200)
+          .expect('Content-Type', /json/)
+          .end(function(err,res){
+            response = res.text;
+            second_response = JSON.parse(response);
+          //  console.log("second_response: ",second_response);
+            done();
+          });
+        });
+        it('compares updated list of picos to confirm successful creation, stores prototype_one eci for testing', function() {
+          first_results = first_response.children =="error" ? []: first_response.children;
+          second_results = second_response.children =="error" ? []: second_response.children;
+          var first_response_ecis = _.map(first_results, function(child){ return child[0]; });
+          var second_response_ecis = _.map(second_results, function(child){ return child[0]; });
+          var new_Pico_eci = _.difference( second_response_ecis, first_response_ecis  );
+          new_pico = _.filter(second_results, function(eci){ return eci[0] == new_Pico_eci; });
+          prototype_one = new_pico;
+         // console.log("prototype_one",prototype_one);
+          if (((prototype_one.length) != 1 )){
+            console.log("first_response:");
+            console.log(first_results);
+            console.log("second_response:");
+            console.log(second_results);
+            console.log("first_response mapped:");
+            console.log(first_response_ecis);
+            console.log("second_response mapped:");
+            console.log(second_response_ecis);
+            console.log("difference:");
+            console.log(new_Pico_eci);
+            console.log("second_response filtered:");
+            console.log(prototype_one);
+            console.log(prototype_one[0][0]);
+            if(((prototype_one.length) > 1 )){
+              throw new Error("multiple new installed rulesets");
+            }else{
+              throw new Error("no new installed rulesets");
+            }
+
+          }
+        });
+
+          it('confirms base ProtoType channels creation',function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: prototype_one[0][0],_eid: eid('P'),collection : "type"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              console.log("channel",JSON.stringify(response));
+              expect(response.channels).to.be.an('object');
+              assert.isAtLeast(response.channels.ProtoType.length,2,"should have at least 2 channels listed.");
+              prototype_channels = response.channels.ProtoType;
+              even = _.find(prototype_channels, function(channel){ return channel.name == 'testPrototypChannel'; }); 
+              assert.equal(even.name,'testPrototypChannel');
+              even = _.find(prototype_channels, function(channel){ return channel.name == 'test2PrototypChannel'; }); 
+              assert.equal(even.name,'test2PrototypChannel');
+              done();
+            });
+          });
+ 
+
+        it('confirms devtools(default) ProtoType channels creation',function(done){
+            childSkyQuery.get("/channel")
+            .query({ _eci: prototype_one[0][0],_eid: eid('P'),collection : "type"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              //console.log("channel",JSON.stringify(response));
+              expect(response.channels).to.be.an('object');
+              assert.isAtLeast(response.channels.ProtoType.length,2,"should have at least 2 channels listed.");
+              prototype_channels = response.channels.ProtoType;
+              even = _.find(prototype_channels, function(channel){ return channel.name == 'testDevtoolsPrototypChannel'; }); 
+              assert.equal(even.name,'testDevtoolsPrototypChannel');
+              even = _.find(prototype_channels, function(channel){ return channel.name == 'testDevtools2PrototypChannel'; }); 
+              assert.equal(even.name,'testDevtools2PrototypChannel');
+              done();
+            });
+          });
+
+
+           it('confirms base prototype subscription creation, ',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('P'), id : "basePrototypeName"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              console.log("single subscription from subscription name",JSON.stringify(response));
+              subscription = response.subscriptions;
+              expect(subscription).to.be.an('object');
+              values = _.values(subscription);
+              assert.equal(values.subscription_name,'basePrototypeName');
+              done();
+            });
+          });
+  });
 
 
 
-
+});
 
 
 // ********************************************************************************************
@@ -1685,14 +2188,14 @@ describe('Wrangler Test Driver', function() {
             for(var key in logs[i]) { // only loop once on suite key 
               value = logs[i][key]; // get values 
             }
-        console.log("Log ", logs[i]);
-        console.log("values ", value);
+     //   console.log("Log ", logs[i]);
+     //   console.log("values ", value);
 
             eids = eids.concat(value.A);
         }
-        console.log("eids  ", eids);
+      //  console.log("eids  ", eids);
         eids = eids.join(";");
-        console.log("eids  ", eids);
+       // console.log("eids  ", eids);
         supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
           .query({ _eci: pico_A[0][0],_eid: eid('a'),eids:eids})
           .expect(200)
@@ -1720,7 +2223,7 @@ describe('Wrangler Test Driver', function() {
             done();
           });
         });
-      
+      /*
       it('store logs eid for B',function(done){
         //var eids = _log_eid.join(';');
         logs = eidLogs.Logs();
@@ -1733,14 +2236,14 @@ describe('Wrangler Test Driver', function() {
             for(var key in logs[i]) { // only loop once on suite key 
               value = logs[i][key]; // get values 
             }
-        console.log("Log ", logs[i]);
-        console.log("values ", value);
+    //    console.log("Log ", logs[i]);
+    //    console.log("values ", value);
 
             eids = eids.concat(value.B);
         }
-        console.log("eids  ", eids);
+    //    console.log("eids  ", eids);
         eids = eids.join(";");
-        console.log("eids  ", eids);
+    //    console.log("eids  ", eids);
         supertest("https://kibdev.kobj.net/sky/cloud/"+picoLogs).get("/getLogs")
           .query({ _eci: pico_B[0][0],_eid: eid('b')})//,eids:eids})
           .expect(200)
@@ -1750,15 +2253,15 @@ describe('Wrangler Test Driver', function() {
             //var response_eids = _.map(response, function(log){ return log.; });
 
           //  response = _.filter(response, function(log){ 
-              console.log("logs",response);
+     //         console.log("logs",response);
              // console.log("contains check.",_.contains(_log_eid,log.eid));
               //return _.contains(_log_eid,log.eid);});
-            console.log("logs of failed operations",response);
+     //       console.log("logs of failed operations",response);
             for (var i = 0; i < response.length; i++) {
               for (var k = 0; k < response[i].log_items.length; k++) {
                 response[i].log_items[k] = _.rest(response[i].log_items[k].split(/\s+/),5); // cut off extra first 6 columns 
                 response[i].log_items[k] = response[i].log_items[k].join(' '); // join last columns back together 
-                console.log("eid ",response[i].eid);
+    //            console.log("eid ",response[i].eid);
               }
             }
             //console.log("logs of failed operations",response);
@@ -1768,9 +2271,9 @@ describe('Wrangler Test Driver', function() {
             done();
           });
         });
+*/
 
       });
-
       describe('Clean up',function(done){
         it( 'remove child pico A used for testing',function(done) {
           EventApi(_eci).get('/child_deletion')

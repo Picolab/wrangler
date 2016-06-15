@@ -569,7 +569,7 @@ ruleset b507803x0 {
     checkSubscriptionName = function(name){
           sub = subscriptions(name);
           subs = sub{"subscriptions"};
-          return = (subs eq {});
+          return = (subs.encode() eq '{}');
           //(subs eq {});
           return;
 

@@ -1686,6 +1686,21 @@ describe('Wrangler Test Driver', function() {
               done();
             });
           });
+          it('should return a single subscription from subscription name, ',function(done){
+            childSkyQuery.get("/subscriptions")
+            .query({ _eci: pico_A[0][0],_eid: eid('a'), id: "adam"})
+            .expect(200)
+            .end(function(err,res){
+              response = res.text;
+              response = JSON.parse(response);
+              assert.equal(true,response.status);
+              console.log("single subscription from subscription name",response);
+              subscription = response.subscriptions;
+              expect(subscription).to.be.an('object');
+              assert.equal(testing1_subscription.channel_name,subscription[testing1_subscription.channel_name].channel_name);
+              done();
+            });
+          });
           it('should return a single subscription from eci as id',function(done){
             childSkyQuery.get("/subscriptions")
             .query({ _eci: pico_A[0][0],_eid: eid('a'), id : testing1_subscription.inbound_eci})

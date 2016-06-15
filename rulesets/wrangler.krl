@@ -569,7 +569,7 @@ ruleset b507803x0 {
     checkSubscriptionName = function(name){
           sub = subscriptions(name,null,null);
           subs = sub{"subscriptions"}.defaultsTo({},standardOut("no subscriptions found"));
-          (subscription eq {});
+          (subs eq {});
 
     }
     randomSubscriptionName = function(){
@@ -1242,11 +1242,11 @@ ruleset b507803x0 {
       attr = event:attrs();
       attrs = attr.put({"name":name});
     }
-    //if(checkSubscriptionName(name)) then
+    if(checkSubscriptionName(name)) then
     {
       noop();
     }
-    always{
+    fired{
       raise wrangler event 'checked_name_subscription'
        attributes attrs
     }

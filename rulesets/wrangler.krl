@@ -25,7 +25,7 @@ ruleset b507803x0 {
     provides skyQuery, rulesets, rulesetsInfo, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, //pico
-    subscriptions, eciFromName, subscriptionAttributes, //subscription
+    subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
 
@@ -567,8 +567,8 @@ ruleset b507803x0 {
 
     }    
     checkSubscriptionName = function(name){
-          sub = subscriptions(name,null,null);
-          subs = sub{"subscriptions"}.defaultsTo({},standardOut("no subscriptions found"));
+          sub = subscriptions(name);
+          subs = sub{"subscriptions"};
           (subs eq {});
 
     }

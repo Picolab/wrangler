@@ -569,7 +569,8 @@ ruleset b507803x0 {
     checkSubscriptionName = function(name){
           sub = subscriptions(name);
           subs = sub{"subscriptions"};
-          (subs eq {});
+          //(subs eq {});
+          (true);
 
     }
     randomSubscriptionName = function(){

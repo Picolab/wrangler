@@ -570,7 +570,7 @@ ruleset b507803x0 {
           sub = subscriptions(name);
           subs = sub{"subscriptions"};
           encoded_sub = subs.encode();
-          return = ( encoded_sub eq '{}') => true | false;
+          return = encoded_sub.match(re/{}/);
           //(subs eq {});
           return;
 

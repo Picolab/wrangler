@@ -8,9 +8,13 @@
   },
   "dependencies": {
     "chai": "~3.5.0",
-    "mocha": "*"
+    "mocha": "*",
+    "node-stringify": "0.0.19"
   },
   "engines": {
     "node": ">=0.8"
+  },
+  "devDependencies": {
+    "mocha.parallel": "^0.12.0"
   }
 }

@@ -24,7 +24,7 @@ ruleset b507199x5 {
       //none
     provides skyQuery, rulesets, rulesetsInfo, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico,checkPicoName, //pico
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, //pico
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on

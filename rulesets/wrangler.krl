@@ -24,7 +24,7 @@ ruleset b507199x5 {
       //none
     provides skyQuery, rulesets, rulesetsInfo, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, //pico
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -246,9 +246,18 @@ ruleset b507199x5 {
   children = function() {
     self = meta:eci().klog("meta eci for list_children:  ");
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
+
+    my_children = ent:my_children.filter(function(child){
+                                 this_eci = child{"eci"};
+				 children.filter(function(rec){
+				                   rec[0] eq this_eci
+                                                 })
+					 .length() > 0
+                               })
+
     {
       'status' : (children neq "error"),
-      'children' : children
+      'children' : my_children
     }
   }
   parent = function() {
@@ -290,9 +299,22 @@ ruleset b507199x5 {
     }
   }
   
-  deletePico = defaction(eci) {
-    noret = pci:delete_pico(eci, {"cascade":1});
-    send_directive("deleted pico #{eci}");
+  deleteChild = defaction(name) {
+
+    child_rec = ent:my_children.filter(function(rec){rec{"name"} eq name})
+                               .head()
+			       .defaultsTo({})
+                               .klog("Child to delete: ");
+
+    eci_to_delete = child_rec{"eci"};
+    new_child_list = ent:my_children
+                               .filter(function(rec){rec{"name"} neq name})
+                               .klog("Children to keep: ")
+			       .pset(ent:my_children)
+			       ;
+
+    noret = pci:delete_pico(eci_to_delete, {"cascade":1});
+    send_directive("deleted pico #{eci_to_delete}");
   }
   
   basePrototype = {
@@ -445,6 +467,14 @@ ruleset b507199x5 {
     // create child 
     newPicoInfo = pci:new_pico(meta:eci()); // we need pci updated to take a name.
     newPicoEci = newPicoInfo{"cid"};// store child eci
+    // store name
+    child_rec = {"name": name,
+                 "eci": newPicoEci
+                };
+    my_children = ent:my_children => ent:my_children | []; // first child
+    foo = my_children.append(child_rec)
+                     .klog("New Child List: ")
+		     .pset(ent:my_children);
     // bootstrap child
     //combine new_ruleset calls 
     joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');

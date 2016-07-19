@@ -469,7 +469,7 @@ ruleset b507199x5 {
 
 // create child from protype will take the name with a option of a prototype with a default to base.
   createChild = defaction(name){ 
-    configure using protype_name = "devtools"; // base must be installed by default for prototypeing to work 
+    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");

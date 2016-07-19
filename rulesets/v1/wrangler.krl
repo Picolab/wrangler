@@ -104,9 +104,13 @@ ruleset b507199x5 {
       new_ruleset = pci:new_ruleset(pico_eci, rids);
       send_directive("installed #{rids}");
     }
+    
     uninstallRulesets = defaction(rids){
-      configure using eci = meta:eci();
-      deleted = pci:delete_ruleset(eci, rids);
+      configure using eci = meta:eci() and name="none";
+      pico_eci = (name eq "none") => eci
+                                   | picoECIFromName(name);
+
+      deleted = pci:delete_ruleset(pico_eci, rids);
       send_directive("uninstalled #{rids}");
     }
 
@@ -464,8 +468,8 @@ ruleset b507199x5 {
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to base.
-  createChild = defaction(name,protype_name){ 
-    //configure using protype_name = "devtools"; // base must be installed by default for prototypeing to work 
+  createChild = defaction(name){ 
+    configure using protype_name = "devtools"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");

@@ -22,7 +22,7 @@ ruleset b507199x5 {
 
     // Accounting keys
       //none
-    provides skyQuery, rulesets, rulesetsInfo, //ruleset
+    provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
@@ -96,8 +96,12 @@ ruleset b507199x5 {
     // add defaultsto for eci so it defaultsto meta:eci
     // everywhere installRulesets defaction will need a with eci for any out side 
     installRulesets = defaction(rids){
-      configure using eci = meta:eci();
-      new_ruleset = pci:new_ruleset(eci, rids);
+      configure using eci = meta:eci() and name="none";
+
+      pico_eci = (name eq "none") => eci
+                                   | picoECIFromName(name);
+
+      new_ruleset = pci:new_ruleset(pico_eci, rids);
       send_directive("installed #{rids}");
     }
     uninstallRulesets = defaction(rids){
@@ -298,6 +302,13 @@ ruleset b507199x5 {
       'attributes' : ent:attributes
     }
   }
+
+  picoECIFromName = function (name) {
+    pico = ent:my_children.filter(function(rec){rec{"name"} eq name})
+                          .head()
+    pico{"eci"}
+  };
+
   
   deleteChild = defaction(name) {
 

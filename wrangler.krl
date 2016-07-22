@@ -6,11 +6,10 @@ ruleset b507803x0 {
     description <<
       Wrangler ( ) Module
 
-      use module  b507798x0 alias wrangler
+      use module v1_wrangler alias wrangler
 
-      This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
-      When a PICO is created or authenticated this ruleset
-      will be installed into the Personal Cloud to provide an Event layer.
+      This Ruleset/Module provides life-cycle management for picos (persistent computer objects).
+      When a pico is created or authenticated this ruleset will be installed
     >>
     author "BYUPICOLab"
     
@@ -535,6 +534,7 @@ ruleset b507803x0 {
 
     };
 
+    // assumes that we'll never not get a unique name in n tries
     randomName = function(namespace){
         n = 5;
         array = (0).range(n).map(function(n){
@@ -548,6 +548,7 @@ ruleset b507803x0 {
         unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
         (namespace +':'+ unique_name);
     }
+    
     // optimize by taking a list of names, to prevent multiple network calls for channels
     checkName = function(name){
           chan = channel();

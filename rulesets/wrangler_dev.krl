@@ -1,12 +1,12 @@
 // operators are camel case, variables are snake case.
     
-ruleset v1_wrangler {
+ruleset b507199x5 {
   meta {
-    name "v1_wrangler"
+    name "v1_wrangler.dev"
     description <<
       Wrangler ( ) Module
 
-      use module  v1_wrangler alias wrangler
+      use module  v1_wrangler.dev alias wrangler
 
       This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
       When a PICO is created or authenticated this ruleset

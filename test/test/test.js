@@ -23,7 +23,7 @@
 
           _pico_used='', // can be parent , a , b
           wrangler_dev = "b507805x0.dev", 
-          wrangler_prod = 'b507199x5.dev',
+          wrangler_prod = 'v1_wrangler.dev',
           bootstrap_rid = "b507199x1.dev",
           picoLogs = "b16x29";
           testing_rid1 = "b507706x12.dev",// used to install, uninstall and query meta data 

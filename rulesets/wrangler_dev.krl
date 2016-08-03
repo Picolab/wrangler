@@ -24,7 +24,7 @@ ruleset v1_wrangler {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -1274,11 +1274,11 @@ ruleset v1_wrangler {
   rule deleteChild {
     select when wrangler child_deletion
     pre {
-      eciDeleted = event:attr("deletionTarget").defaultsTo("", standardError("missing pico for deletion"));
+      pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
     }
-    if(eciDeleted neq "") then
+    if(pico_name neq "") then
     {
-      deletePico(eciDeleted);
+      deleteChild(pico_name);
     }
     notfired {
       log "deletion failed because no child was specified";

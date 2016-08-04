@@ -278,7 +278,7 @@ ruleset v1_wrangler {
     my_child_list = children.map(function(tuple)
                                           {
                                             this_eci = tuple[0];
-                                            ent_my_children.filter(function(ent_child)
+                                            return = ent_my_children.filter(function(ent_child)
                                               {
                                                 ent_child{"eci"} eq this_eci
                                               })
@@ -287,6 +287,7 @@ ruleset v1_wrangler {
                                                                 "name": "unknown",
                                                                 "eci": this_eci
                                                               }
+                                            return
                                           });
     // join list of children
 

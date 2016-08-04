@@ -265,14 +265,30 @@ ruleset v1_wrangler {
   children = function() {
     self = meta:eci().klog("meta eci for list_children:  ");
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
-
-    my_children = ent:my_children.filter(function(child){
-                                 this_eci = child{"eci"};
-				 children.filter(function(rec){
-				                   rec[0] eq this_eci
-                                                 })
-					 .length() > 0
-                               })
+   /* my_children = ent:my_children.filter(function(child)
+                                          {
+                                            this_eci = child{"eci"};
+				                                    children.filter(function(rec)
+                                              {
+				                                        rec[0] eq this_eci
+                                              })
+					                                   .length() > 0
+                                          });*/
+    ent_my_children = ent:my_children;
+    my_child_list = children.map(function(tuple)
+                                          {
+                                            this_eci = tuple[0];
+                                            ent_my_children.filter(function(ent_child)
+                                              {
+                                                ent_child{"eci"} eq this_eci
+                                              })
+                                             .length() > 0 => ent_child | // if child with name return the name structure  
+                                                              {  // if child with no name return with unknown name structure
+                                                                "name": "unknown",
+                                                                "eci": this_eci
+                                                              }
+                                          });
+    // join list of children
 
     {
       'status' : (children neq "error"),

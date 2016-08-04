@@ -160,8 +160,19 @@ ruleset v1_wrangler {
     channel = function(id,collection,filtered) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
-      channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      
+      chans = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      channels = chans.map(function(channel){ // reconstruct each channel to have eci not cid
+                                            chan = channel.put(["eci"],channel{"cid"}); 
+                                            chann = chan.delete(["cid"]);
+                                            chann // return reconstructed channel 
+                                           /* {
+                                              "last_active":channel{"last_active"},
+                                              "policy":channel{"policy"},
+                                              "name":channel{"name"},
+                                              "type":channel{"type"},
+                                              "eci":channel{"cid"},
+                                              "attributes":channel{"attributes"}
+                                              } */});
       single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 

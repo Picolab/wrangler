@@ -298,11 +298,8 @@ ruleset v1_wrangler {
                                               {
                                                 ent_child{"eci"} eq this_eci
                                               }).klog("first filter: ");
-                                            return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
-                                                              {  // if child with no name return with unknown name structure
-                                                                "name": pdsName(this_eci),
-                                                                "eci": this_eci
-                                                              }
+                                            return = return1.length() > 0 => return1[0] | pdsName(this_eci);// if child with name return the name structure  
+                                                              
                                             return.klog("second filter: ")
                                           }).klog("map : ");
     foo = my_child_list.pset(ent:my_children)
@@ -313,10 +310,13 @@ ruleset v1_wrangler {
   }
 
   pdsName = function(this_eci) {
-    pdsProfiles = skyQuery(this_eci, null ,"pds","profile", null);
+    pdsProfiles = skyQuery(this_eci, null ,"pds","profile", null).klog("sky : ");
     pdsProfile = pdsProfiles{"profile"};
     name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | "unknown" ;
-    name
+    { 
+      "name": name,
+      "eci": this_eci
+    }
   }
 
   parent = function() {

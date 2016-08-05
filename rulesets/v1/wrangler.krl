@@ -1,12 +1,12 @@
 // operators are camel case, variables are snake case.
     
-ruleset b507199x5 {
+ruleset v1_wrangler {
   meta {
-    name "wrangler"
+    name "v1_wrangler"
     description <<
       Wrangler ( ) Module
 
-      use module  b507199x5 alias wrangler
+      use module  v1_wrangler alias wrangler
 
       This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
       When a PICO is created or authenticated this ruleset
@@ -24,7 +24,7 @@ ruleset b507199x5 {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -337,7 +337,7 @@ ruleset b507199x5 {
                 "discription": "Wrangler base prototype"
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ "b507199x5.dev",
+      "rids": [ "v1_wrangler.dev",
                 "b507199x8.dev" // pds
                 //"b507805x0.dev" developmet wrangler
                  //"a169x625"
@@ -633,7 +633,7 @@ ruleset b507199x5 {
           
           names = picos.none(function(child){
             eci = child[0]; 
-            name_return = skyQuery(eci,meta:host(),"b507199x5.dev","name",noParam);
+            name_return = skyQuery(eci,meta:host(),"v1_wrangler.dev","name",noParam);
             pico_name = name_return{"picoName"};
             (pico_name eq name)
             });
@@ -1274,11 +1274,11 @@ ruleset b507199x5 {
   rule deleteChild {
     select when wrangler child_deletion
     pre {
-      eciDeleted = event:attr("deletionTarget").defaultsTo("", standardError("missing pico for deletion"));
+      pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
     }
-    if(eciDeleted neq "") then
+    if(pico_name neq "") then
     {
-      deletePico(eciDeleted);
+      deleteChild(pico_name);
     }
     notfired {
       log "deletion failed because no child was specified";

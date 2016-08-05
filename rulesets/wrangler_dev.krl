@@ -2,11 +2,11 @@
     
 ruleset v1_wrangler {
   meta {
-    name "wrangler"
+    name "v1_wrangler.dev"
     description <<
       Wrangler ( ) Module
 
-      use module  v1_wrangler alias wrangler
+      use module  v1_wrangler.dev alias wrangler
 
       This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
       When a PICO is created or authenticated this ruleset
@@ -24,7 +24,7 @@ ruleset v1_wrangler {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -390,9 +390,9 @@ ruleset v1_wrangler {
       "PDS" : {
                 "profile" : {"name":"base"},
                 "general" : {"test":{"subtest":"just a test"}},
-                "settings": {"b507798x0.dev":{
+                "settings": {"v1_wrangler.dev":{
                                               "name":"wrangler",
-                                              "rid" :"b507798x0.dev",
+                                              "rid" :"v1_wrangler.dev",
                                               "data":{},
                                               "schema":["im","a","schema"]
                                               }
@@ -469,7 +469,7 @@ ruleset v1_wrangler {
 
 // create child from protype will take the name with a option of a prototype with a default to base.
   createChild = defaction(name){ 
-    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
+    configure using protype_name = "devtools"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{protype_name}.defaultsTo(devtoolsPrototype,"prototype not found");
@@ -1274,11 +1274,11 @@ ruleset v1_wrangler {
   rule deleteChild {
     select when wrangler child_deletion
     pre {
-      eciDeleted = event:attr("deletionTarget").defaultsTo("", standardError("missing pico for deletion"));
+      pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
     }
-    if(eciDeleted neq "") then
+    if(pico_name neq "") then
     {
-      deletePico(eciDeleted);
+      deleteChild(pico_name);
     }
     notfired {
       log "deletion failed because no child was specified";
@@ -1590,7 +1590,6 @@ ruleset v1_wrangler {
   } 
   rule removeSubscription {
     select when wrangler subscription_removal
-             or wrangler subscription_deletion_requested
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));

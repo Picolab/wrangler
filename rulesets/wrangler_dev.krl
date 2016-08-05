@@ -265,15 +265,6 @@ ruleset v1_wrangler {
   children = function() {
     self = meta:eci().klog("meta eci for list_children:  ");
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
-   /* my_children = ent:my_children.filter(function(child)
-                                          {
-                                            this_eci = child{"eci"};
-				                                    children.filter(function(rec)
-                                              {
-				                                        rec[0] eq this_eci
-                                              })
-					                                   .length() > 0
-                                          });*/
     ent_my_children = ent:my_children;
     my_child_list = children.map(function(tuple)
                                           {
@@ -289,7 +280,6 @@ ruleset v1_wrangler {
                                                               }
                                             return.klog("second filter: ")
                                           }).klog("map : ");
-    // join list of children
 
     {
       'status' : (children neq "error"),

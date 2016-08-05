@@ -288,7 +288,7 @@ ruleset v1_wrangler {
                                                                 "eci": this_eci
                                                               }
                                             return.klog("second filter: ")
-                                          });
+                                          }).klog("map : ");
     // join list of children
 
     {

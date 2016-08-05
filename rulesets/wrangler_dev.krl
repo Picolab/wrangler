@@ -281,13 +281,13 @@ ruleset v1_wrangler {
                                             return = ent_my_children.filter(function(ent_child)
                                               {
                                                 ent_child{"eci"} eq this_eci
-                                              })
+                                              }).klog("first filter: ")
                                              .length() > 0 => ent_child | // if child with name return the name structure  
                                                               {  // if child with no name return with unknown name structure
                                                                 "name": "unknown",
                                                                 "eci": this_eci
                                                               }
-                                            return
+                                            return.klog("second filter: ")
                                           });
     // join list of children
 

@@ -282,7 +282,7 @@ ruleset v1_wrangler {
                                               {
                                                 ent_child{"eci"} eq this_eci
                                               }).klog("first filter: ");
-                                            return = return1.length() > 0 => return[0] | // if child with name return the name structure  
+                                            return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
                                                               {  // if child with no name return with unknown name structure
                                                                 "name": "unknown",
                                                                 "eci": this_eci

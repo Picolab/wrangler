@@ -293,7 +293,7 @@ ruleset v1_wrangler {
 
     {
       'status' : (children neq "error"),
-      'children' : my_children
+      'children' : my_child_list
     }
   }
   parent = function() {

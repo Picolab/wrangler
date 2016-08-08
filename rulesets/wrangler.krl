@@ -2,7 +2,7 @@
     
 ruleset v1_wrangler {
   meta {
-    name "v1_wrangler.dev"
+    name "Wrangler Core"
     description <<
       Wrangler ( ) Module
 

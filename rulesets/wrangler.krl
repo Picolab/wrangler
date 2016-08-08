@@ -1641,6 +1641,7 @@ ruleset v1_wrangler {
   } 
   rule removeSubscription {
     select when wrangler subscription_removal
+             or wrangler subscription_deletion_requested
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));

@@ -311,7 +311,7 @@ ruleset v1_wrangler {
 
   pdsName = function(this_eci) {
     pdsProfiles = skyQuery(this_eci, null ,"pds","profile", null).klog("sky : ");
-    pdsProfile = pdsProfiles{"profile"};
+    pdsProfile = pdsProfiles{"profile"}.klog("child pds profile");
     name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | "unknown" ;
     { 
       "name": name,

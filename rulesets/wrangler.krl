@@ -313,7 +313,8 @@ ruleset v1_wrangler {
     results = skyQuery(this_eci, null ,"b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
     oldentnamestruc = results{"skyCloudError"}.isnull() => results | {"picoName":{}};
     oldentname = oldentnamestruc{"picoName"}.klog("child name");
-    name = (oldentname.typeof() eq 'str') => oldentname | child{"name"};
+    current_name = child{"name"}.typeof() eq 'str' => child{"name"}|"unknown";
+    name = (oldentname.typeof() eq 'str') => oldentname | current_name;
     { 
       "name": name,
       "eci": this_eci

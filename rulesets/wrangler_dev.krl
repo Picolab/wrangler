@@ -310,9 +310,9 @@ ruleset v1_wrangler {
   }
 
   pdsName = function(this_eci,child) {
-    pdsProfiles = skyQuery(this_eci, null ,"b507199x8","profile", null).klog("sky : ");
-    pdsProfile = pdsProfiles{"profile"}.klog("child pds profile");
-    name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | child{"name"};
+    oldentnamestruc = skyQuery(this_eci, null ,"b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
+    oldentname = oldentnamestruc{"picoName"}.klog("child name");
+    name = (oldentname.typeof() eq 'str') => oldentname | child{"name"};
     { 
       "name": name,
       "eci": this_eci

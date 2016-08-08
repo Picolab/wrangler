@@ -2,11 +2,11 @@
     
 ruleset v1_wrangler {
   meta {
-    name "v1_wrangler"
+    name "v1_wrangler.dev"
     description <<
       Wrangler ( ) Module
 
-      use module  v1_wrangler alias wrangler
+      use module  v1_wrangler.dev alias wrangler
 
       This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
       When a PICO is created or authenticated this ruleset
@@ -24,7 +24,7 @@ ruleset v1_wrangler {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -160,8 +160,19 @@ ruleset v1_wrangler {
     channel = function(id,collection,filtered) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
-      channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      
+      chans = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      channels = chans.map(function(channel){ // reconstruct each channel to have eci not cid
+                                          //  chan = channel.put(["eci"],channel{"cid"}); 
+                                          //  chann = chan.delete(["cid"]);
+                                          //  chann // return reconstructed channel 
+                                            {
+                                              "last_active":channel{"last_active"},
+                                              "policy":channel{"policy"},
+                                              "name":channel{"name"},
+                                              "type":channel{"type"},
+                                              "eci":channel{"cid"},
+                                              "attributes":channel{"attributes"}
+                                              } });
       single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
@@ -255,19 +266,59 @@ ruleset v1_wrangler {
     self = meta:eci().klog("meta eci for list_children:  ");
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
 
-    my_children = ent:my_children.filter(function(child){
-                                 this_eci = child{"eci"};
-				 children.filter(function(rec){
-				                   rec[0] eq this_eci
-                                                 })
-					 .length() > 0
-                               })
+    ent_my_children = ent:my_children;
+    my_child_list = children.map(function(tuple)
+                                          {
+                                            this_eci = tuple[0];
+                                            return1 = ent_my_children.filter(function(ent_child)
+                                              {
+                                                ent_child{"eci"} eq this_eci
+                                              }).klog("first filter: ");
+                                            return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
+                                                              {  // if child with no name return with unknown name structure
+                                                                "name": "unknown",
+                                                                "eci": this_eci
+                                                              }
+                                            return.klog("second filter: ")
+                                          }).klog("map : ");
 
     {
       'status' : (children neq "error"),
-      'children' : my_children
+      'children' : my_child_list
     }
   }
+  children_FixitFelix = function() {
+    self = meta:eci().klog("meta eci for list_children:  ");
+    children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
+    ent_my_children = ent:my_children;
+    my_child_list = children.map(function(tuple)
+                                          {
+                                            this_eci = tuple[0];
+                                            return1 = ent_my_children.filter(function(ent_child)
+                                              {
+                                                ent_child{"eci"} eq this_eci
+                                              }).klog("first filter: ");
+                                            return = /*return1.length() > 0 => return1[0] |*/ pdsName(this_eci,return1[0]);// if child with name return the name structure  
+                                                              
+                                            return.klog("second filter: ")
+                                          }).klog("map : ");
+    foo = my_child_list.pset(ent:my_children)
+    {
+      'status' : (children neq "error"),
+      'children' : my_child_list
+    }
+  }
+
+  pdsName = function(this_eci,child) {
+    oldentnamestruc = skyQuery(this_eci, null ,"b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
+    oldentname = oldentnamestruc{"picoName"}.klog("child name");
+    name = (oldentname.typeof() eq 'str') => oldentname | child{"name"};
+    { 
+      "name": name,
+      "eci": this_eci
+    }
+  }
+
   parent = function() {
     self = meta:eci();
     parent = pci:list_parent(self).defaultsTo("error", standardError("pci parent retrieval failed"));

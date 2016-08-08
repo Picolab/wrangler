@@ -42,7 +42,6 @@
     if (wrangler.host === "none") { // I dont think this will ever be true.....
         throw "No wrangler host defined";
     }
-    var Host = ;
     parts.unshift(host); // adds host to beginning of array
     var res = 'https://'+ parts.join("/"); // returns a url structure string
     return res;

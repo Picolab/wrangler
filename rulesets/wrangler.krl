@@ -110,8 +110,8 @@ ruleset v1_wrangler {
       pico_eci = (name eq "none") => eci
                                    | picoECIFromName(name);
 
-      deleted = pci:delete_ruleset(pico_eci, rids);
-      send_directive("uninstalled #{rids}");
+      deleted = pci:delete_ruleset(pico_eci, rids.klog("rids "));
+      send_directive("uninstalled #{rids} in pico #{pico_eci}");
     }
 
 // ********************************************************************************************
@@ -345,12 +345,13 @@ ruleset v1_wrangler {
     //pdsProfiles = pds:profile();
     //pdsProfile = pdsProfiles{"profile"};
     //name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | ent:name ;
-    name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    //name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    return = ent:name ;
     {
      // 'status' : pdsProfiles{"status"},
       'status' : "",
-      'picoName' : name
-    }
+      'picoName' : return
+    }.klog("name :")
   }
 
   attributes = function() {
@@ -368,14 +369,15 @@ ruleset v1_wrangler {
 
   
   deleteChild = defaction(name) {
-
-    child_rec = ent:my_children.filter(function(rec){rec{"name"} eq name})
+    results = children();
+    ent_my_children = results{"children"};
+    child_rec = ent_my_children.filter(function(rec){rec{"name"} eq name})
                                .head()
              .defaultsTo({})
                                .klog("Child to delete: ");
 
     eci_to_delete = child_rec{"eci"};
-    new_child_list = ent:my_children
+    new_child_list = ent_my_children
                                .filter(function(rec){rec{"name"} neq name})
                                .klog("Children to keep: ")
              .pset(ent:my_children)
@@ -1340,6 +1342,36 @@ ruleset v1_wrangler {
 
 // ********************************************************************************************
 // ***                                      Subscriptions                                   ***
+//                                         _
+//                                        ==(W{==========-      /===-
+//                                          ||  (.--.)         /===-_---~~~~~~~~~------____
+//                                          | \_,|**|,__      |===-~___                _,-' `
+//                             -==\\        `\ ' `--'   ),    `//~\\   ~~~~`---.___.-~~
+//                         ______-==|        /`\_. .__/\ \    | |  \\           _-~`
+//                   __--~~~  ,-/-==\\      (   | .  |~~~~|   | |   `\        ,'
+//                _-~       /'    |  \\     )__/==0==-\<>/   / /      \      /
+//              .'        /       |   \\      /~\___/~~\/  /' /        \   /'
+//             /  ____  /         |    \`\.__/-~~   \  |_/'  /          \/'
+//            /-'~    ~~~~~---__  |     ~-/~         ( )   /'        _--~`
+//                              \_|      /        _) | ;  ),   __--~~
+//                                '~~--_/      _-~/- |/ \   '-~ \
+//                               {\__--_/}    / \\_>-|)<__\      \
+//                               /'   (_/  _-~  | |__>--<__|      |
+//                              |   _/) )-~     | |__>--<__|      |
+//                              / /~ ,_/       / /__>---<__/      |
+//                             o-o _//        /-~_>---<__-~      /
+//                             (^(~          /~_>---<__-      _-~
+//                            ,/|           /__>--<__/     _-~
+//                         ,//('(          |__>--<__|     /                  .----_
+//                        ( ( '))          |__>--<__|    |                 /' _---_~\
+//                     `-)) )) (           |__>--<__|    | -Tua Xiong    /'  /     ~\`\
+//                    ,/,'//( (             \__>--<__\    \            /'  //        ||
+//                  ,( ( ((, ))              ~-__>--<_~-_  ~--____---~' _/'/        /'
+//                `~/  )` ) ,/|                 ~-_~>--<_/-__       __-~ _/
+//              ._-~//( )/ )) `                    ~~-'_/_/ /~~~~~~~__--~
+//               ;'( ')/ ,)(                              ~~~~~~~~~~
+//              ' ') '( (/
+// ***            '   '  `                   HERE BE DRAGONS                                ***
 // ********************************************************************************************
 
   //-------------------- Subscriptions ----------------------http://developer.kynetx.com/display/docs/Subscriptions+in+the+wrangler+Service
@@ -1368,7 +1400,6 @@ ruleset v1_wrangler {
   // my_role
   // subscriber_role
 
-   // creates inbound and sends event for other pico to create inbound.
   rule subscribeNameCheck {
     select when wrangler subscription
     pre {
@@ -1390,6 +1421,7 @@ ruleset v1_wrangler {
    // }
   }
 
+   // creates inbound and sends event for other pico to create inbound.
   rule subscribe {// need to change varibles to snake case.
     select when wrangler checked_name_subscription
    pre {

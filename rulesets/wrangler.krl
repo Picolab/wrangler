@@ -345,12 +345,13 @@ ruleset v1_wrangler {
     //pdsProfiles = pds:profile();
     //pdsProfile = pdsProfiles{"profile"};
     //name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | ent:name ;
-    name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    //name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    return = ent:name ;
     {
      // 'status' : pdsProfiles{"status"},
       'status' : "",
-      'picoName' : name
-    }
+      'picoName' : return
+    }.klog("name :")
   }
 
   attributes = function() {

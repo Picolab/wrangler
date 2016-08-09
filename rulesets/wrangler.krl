@@ -110,8 +110,8 @@ ruleset v1_wrangler {
       pico_eci = (name eq "none") => eci
                                    | picoECIFromName(name);
 
-      deleted = pci:delete_ruleset(pico_eci, rids);
-      send_directive("uninstalled #{rids}");
+      deleted = pci:delete_ruleset(pico_eci, rids.klog("rids "));
+      send_directive("uninstalled #{rids} in pico #{pico_eci}");
     }
 
 // ********************************************************************************************

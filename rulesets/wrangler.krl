@@ -369,14 +369,15 @@ ruleset v1_wrangler {
 
   
   deleteChild = defaction(name) {
-
-    child_rec = ent:my_children.filter(function(rec){rec{"name"} eq name})
+    results = children();
+    ent_my_children = results{"children"};
+    child_rec = ent_my_children.filter(function(rec){rec{"name"} eq name})
                                .head()
              .defaultsTo({})
                                .klog("Child to delete: ");
 
     eci_to_delete = child_rec{"eci"};
-    new_child_list = ent:my_children
+    new_child_list = ent_my_children
                                .filter(function(rec){rec{"name"} neq name})
                                .klog("Children to keep: ")
              .pset(ent:my_children)

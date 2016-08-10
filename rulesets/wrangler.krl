@@ -698,6 +698,7 @@ ruleset v1_wrangler {
     checkSubscriptionName = function(name){
           sub = subscriptions(name, null, null);
           subs = sub{"subscriptions"};
+          //b = subs => "true" | "false";
           encoded_sub = subs.encode().klog("encode subs :");
           return = encoded_sub.match(re/{}/);
           //(subs eq {});

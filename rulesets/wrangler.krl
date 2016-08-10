@@ -696,7 +696,7 @@ ruleset v1_wrangler {
 
     }      
     checkSubscriptionName = function(name){
-          sub = subscriptions(name);
+          sub = subscriptions(name, null, null);
           subs = sub{"subscriptions"};
           encoded_sub = subs.encode().klog("encode subs :");
           return = encoded_sub.match(re/{}/);
@@ -704,6 +704,7 @@ ruleset v1_wrangler {
           return.klog("results : ");
 
     }
+    // this only creates 5 random names, if none are unique the function will fail.... but thats unlikely. 
     randomSubscriptionName = function(){
         n = 5;
         array = (0).range(n).map(function(n){
@@ -1357,10 +1358,10 @@ ruleset v1_wrangler {
 //                                '~~--_/      _-~/- |/ \   '-~ \
 //                               {\__--_/}    / \\_>-|)<__\      \
 //                               /'   (_/  _-~  | |__>--<__|      |
-//                              |   _/) )-~     | |__>--<__|      |
+//                              |*  */) )-~     | |__>--<__|      |
 //                              / /~ ,_/       / /__>---<__/      |
 //                             o-o _//        /-~_>---<__-~      /
-//                             (^(~          /~_>---<__-      _-~
+//                             (^(~_/        /~_>---<__-      _-~
 //                            ,/|           /__>--<__/     _-~
 //                         ,//('(          |__>--<__|     /                  .----_
 //                        ( ( '))          |__>--<__|    |                 /' _---_~\
@@ -1407,18 +1408,18 @@ ruleset v1_wrangler {
       attr = event:attrs();
       attrs = attr.put({"name":name});
     }
-    //if(checkSubscriptionName(name)) then
+    if(checkSubscriptionName(name)) then
     {
       noop();
     }
-    always{
+    fired{
       raise wrangler event 'checked_name_subscription'
        attributes attrs
     }
-    //else{
-    //  error warn "douplicate subscription name, failed to send request "+name;
-    //  log(">> could not send request #{name} >>");
-   // }
+    else{
+      error warn "douplicate subscription name, failed to send request "+name;
+      log(">> could not send request #{name} >>");
+    }
   }
 
    // creates inbound and sends event for other pico to create inbound.

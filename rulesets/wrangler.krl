@@ -1,18 +1,18 @@
 // operators are camel case, variables are snake case.
     
-ruleset b507199x5 {
+ruleset v1_wrangler {
   meta {
-    name "wrangler"
+    name "Wrangler Core"
     description <<
-      Wrangler ( ) Module
+Wrangler Core Module
 
-      use module  b507199x5 alias wrangler
+   use module v1_wrangler.dev alias wrangler
 
-      This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
-      When a PICO is created or authenticated this ruleset
-      will be installed into the Personal Cloud to provide an Event layer.
-    >>
-    author "BYUPICOLab"
+This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
+When a PICO is created or authenticated this ruleset will be installed to provide essential
+services.
+>>
+    author "BYU Pico Lab"
     
     logging off
 
@@ -24,7 +24,7 @@ ruleset b507199x5 {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -110,8 +110,8 @@ ruleset b507199x5 {
       pico_eci = (name eq "none") => eci
                                    | picoECIFromName(name);
 
-      deleted = pci:delete_ruleset(pico_eci, rids);
-      send_directive("uninstalled #{rids}");
+      deleted = pci:delete_ruleset(pico_eci, rids.klog("rids "));
+      send_directive("uninstalled #{rids} in pico #{pico_eci}");
     }
 
 // ********************************************************************************************
@@ -125,9 +125,9 @@ ruleset b507199x5 {
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       
-      // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+      // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
       attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-              'cid' |
+              'eci' |
               'name';
       channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
       filtered_channels = channel_list.filter(function(channel){
@@ -146,7 +146,7 @@ ruleset b507199x5 {
     eciFromName = function(name){
       results = channel(name);
       channel_single = results{'channels'};
-      channel_single{'cid'};
+      channel_single{'eci'};
     }
     // always return a eci weather given a eci or name
     alwaysEci = function(value){
@@ -160,12 +160,23 @@ ruleset b507199x5 {
     channel = function(id,collection,filtered) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
-      channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      
+      chans = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
+                                          //  chan = channel.put(["eci"],channel{"eci"}); 
+                                          //  chann = chan.delete(["eci"]);
+                                          //  chann // return reconstructed channel 
+                                            {
+                                              "last_active":channel{"last_active"},
+                                              "policy":channel{"policy"},
+                                              "name":channel{"name"},
+                                              "type":channel{"type"},
+                                              "eci":channel{"cid"},
+                                              "attributes":channel{"attributes"}
+                                              } });
       single_channel = function(value,chans){
-         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-                'cid' |
+                'eci' |
                 'name';
         channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){
@@ -189,7 +200,9 @@ ruleset b507199x5 {
     }
     channelAttributes = function(eci,name) {
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
-      results = pci:get_eci_attributes(Eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
+      results = pci:get_eci_attributes(Eci
+        //.klog("get_eci_attributes passed eci: ")
+        ).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
         'attributes' : results
@@ -252,22 +265,71 @@ ruleset b507199x5 {
   //-------------------- Picos --------------------
    /// should children and parent functions return a map instead of an array??
   children = function() {
-    self = meta:eci().klog("meta eci for list_children:  ");
+    self = meta:eci()
+    //.klog("meta eci for list_children:  ")
+    ;
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
 
-    my_children = ent:my_children.filter(function(child){
-                                 this_eci = child{"eci"};
-				 children.filter(function(rec){
-				                   rec[0] eq this_eci
-                                                 })
-					 .length() > 0
-                               })
+    ent_my_children = ent:my_children;
+    my_child_list = children.map(function(tuple)
+                                          {
+                                            this_eci = tuple[0];
+                                            return1 = ent_my_children.filter(function(ent_child)
+                                              {
+                                                ent_child{"eci"} eq this_eci
+                                              })
+                                            //.klog("first filter: ")
+                                            ;
+                                            return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
+                                                              {  // if child with no name return with unknown name structure
+                                                                "name": "unknown",
+                                                                "eci": this_eci
+                                                              }
+                                            return
+                                            //.klog("second filter: ")
+                                          })
+                                          //.klog("map : ")
+                                          ;
 
     {
       'status' : (children neq "error"),
-      'children' : my_children
+      'children' : my_child_list
     }
   }
+  children_FixitFelix = function() {
+    self = meta:eci().klog("meta eci for list_children:  ");
+    children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
+    ent_my_children = ent:my_children;
+    my_child_list = children.map(function(tuple)
+                                          {
+                                            this_eci = tuple[0];
+                                            return1 = ent_my_children.filter(function(ent_child)
+                                              {
+                                                ent_child{"eci"} eq this_eci
+                                              }).klog("first filter: ");
+                                            return = /*return1.length() > 0 => return1[0] |*/ pdsName(this_eci,return1[0]);// if child with name return the name structure  
+                                                              
+                                            return.klog("second filter: ")
+                                          }).klog("map : ");
+    foo = my_child_list.pset(ent:my_children)
+    {
+      'status' : (children neq "error"),
+      'children' : my_child_list
+    }
+  }
+
+  pdsName = function(this_eci,child) {
+    results = skyQuery(this_eci, null ,"b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
+    oldentnamestruc = results{"skyCloudError"}.isnull() => results | {"picoName":{}};
+    oldentname = oldentnamestruc{"picoName"}.klog("child name");
+    current_name = child{"name"}.typeof() eq 'str' => child{"name"}|"unknown";
+    name = (oldentname.typeof() eq 'str') => oldentname | current_name;
+    { 
+      "name": name,
+      "eci": this_eci
+    }
+  }
+
   parent = function() {
     self = meta:eci();
     parent = pci:list_parent(self).defaultsTo("error", standardError("pci parent retrieval failed"));
@@ -292,12 +354,13 @@ ruleset b507199x5 {
     //pdsProfiles = pds:profile();
     //pdsProfile = pdsProfiles{"profile"};
     //name = (pdsProfile.typeof() eq 'hash') => pdsProfile{"name"} | ent:name ;
-    name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    //name =  ent:name.defaultsTo("unknownName",standardError("pci parent retrieval failed"));
+    return = ent:name ;
     {
      // 'status' : pdsProfiles{"status"},
       'status' : "",
-      'picoName' : name
-    }
+      'picoName' : return
+    }.klog("name :")
   }
 
   attributes = function() {
@@ -315,18 +378,19 @@ ruleset b507199x5 {
 
   
   deleteChild = defaction(name) {
-
-    child_rec = ent:my_children.filter(function(rec){rec{"name"} eq name})
+    results = children();
+    ent_my_children = results{"children"};
+    child_rec = ent_my_children.filter(function(rec){rec{"name"} eq name})
                                .head()
-			       .defaultsTo({})
+             .defaultsTo({})
                                .klog("Child to delete: ");
 
     eci_to_delete = child_rec{"eci"};
-    new_child_list = ent:my_children
+    new_child_list = ent_my_children
                                .filter(function(rec){rec{"name"} neq name})
                                .klog("Children to keep: ")
-			       .pset(ent:my_children)
-			       ;
+             .pset(ent:my_children)
+             ;
 
     noret = pci:delete_pico(eci_to_delete, {"cascade":1});
     send_directive("deleted pico #{eci_to_delete}");
@@ -337,7 +401,7 @@ ruleset b507199x5 {
                 "discription": "Wrangler base prototype"
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ "b507199x5.dev",
+      "rids": [ "v1_wrangler.dev",
                 "b507199x8.dev" // pds
                 //"b507805x0.dev" developmet wrangler
                  //"a169x625"
@@ -454,7 +518,7 @@ ruleset b507199x5 {
 
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
-    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype };// if no prototypes set to map so we can use put()
+    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype }; // if no prototypes set to map so we can use put()
     prototypes = init_prototypes.put(['base'],basePrototype);
     {
       'status' : true,
@@ -489,13 +553,13 @@ ruleset b507199x5 {
     my_children = ent:my_children => ent:my_children | []; // first child
     foo = my_children.append(child_rec)
                      .klog("New Child List: ")
-		     .pset(ent:my_children);
+         .pset(ent:my_children);
     // bootstrap child
     //combine new_ruleset calls 
     joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
-    event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
+    event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
   }
 
@@ -517,17 +581,24 @@ ruleset b507199x5 {
             (attributes.isnull()) => null |
             (attributes{'subscription_name'}.isnull() eq false); 
           };
-        isSubscription(channel).klog("isSubscriptions(): ");
+        isSubscription(channel)
+        //.klog("isSubscriptions(): ")
+        ;
 
       }); 
       // reconstruct list, to have a inbound in attributes.
       subs = filtered_channels.map( function(channel){
-           channel.put(["attributes","inbound_eci"],channel{"cid"})
+           channel.put(["attributes","inbound_eci"],channel{"eci"})
                   .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash
       subsript = subs.map( function(channel){
-          {channel{'name'}:channel{'attributes'}}
+      //    {channel{'name'}:channel{'attributes'}}
+          attributes = channel{'attributes'};
+          //subscription_name = attributes{'subscription_name'};
+          {
+            attributes{'subscription_name'} : attributes
+          }
       });
       /*  
       {"18:floppy" :
@@ -552,21 +623,31 @@ ruleset b507199x5 {
       };
 
       single_subscription = function(value,subs){
-         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
-        parts = value.split(re/:/).klog('parts of id');
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
+        parts = value.split(re/:/)
+        //.klog('parts of id')
+        ;
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'inbound_eci' |
-                (parts.length() > 1) => // channel name of subscriptions are namespace:uniqename 
+                (parts.length() > 1) => // channel name of subscriptions are namespace:subscription_name 
                    "channel_name" // is channel name
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
-          attr_value = type(subscription,attribute.klog('attribute ')).klog('types function: ');
-          (attr_value eq value).klog('found ? ');
+          attr_value = type(subscription,attribute
+            //.klog('attribute ')
+            )
+            //.klog('types function: ')
+          ;
+          (attr_value eq value)
+          //.klog('found ? ')
+          ;
           }); 
 
-        result = filtered_subscriptions.klog('filtered_subscriptions: ')
-                .head().klog('head: ') 
+        result = filtered_subscriptions
+        //.klog('filtered_subscriptions: ')
+                .head()
+                //.klog('head: ') 
                 .defaultsTo({},standardError("no subscription found, by .head()"));
         (result);
       };
@@ -581,7 +662,7 @@ ruleset b507199x5 {
 
     };
 
-    randomName = function(namespace){
+   /* randomName = function(namespace){
         n = 5;
         array = (0).range(n).map(function(n){
           (random:word());
@@ -593,24 +674,22 @@ ruleset b507199x5 {
 
         unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
         (namespace +':'+ unique_name);
-    }
-    // optimize by taking a list of names, to prevent multiple network calls for channels
+    }*/
+    // optimize by taking a list of names, to prevent multiple network calls to channels when checking for unique name
     checkName = function(name){
-          chan = channel();
+          chan = channel(name, null, null);
           //channels = channels(); worse bug ever!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          // in our meetings we said to check name_space, how is that done?
-          
           /*{
           "last_active": 1426286486,
           "name": "Oauth Developer ECI",
           "type": "OAUTH",
-          "cid": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
+          "eci": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
           "attributes": null}
           */
-          chs = chan{"channels"}.defaultsTo("no Channel",standardOut("no channel found"));
-          names = chs.none(function(channel){channel{"name"} eq name});
-          (names);
-
+          chs = chan{"channels"}.defaultsTo({},standardOut("no channel found"));
+          encoded_chan = chs.encode().klog("encode chs :");
+          return = encoded_chan.match(re/{}/);
+          (return);
     }
 
     randomPicoName = function(){
@@ -633,29 +712,40 @@ ruleset b507199x5 {
           
           names = picos.none(function(child){
             eci = child[0]; 
-            name_return = skyQuery(eci,meta:host(),"b507199x5.dev","name",noParam);
+            name_return = skyQuery(eci,meta:host(),"v1_wrangler.dev","name",noParam);
             pico_name = name_return{"picoName"};
             (pico_name eq name)
             });
           (names).klog("results : ");
 
     }      
-    checkSubscriptionName = function(name){
-          sub = subscriptions(name);
-          subs = sub{"subscriptions"};
-          encoded_sub = subs.encode().klog("encode subs :");
-          return = encoded_sub.match(re/{}/);
+    checkSubscriptionName = function(name,name_space){
+        checkName(name_space + ":" + name);
+
+
+          //sub = subscriptions( null, "name_space", name_space);
+          //subs = sub{"subscriptions"};//array
+          //sub = subs.filter( function(subcription){
+          //                            sub_values = subcription.values();
+          //                            (sub_values{"subscription_name"} eq name)
+          //  });
+
+          //b = subs => "true" | "false";
+          //encoded_sub = subs.encode().klog("encode subs :");
+          //return = encoded_sub.match(re/{}/);
           //(subs eq {});
-          return.klog("results : ");
+          //return.klog("results : ");
 
     }
-    randomSubscriptionName = function(){
+    // this only creates 5 random names, if none are unique the function will fail.... but thats unlikely. 
+
+    randomSubscriptionName = function(name_space){
         n = 5;
         array = (0).range(n).map(function(n){
           (random:word());
           });
         names= array.collect(function(name){
-          (checkSubscriptionName( name )) => "unique" | "taken";
+          (checkSubscriptionName( name, name_space )) => "unique" | "taken";
         });
         name = names{"unique"} || [];
 
@@ -742,7 +832,9 @@ ruleset b507199x5 {
     select when wrangler uninstall_rulesets_requested
     pre {
      // eci = meta:eci();
-      rids = event:attr("rids").defaultsTo("", ">>  >> ").klog(">> rids attribute <<");
+      rids = event:attr("rids").defaultsTo("", ">>  >> ")
+      //.klog(">> rids attribute <<")
+      ;
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     { 
@@ -778,7 +870,7 @@ ruleset b507199x5 {
       attrs =  decodeDefaults(attributes);
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      decoded_policy = policy.decode() || policy;
       options = {
         'name' : channel_name,
         'eci_type' : type,
@@ -820,7 +912,7 @@ ruleset b507199x5 {
       attrs =  decodeDefaults(attributes);
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      decoded_policy = policy.decode() || policy;
       options = {
         'name' : channel_name,
         'eci_type' : type,
@@ -1231,8 +1323,10 @@ ruleset b507199x5 {
 
   rule addPrototype {
     select when wrangler add_prototype
+            or  wrangler update_prototype
     pre {
-
+      prototype = event:attr("prototype");
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();
@@ -1243,10 +1337,11 @@ ruleset b507199x5 {
             attributes event:attrs();
     }
   }
-  rule updatePrototype {
+ /* rule updatePrototype {
     select when wrangler update_prototype
     pre {
-
+      prototype = event:attr("prototype");
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();
@@ -1256,11 +1351,11 @@ ruleset b507199x5 {
     raise wrangler event Prototype_type_updated
             attributes event:attrs();
     }
-  }
+  }*/
   rule removePrototype {
-    select when wrangler add_prototype
+    select when wrangler remove_prototype
     pre {
-
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();
@@ -1274,11 +1369,11 @@ ruleset b507199x5 {
   rule deleteChild {
     select when wrangler child_deletion
     pre {
-      eciDeleted = event:attr("deletionTarget").defaultsTo("", standardError("missing pico for deletion"));
+      pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
     }
-    if(eciDeleted neq "") then
+    if(pico_name neq "") then
     {
-      deletePico(eciDeleted);
+      deleteChild(pico_name);
     }
     notfired {
       log "deletion failed because no child was specified";
@@ -1287,6 +1382,36 @@ ruleset b507199x5 {
 
 // ********************************************************************************************
 // ***                                      Subscriptions                                   ***
+//                                         _
+//                                        ==(W{==========-      /===-
+//                                          ||  (.--.)         /===-_---~~~~~~~~~------____
+//                                          | \_,|**|,__      |===-~___                _,-' `
+//                             -==\\        `\ ' `--'   ),    `//~\\   ~~~~`---.___.-~~
+//                         ______-==|        /`\_. .__/\ \    | |  \\           _-~`
+//                   __--~~~  ,-/-==\\      (   | .  |~~~~|   | |   `\        ,'
+//                _-~       /'    |  \\     )__/==0==-\<>/   / /      \      /
+//              .'        /       |   \\      /~\___/~~\/  /' /        \   /'
+//             /  ____  /         |    \`\.__/-~~   \  |_/'  /          \/'
+//            /-'~    ~~~~~---__  |     ~-/~         ( )   /'        _--~`
+//                              \_|      /        _) | ;  ),   __--~~
+//                                '~~--_/      _-~/- |/ \   '-~ \
+//                               {\__--_/}    / \\_>-|)<__\      \
+//                               /'   (_/  _-~  | |__>--<__|      |
+//                              |*  */) )-~     | |__>--<__|      |
+//                              / /~ ,_/       / /__>---<__/      |
+//                             o-o _//        /-~_>---<__-~      /
+//                             (^(~_/        /~_>---<__-      _-~
+//                            ,/|           /__>--<__/     _-~
+//                         ,//('(          |__>--<__|     /                  .----_
+//                        ( ( '))          |__>--<__|    |                 /' _---_~\
+//                     `-)) )) (           |__>--<__|    | -Tua Xiong    /'  /     ~\`\
+//                    ,/,'//( (             \__>--<__\    \            /'  //        ||
+//                  ,( ( ((, ))              ~-__>--<_~-_  ~--____---~' _/'/        /'
+//                `~/  )` ) ,/|                 ~-_~>--<_/-__       __-~ _/
+//              ._-~//( )/ )) `                    ~~-'_/_/ /~~~~~~~__--~
+//               ;'( ')/ ,)(                              ~~~~~~~~~~
+//              ' ') '( (/
+// ***            '   '  `                   HERE BE DRAGONS                                ***
 // ********************************************************************************************
 
   //-------------------- Subscriptions ----------------------http://developer.kynetx.com/display/docs/Subscriptions+in+the+wrangler+Service
@@ -1315,28 +1440,29 @@ ruleset b507199x5 {
   // my_role
   // subscriber_role
 
-   // creates inbound and sends event for other pico to create inbound.
   rule subscribeNameCheck {
     select when wrangler subscription
     pre {
-      name   = event:attr("name").defaultsTo(randomSubscriptionName(), standardError("channel_name"));
+      name_space = event:attr("name_space");
+      name   = event:attr("name").defaultsTo(randomSubscriptionName(name_space), standardError("channel_name"));
       attr = event:attrs();
       attrs = attr.put({"name":name});
     }
-    //if(checkSubscriptionName(name)) then
+    if(checkSubscriptionName(name,name_space)) then
     {
       noop();
     }
-    always{
+    fired{
       raise wrangler event 'checked_name_subscription'
        attributes attrs
     }
-    //else{
-    //  error warn "douplicate subscription name, failed to send request "+name;
-    //  log(">> could not send request #{name} >>");
-   // }
+    else{
+      error warn "douplicate subscription name, failed to send request "+name;
+      log(">> could not send request #{name} >>");
+    }
   }
 
+   // creates inbound and sends event for other pico to create inbound.
   rule subscribe {// need to change varibles to snake case.
     select when wrangler checked_name_subscription
    pre {
@@ -1352,10 +1478,11 @@ ruleset b507199x5 {
 
      // // destination for external event
       subscription_map = {
-            "cid" : subscriber_eci
+            "eci" : subscriber_eci
       };
       // create unique_name for channel
-      unique_name = randomName(name_space);
+      //unique_name = randomName(name_space);
+      unique_name = name_space + ":" + name;
 
       // build pending subscription entry
 
@@ -1437,7 +1564,9 @@ ruleset b507199x5 {
           {};
           // should this go into the hash above?
       unique_name = (status eq "inbound") => 
-            randomName(pending_subscriptions{'name_space'}) |
+            //randomName(pending_subscriptions{'name_space'}) 
+            name_space + ":" + event:attr("name")
+            |
             channel_name;
       options = {
         'name' : unique_name, 
@@ -1478,13 +1607,13 @@ ruleset b507199x5 {
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
       results = channel(channel_name,undefined,undefined);
       inbound = results{'channels'};
-      inbound_eci = inbound{'cid'}; // this is why we call channel and not subscriptionAttributes.
+      inbound_eci = inbound{'eci'}; // this is why we call channel and not subscriptionAttributes.
       attributes = inbound{'attributes'};
       status = attributes{'status'};
       //inbound_eci = eciFromName(channel_name).klog("back eci: ");
       outbound_eci = attributes{'outbound_eci'}; // whats better?
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription Map: ");
     }// this is a possible place to create a channel for subscription
     if (outbound_eci neq "no outbound_eci") then
@@ -1557,7 +1686,7 @@ ruleset b507199x5 {
       results = channel(channel_name);
       inbound = results{'channels'};
       // look up back channel for canceling outbound.
-      inbound_eci = inbound{'cid'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
+      inbound_eci = inbound{'eci'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
       attributes = inbound{'attributes'};
       // get outbound_eci for subscription_map // who we will notify
@@ -1566,7 +1695,7 @@ ruleset b507199x5 {
       // raise remove event to self with eci from name .
 
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription_map: ");
     }
     //if( eci neq "No outbound_eci") then // always try to notify other party
@@ -1575,7 +1704,7 @@ ruleset b507199x5 {
         with attrs = {
           // this will catch the problem with canceling outbound
           "eci"  : inbound_eci, // tabo to pass this but other pico has no other way to know ...
-          "status": status//"outbound"
+          "status": status //"outbound"
         };
     }
     fired {
@@ -1590,6 +1719,7 @@ ruleset b507199x5 {
   } 
   rule removeSubscription {
     select when wrangler subscription_removal
+             or wrangler subscription_deletion_requested
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));
@@ -1608,7 +1738,7 @@ ruleset b507199x5 {
           }); 
         result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
         // a channel with the correct outbound_eci
-        return = result{'cid'} // the correct eci to be removed.
+        return = result{'eci'} // the correct eci to be removed.
         (return);
       };
 

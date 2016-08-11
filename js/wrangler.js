@@ -31,37 +31,39 @@
  * @return {String} returns the cid, if no cid passed then check_eci returns wrangler.defaultECI.
  */
     var check_eci = function(cid) {
-       var res = cid || wrangler.defaultECI;
-       if (res === "none") {
-           throw "No wrangler event channel identifier (ECI) defined";
-       }
-       return res;
-   };
-
-   var mkEsl = function(parts,host) {
-    if (wrangler.host === "none") { // I dont think this will ever be true.....
-        throw "No wrangler host defined";
-    }
-    var Host = ;
-    parts.unshift(host); // adds host to beginning of array
-    var res = 'https://'+ parts.join("/"); // returns a url structure string
-    return res;
+	var res = cid || wrangler.defaultECI;
+	if (res === "none") {
+            throw "No wrangler event channel identifier (ECI) defined";
+	}
+	return res;
     };
 
+    var mkEsl = function(parts,host) {
+	if (wrangler.host === "none") { // I dont think this will ever be true.....
+            throw "No wrangler host defined";
+	}
+	parts.unshift(host); // adds host to beginning of array
+	var res = 'https://'+ parts.join("/"); // returns a url structure string
+	return res;
+    };
+
+    
     get_rid = function(name) {
         
         var rids = {
-            "rulesets": {"prod": "b507199x5.prod", 
-                          "dev": "b507199x5.dev"
-            },
+            "rulesets": {"prod": "v1_wrangler.prod", 
+                         "dev": "v1_wrangler.dev"
+			},
             "bootstrap":{"prod": "b507199x1.prod", 
-                          "dev": "b507199x1.dev"
-            }
+                         "dev": "b507199x1.dev"
+			}
         };
 
-        return rids[name].dev;
+        return rids[name].prod;
     };
 
+
+    
     // ------------------------------------------------------------------------
     // Raise Sky Event
 
@@ -297,6 +299,23 @@
         wrangler.attributes = function(parameters, postFunction, options)
     {
         return wrangler.skyQuery(get_rid("rulesets"), "attributes", parameters, postFunction , options); 
+    };
+
+        wrangler.prototypes = function(parameters, postFunction, options)
+    {
+        return wrangler.skyQuery(get_rid("rulesets"), "prototypes", parameters, postFunction , options); 
+    };
+        wrangler.addPrototype = function(parameters, postFunction, options)
+    {
+        return wrangler.raiseEvent("wrangler", "add_prototype", eventAttributes, postFunction, options);
+    };
+        wrangler.updatePrototype = function(parameters, postFunction, options)
+    {
+        return wrangler.raiseEvent("wrangler", "update_prototype", eventAttributes, postFunction, options);
+    };
+        wrangler.removePrototype = function(parameters, postFunction, options)
+    {
+        return wrangler.raiseEvent("wrangler", "remove_prototype", eventAttributes, postFunction, options);
     };
 
      wrangler.createChild = function( eventAttributes, postFunction, options)

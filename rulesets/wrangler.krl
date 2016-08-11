@@ -4,15 +4,15 @@ ruleset v1_wrangler {
   meta {
     name "Wrangler Core"
     description <<
-      Wrangler ( ) Module
+Wrangler Core Module
 
-      use module  v1_wrangler.dev alias wrangler
+   use module v1_wrangler.dev alias wrangler
 
-      This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
-      When a PICO is created or authenticated this ruleset
-      will be installed into the Personal Cloud to provide an Event layer.
-    >>
-    author "BYUPICOLab"
+This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
+When a PICO is created or authenticated this ruleset will be installed to provide essential
+services.
+>>
+    author "BYU Pico Lab"
     
     logging off
 
@@ -24,7 +24,7 @@ ruleset v1_wrangler {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -1642,7 +1642,7 @@ ruleset v1_wrangler {
       results = channel(channel_name);
       inbound = results{'channels'};
       // look up back channel for canceling outbound.
-      inbound_eci = inbound{'cid'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
+      inbound_eci = inbound{'eci'}.klog("inbound_eci: "); // this is why we call channel and not subscriptionAttributes.
       // get attr from channel
       attributes = inbound{'attributes'};
       // get outbound_eci for subscription_map // who we will notify
@@ -1651,7 +1651,7 @@ ruleset v1_wrangler {
       // raise remove event to self with eci from name .
 
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription_map: ");
     }
     //if( eci neq "No outbound_eci") then // always try to notify other party
@@ -1660,7 +1660,7 @@ ruleset v1_wrangler {
         with attrs = {
           // this will catch the problem with canceling outbound
           "eci"  : inbound_eci, // tabo to pass this but other pico has no other way to know ...
-          "status": status//"outbound"
+          "status": status //"outbound"
         };
     }
     fired {

@@ -137,8 +137,9 @@
 
         var eci = check_eci(options.eci);
         //url constructor
+        console.log("options ",options);
         var esl = mkEsl(
-          //['sky/cloud',
+          //['sky/cloud']
           [ options._path || wrangler.functionPath ,
             module,
             func_name

@@ -1326,6 +1326,7 @@ services.
             or  wrangler update_prototype
     pre {
       prototype = event:attr("prototype");
+      proto_obj = prototype.decode();
       prototype_name = event:attr("prototype_name");
     }
     {

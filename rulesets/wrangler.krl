@@ -125,7 +125,7 @@ services.
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       
-      // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+      // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
       attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               'eci' |
               'name';
@@ -161,9 +161,9 @@ services.
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       chans = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      channels = chans.map(function(channel){ // reconstruct each channel to have eci not cid
-                                          //  chan = channel.put(["eci"],channel{"cid"}); 
-                                          //  chann = chan.delete(["cid"]);
+      channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
+                                          //  chan = channel.put(["eci"],channel{"eci"}); 
+                                          //  chann = chan.delete(["eci"]);
                                           //  chann // return reconstructed channel 
                                             {
                                               "last_active":channel{"last_active"},
@@ -174,7 +174,7 @@ services.
                                               "attributes":channel{"attributes"}
                                               } });
       single_channel = function(value,chans){
-         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'eci' |
                 'name';
@@ -582,7 +582,12 @@ services.
       });
       // name to attributes hash
       subsript = subs.map( function(channel){
-          {channel{'name'}:channel{'attributes'}}
+      //    {channel{'name'}:channel{'attributes'}}
+          attributes = channel{'attributes'};
+          //subscription_name = attributes{'subscription_name'};
+          {
+            attributes{'subscription_name'} : attributes
+          }
       });
       /*  
       {"18:floppy" :
@@ -607,11 +612,11 @@ services.
       };
 
       single_subscription = function(value,subs){
-         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
+         // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
         parts = value.split(re/:/).klog('parts of id');
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'inbound_eci' |
-                (parts.length() > 1) => // channel name of subscriptions are namespace:uniqename 
+                (parts.length() > 1) => // channel name of subscriptions are namespace:subscription_name 
                    "channel_name" // is channel name
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
@@ -636,7 +641,7 @@ services.
 
     };
 
-    randomName = function(namespace){
+   /* randomName = function(namespace){
         n = 5;
         array = (0).range(n).map(function(n){
           (random:word());
@@ -648,24 +653,22 @@ services.
 
         unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
         (namespace +':'+ unique_name);
-    }
-    // optimize by taking a list of names, to prevent multiple network calls for channels
+    }*/
+    // optimize by taking a list of names, to prevent multiple network calls to channels when checking for unique name
     checkName = function(name){
-          chan = channel();
+          chan = channel(name, null, null);
           //channels = channels(); worse bug ever!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          // in our meetings we said to check name_space, how is that done?
-          
           /*{
           "last_active": 1426286486,
           "name": "Oauth Developer ECI",
           "type": "OAUTH",
-          "cid": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
+          "eci": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
           "attributes": null}
           */
-          chs = chan{"channels"}.defaultsTo("no Channel",standardOut("no channel found"));
-          names = chs.none(function(channel){channel{"name"} eq name});
-          (names);
-
+          chs = chan{"channels"}.defaultsTo({},standardOut("no channel found"));
+          encoded_chan = chs.encode().klog("encode chs :");
+          return = encoded_chan.match(re/{}/);
+          (return);
     }
 
     randomPicoName = function(){
@@ -695,22 +698,33 @@ services.
           (names).klog("results : ");
 
     }      
-    checkSubscriptionName = function(name){
-          sub = subscriptions(name);
-          subs = sub{"subscriptions"};
-          encoded_sub = subs.encode().klog("encode subs :");
-          return = encoded_sub.match(re/{}/);
+    checkSubscriptionName = function(name,name_space){
+        checkName(name_space + ":" + name);
+
+
+          //sub = subscriptions( null, "name_space", name_space);
+          //subs = sub{"subscriptions"};//array
+          //sub = subs.filter( function(subcription){
+          //                            sub_values = subcription.values();
+          //                            (sub_values{"subscription_name"} eq name)
+          //  });
+
+          //b = subs => "true" | "false";
+          //encoded_sub = subs.encode().klog("encode subs :");
+          //return = encoded_sub.match(re/{}/);
           //(subs eq {});
-          return.klog("results : ");
+          //return.klog("results : ");
 
     }
-    randomSubscriptionName = function(){
+    // this only creates 5 random names, if none are unique the function will fail.... but thats unlikely. 
+
+    randomSubscriptionName = function(name_space){
         n = 5;
         array = (0).range(n).map(function(n){
           (random:word());
           });
         names= array.collect(function(name){
-          (checkSubscriptionName( name )) => "unique" | "taken";
+          (checkSubscriptionName( name, name_space )) => "unique" | "taken";
         });
         name = names{"unique"} || [];
 
@@ -1357,10 +1371,10 @@ services.
 //                                '~~--_/      _-~/- |/ \   '-~ \
 //                               {\__--_/}    / \\_>-|)<__\      \
 //                               /'   (_/  _-~  | |__>--<__|      |
-//                              |   _/) )-~     | |__>--<__|      |
+//                              |*  */) )-~     | |__>--<__|      |
 //                              / /~ ,_/       / /__>---<__/      |
 //                             o-o _//        /-~_>---<__-~      /
-//                             (^(~          /~_>---<__-      _-~
+//                             (^(~_/        /~_>---<__-      _-~
 //                            ,/|           /__>--<__/     _-~
 //                         ,//('(          |__>--<__|     /                  .----_
 //                        ( ( '))          |__>--<__|    |                 /' _---_~\
@@ -1403,22 +1417,23 @@ services.
   rule subscribeNameCheck {
     select when wrangler subscription
     pre {
-      name   = event:attr("name").defaultsTo(randomSubscriptionName(), standardError("channel_name"));
+      name_space = event:attr("name_space");
+      name   = event:attr("name").defaultsTo(randomSubscriptionName(name_space), standardError("channel_name"));
       attr = event:attrs();
       attrs = attr.put({"name":name});
     }
-    //if(checkSubscriptionName(name)) then
+    if(checkSubscriptionName(name,name_space)) then
     {
       noop();
     }
-    always{
+    fired{
       raise wrangler event 'checked_name_subscription'
        attributes attrs
     }
-    //else{
-    //  error warn "douplicate subscription name, failed to send request "+name;
-    //  log(">> could not send request #{name} >>");
-   // }
+    else{
+      error warn "douplicate subscription name, failed to send request "+name;
+      log(">> could not send request #{name} >>");
+    }
   }
 
    // creates inbound and sends event for other pico to create inbound.
@@ -1440,7 +1455,8 @@ services.
             "eci" : subscriber_eci
       };
       // create unique_name for channel
-      unique_name = randomName(name_space);
+      //unique_name = randomName(name_space);
+      unique_name = name_space + ":" + name;
 
       // build pending subscription entry
 
@@ -1522,7 +1538,9 @@ services.
           {};
           // should this go into the hash above?
       unique_name = (status eq "inbound") => 
-            randomName(pending_subscriptions{'name_space'}) |
+            //randomName(pending_subscriptions{'name_space'}) 
+            name_space + ":" + event:attr("name")
+            |
             channel_name;
       options = {
         'name' : unique_name, 

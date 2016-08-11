@@ -200,7 +200,9 @@ services.
     }
     channelAttributes = function(eci,name) {
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
-      results = pci:get_eci_attributes(Eci.klog("get_eci_attributes passed eci: ")).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
+      results = pci:get_eci_attributes(Eci
+        //.klog("get_eci_attributes passed eci: ")
+        ).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
         'attributes' : results
@@ -263,7 +265,9 @@ services.
   //-------------------- Picos --------------------
    /// should children and parent functions return a map instead of an array??
   children = function() {
-    self = meta:eci().klog("meta eci for list_children:  ");
+    self = meta:eci()
+    //.klog("meta eci for list_children:  ")
+    ;
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
 
     ent_my_children = ent:my_children;
@@ -273,14 +277,19 @@ services.
                                             return1 = ent_my_children.filter(function(ent_child)
                                               {
                                                 ent_child{"eci"} eq this_eci
-                                              }).klog("first filter: ");
+                                              })
+                                            //.klog("first filter: ")
+                                            ;
                                             return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
                                                               {  // if child with no name return with unknown name structure
                                                                 "name": "unknown",
                                                                 "eci": this_eci
                                                               }
-                                            return.klog("second filter: ")
-                                          }).klog("map : ");
+                                            return
+                                            //.klog("second filter: ")
+                                          })
+                                          //.klog("map : ")
+                                          ;
 
     {
       'status' : (children neq "error"),
@@ -572,7 +581,9 @@ services.
             (attributes.isnull()) => null |
             (attributes{'subscription_name'}.isnull() eq false); 
           };
-        isSubscription(channel).klog("isSubscriptions(): ");
+        isSubscription(channel)
+        //.klog("isSubscriptions(): ")
+        ;
 
       }); 
       // reconstruct list, to have a inbound in attributes.
@@ -613,7 +624,9 @@ services.
 
       single_subscription = function(value,subs){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
-        parts = value.split(re/:/).klog('parts of id');
+        parts = value.split(re/:/)
+        //.klog('parts of id')
+        ;
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
                 'inbound_eci' |
                 (parts.length() > 1) => // channel name of subscriptions are namespace:subscription_name 
@@ -621,12 +634,20 @@ services.
                    | "subscription_name";  // is subscription name
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
-          attr_value = type(subscription,attribute.klog('attribute ')).klog('types function: ');
-          (attr_value eq value).klog('found ? ');
+          attr_value = type(subscription,attribute
+            //.klog('attribute ')
+            )
+            //.klog('types function: ')
+          ;
+          (attr_value eq value)
+          //.klog('found ? ')
+          ;
           }); 
 
-        result = filtered_subscriptions.klog('filtered_subscriptions: ')
-                .head().klog('head: ') 
+        result = filtered_subscriptions
+        //.klog('filtered_subscriptions: ')
+                .head()
+                //.klog('head: ') 
                 .defaultsTo({},standardError("no subscription found, by .head()"));
         (result);
       };
@@ -811,7 +832,9 @@ services.
     select when wrangler uninstall_rulesets_requested
     pre {
      // eci = meta:eci();
-      rids = event:attr("rids").defaultsTo("", ">>  >> ").klog(">> rids attribute <<");
+      rids = event:attr("rids").defaultsTo("", ">>  >> ")
+      //.klog(">> rids attribute <<")
+      ;
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     { 
@@ -847,7 +870,7 @@ services.
       attrs =  decodeDefaults(attributes);
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      decoded_policy = policy.decode() || policy;
       options = {
         'name' : channel_name,
         'eci_type' : type,
@@ -889,7 +912,7 @@ services.
       attrs =  decodeDefaults(attributes);
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"));
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode().klog('decoded_policy') || policy;
+      decoded_policy = policy.decode() || policy;
       options = {
         'name' : channel_name,
         'eci_type' : type,

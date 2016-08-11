@@ -93,10 +93,10 @@
        var eci = check_eci(options.eci);
            var eid = Math.floor(Math.random() * 9999999); // whats the event id used for and do we need it?
            //url constructor
-            if (options._path === undefined) {
+            if (typeof options._path === "undefined") {
               options._path = wrangler.eventPath;
             }
-            if (options._host === undefined) {
+            if (typeof options._host === "undefined") {
               options._host = wrangler.host;
             } 
            var esl = mkEsl(
@@ -144,10 +144,10 @@
         var eci = check_eci(options.eci);
         //url constructor
         console.log("options ",options);
-        if (options._path === undefined) {
+        if (typeof options._path === "undefined") {
           options._path = wrangler.functionPath;
         }
-        if (options._host === undefined) {
+        if (typeof options._host === "undefined") {
           options._host = wrangler.host;
         } 
         var esl = mkEsl(

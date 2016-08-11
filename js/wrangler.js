@@ -93,14 +93,20 @@
        var eci = check_eci(options.eci);
            var eid = Math.floor(Math.random() * 9999999); // whats the event id used for and do we need it?
            //url constructor
+            if (options._path === undefined) {
+              options._path = wrangler.eventPath;
+            }
+            if (options._host === undefined) {
+              options._host = wrangler.host;
+            } 
            var esl = mkEsl(
             //['sky/event',
-            [  options._path || wrangler.eventPath ,
+            [  options._path,
             eci,
             eid,
             eventDomain,
             eventType
-            ],options._host || wrangler.host);
+            ],options._host);
 
          console.log("wrangler.raise ESL: ", esl);
          console.log("event attributes: ", eventAttributes);
@@ -137,12 +143,19 @@
 
         var eci = check_eci(options.eci);
         //url constructor
+        console.log("options ",options);
+        if (options._path === undefined) {
+          options._path = wrangler.functionPath;
+        }
+        if (options._host === undefined) {
+          options._host = wrangler.host;
+        } 
         var esl = mkEsl(
-          //['sky/cloud',
-          [ options._path || wrangler.functionPath ,
+          //['sky/cloud']
+          [ options._path ,
             module,
             func_name
-            ], options._host || wrangler.host);
+            ], options._host );
 
         $.extend(parameters, { "_eci": eci });
 

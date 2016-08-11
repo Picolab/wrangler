@@ -320,15 +320,15 @@
     };
         wrangler.addPrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "add_prototype", eventAttributes, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "add_prototype", parameters, postFunction, options);
     };
         wrangler.updatePrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "update_prototype", eventAttributes, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "update_prototype", parameters, postFunction, options);
     };
         wrangler.removePrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "remove_prototype", eventAttributes, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "remove_prototype", parameters, postFunction, options);
     };
 
      wrangler.createChild = function( eventAttributes, postFunction, options)

@@ -518,7 +518,7 @@ services.
 
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
-    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype };// if no prototypes set to map so we can use put()
+    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype }; // if no prototypes set to map so we can use put()
     prototypes = init_prototypes.put(['base'],basePrototype);
     {
       'status' : true,
@@ -1323,8 +1323,10 @@ services.
 
   rule addPrototype {
     select when wrangler add_prototype
+            or  wrangler update_prototype
     pre {
-
+      prototype = event:attr("prototype");
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();
@@ -1335,10 +1337,11 @@ services.
             attributes event:attrs();
     }
   }
-  rule updatePrototype {
+ /* rule updatePrototype {
     select when wrangler update_prototype
     pre {
-
+      prototype = event:attr("prototype");
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();
@@ -1348,11 +1351,11 @@ services.
     raise wrangler event Prototype_type_updated
             attributes event:attrs();
     }
-  }
+  }*/
   rule removePrototype {
-    select when wrangler add_prototype
+    select when wrangler remove_prototype
     pre {
-
+      prototype_name = event:attr("prototype_name");
     }
     {
       noop();

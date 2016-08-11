@@ -4,15 +4,15 @@ ruleset v1_wrangler {
   meta {
     name "Wrangler Core"
     description <<
-      Wrangler ( ) Module
+Wrangler Core Module
 
-      use module  v1_wrangler.dev alias wrangler
+   use module v1_wrangler.dev alias wrangler
 
-      This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
-      When a PICO is created or authenticated this ruleset
-      will be installed into the Personal Cloud to provide an Event layer.
-    >>
-    author "BYUPICOLab"
+This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
+When a PICO is created or authenticated this ruleset will be installed to provide essential
+services.
+>>
+    author "BYU Pico Lab"
     
     logging off
 
@@ -24,7 +24,7 @@ ruleset v1_wrangler {
       //none
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico // why do we provide defactions????
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -550,7 +550,7 @@ ruleset v1_wrangler {
     joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
-    event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
+    event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
   }
 
@@ -1452,7 +1452,7 @@ ruleset v1_wrangler {
 
      // // destination for external event
       subscription_map = {
-            "cid" : subscriber_eci
+            "eci" : subscriber_eci
       };
       // create unique_name for channel
       //unique_name = randomName(name_space);
@@ -1587,7 +1587,7 @@ ruleset v1_wrangler {
       //inbound_eci = eciFromName(channel_name).klog("back eci: ");
       outbound_eci = attributes{'outbound_eci'}; // whats better?
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription Map: ");
     }// this is a possible place to create a channel for subscription
     if (outbound_eci neq "no outbound_eci") then
@@ -1669,7 +1669,7 @@ ruleset v1_wrangler {
       // raise remove event to self with eci from name .
 
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription_map: ");
     }
     //if( eci neq "No outbound_eci") then // always try to notify other party
@@ -1678,7 +1678,7 @@ ruleset v1_wrangler {
         with attrs = {
           // this will catch the problem with canceling outbound
           "eci"  : inbound_eci, // tabo to pass this but other pico has no other way to know ...
-          "status": status//"outbound"
+          "status": status //"outbound"
         };
     }
     fired {

@@ -127,7 +127,7 @@ services.
       
       // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
       attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-              'cid' |
+              'eci' |
               'name';
       channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
       filtered_channels = channel_list.filter(function(channel){
@@ -146,7 +146,7 @@ services.
     eciFromName = function(name){
       results = channel(name);
       channel_single = results{'channels'};
-      channel_single{'cid'};
+      channel_single{'eci'};
     }
     // always return a eci weather given a eci or name
     alwaysEci = function(value){
@@ -176,7 +176,7 @@ services.
       single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is cid.
         attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-                'cid' |
+                'eci' |
                 'name';
         channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){
@@ -550,7 +550,7 @@ services.
     joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
-    event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
+    event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
   }
 
@@ -577,7 +577,7 @@ services.
       }); 
       // reconstruct list, to have a inbound in attributes.
       subs = filtered_channels.map( function(channel){
-           channel.put(["attributes","inbound_eci"],channel{"cid"})
+           channel.put(["attributes","inbound_eci"],channel{"eci"})
                   .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
       // name to attributes hash
@@ -1437,7 +1437,7 @@ services.
 
      // // destination for external event
       subscription_map = {
-            "cid" : subscriber_eci
+            "eci" : subscriber_eci
       };
       // create unique_name for channel
       unique_name = randomName(name_space);
@@ -1563,13 +1563,13 @@ services.
       channel_name = event:attr("channel_name").defaultsTo( "no_channel_name", standardError("channel_name"));
       results = channel(channel_name,undefined,undefined);
       inbound = results{'channels'};
-      inbound_eci = inbound{'cid'}; // this is why we call channel and not subscriptionAttributes.
+      inbound_eci = inbound{'eci'}; // this is why we call channel and not subscriptionAttributes.
       attributes = inbound{'attributes'};
       status = attributes{'status'};
       //inbound_eci = eciFromName(channel_name).klog("back eci: ");
       outbound_eci = attributes{'outbound_eci'}; // whats better?
       subscription_map = {
-            "cid" : outbound_eci
+            "eci" : outbound_eci
       }.klog("subscription Map: ");
     }// this is a possible place to create a channel for subscription
     if (outbound_eci neq "no outbound_eci") then
@@ -1694,7 +1694,7 @@ services.
           }); 
         result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
         // a channel with the correct outbound_eci
-        return = result{'cid'} // the correct eci to be removed.
+        return = result{'eci'} // the correct eci to be removed.
         (return);
       };
 

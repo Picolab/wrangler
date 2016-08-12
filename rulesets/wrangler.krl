@@ -1325,14 +1325,16 @@ services.
     select when wrangler add_prototype
             or  wrangler update_prototype
     pre {
-      prototype = event:attr("prototype");
+      prototype = event:attr("prototype").klog("prototype: ");
+      proto_obj = prototype.decode().klog("decoded_proto: ");
       prototype_name = event:attr("prototype_name");
     }
+    // should we always add something?
     {
       noop();
     }
     always {
-      set ent:prototypes{prototype_name} prototype;
+      set ent:prototypes{prototype_name} proto_obj;
     raise wrangler event Prototype_type_added 
             attributes event:attrs();
     }

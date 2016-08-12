@@ -31,39 +31,32 @@
  * @return {String} returns the cid, if no cid passed then check_eci returns wrangler.defaultECI.
  */
     var check_eci = function(cid) {
-  var res = cid || wrangler.defaultECI;
-  if (res === "none") {
+	var res = cid || wrangler.defaultECI;
+	if (res === "none") {
             throw "No wrangler event channel identifier (ECI) defined";
-  }
-  return res;
+	}
+	return res;
     };
 
-    var mkEsl = function(parts,host,apiRoot) {
-  if (wrangler.host === "none") { // I dont think this will ever be true.....
+    var mkEsl = function(parts,host) {
+	if (wrangler.host === "none") { // I dont think this will ever be true.....
             throw "No wrangler host defined";
-  }
-  var res = "";
-  if (typeof apiRoot === "undefined"){
-      parts.unshift(host); // adds host to beginning of array
-      res = 'https://'+ parts.join("/"); // returns a url structure string
-  }else{
-      parts.shift(); // removes path from beginning of array
-      parts.unshift(apiRoot); // adds host to beginning of array
-      res = 'https://'+ parts.join("/"); // returns a url structure string
-  }
-  return res;
+	}
+	parts.unshift(host); // adds host to beginning of array
+	var res = 'https://'+ parts.join("/"); // returns a url structure string
+	return res;
     };
 
     
     get_rid = function(name) {
         
         var rids = {
-            "rulesets": {"prod": "v1_wrangler.prod", 
-                         "dev": "v1_wrangler.dev"
-      },
+            "rulesets": {"prod": "b507888x5.prod",//"v1_wrangler.prod", 
+                         "dev" : "b507888x5.prod" //"v1_wrangler.dev"
+			},
             "bootstrap":{"prod": "b507199x1.prod", 
                          "dev": "b507199x1.dev"
-      }
+			}
         };
 
         return rids[name].prod;
@@ -113,7 +106,7 @@
             eid,
             eventDomain,
             eventType
-            ],options._host,options._apiRoot);
+            ],options._host);
 
          console.log("wrangler.raise ESL: ", esl);
          console.log("event attributes: ", eventAttributes);
@@ -123,9 +116,9 @@
           url: esl,
           data: $.param(eventAttributes),
           dataType: 'json',
-          headers: { 'Kobj-Session': eci }, // not sure needed since eci in URL
-          success: callback,
-          error: options.errorFunc || function(res) { console.error(res) }
+      		headers: { 'Kobj-Session': eci }, // not sure needed since eci in URL
+      		success: callback,
+      		error: options.errorFunc || function(res) { console.error(res) }
         });
        } catch(error) {
          console.error("[raise]", error);
@@ -136,7 +129,7 @@
     wrangler.skyQuery = function(module, func_name, parameters, getSuccess, options)
     {
       //put options stuff here.
-      try {
+    	try {
           options = options || {};
           options.eci = options.eci || PicoNavigator.currentPico || wrangler.defaultECI; //<-- is this vallid?
           var retries = 2;
@@ -162,7 +155,7 @@
           [ options._path ,
             module,
             func_name
-            ], options._host,options._apiRoot );
+            ], options._host );
 
         $.extend(parameters, { "_eci": eci });
 
@@ -193,8 +186,8 @@
          console.error("The request failed due to an ECI error. Going to repeat the request.");
          var repeat_num = (typeof options.repeats !== "undefined") ? ++options.repeats : 0;
          options.repeats = repeat_num;
-          // I don't think this will support promises; not sure how to fix
-          wrangler.skyQuery(module, func_name, parameters, getSuccess, options);
+    			// I don't think this will support promises; not sure how to fix
+    			wrangler.skyQuery(module, func_name, parameters, getSuccess, options);
             }
         }
     };
@@ -205,10 +198,10 @@
       type: 'GET',
       url: esl,
       dataType: 'json',
-        // try this as an explicit argument
-        //    headers: {'Kobj-Session' : eci},
-        success: process_result
-        // error: process_error
+    		// try this as an explicit argument
+    		//		headers: {'Kobj-Session' : eci},
+    		success: process_result
+    		// error: process_error
         });
     } catch(error) {
        console.error("[skyQuery]", error);
@@ -327,15 +320,15 @@
     };
         wrangler.addPrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "add_prototype", parameters, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "add_prototype", eventAttributes, postFunction, options);
     };
         wrangler.updatePrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "update_prototype", parameters, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "update_prototype", eventAttributes, postFunction, options);
     };
         wrangler.removePrototype = function(parameters, postFunction, options)
     {
-        return wrangler.raiseEvent("wrangler", "remove_prototype", parameters, postFunction, options);
+        return wrangler.raiseEvent("wrangler", "remove_prototype", eventAttributes, postFunction, options);
     };
 
      wrangler.createChild = function( eventAttributes, postFunction, options)
@@ -415,10 +408,10 @@
     {
         return wrangler.skyQuery(get_rid("rulesets"), "currentSession", parameters, postFunction , options); 
     };
-    wrangler.bootstrapCheck = function(postFunction, options)
-  {
-    return wrangler.skyQuery(get_rid("bootstrap"), "installedRulesets", {}, postFunction, options);
-  };
+		wrangler.bootstrapCheck = function(postFunction, options)
+	{
+		return wrangler.skyQuery(get_rid("bootstrap"), "installedRulesets", {}, postFunction, options);
+	};
 
 
 
@@ -529,8 +522,8 @@
         "cloudAuth", 
         parameters, 
         function(res){
-            // patch this up since it's not OAUTH
-            if(res.status) {
+				    // patch this up since it's not OAUTH
+				    if(res.status) {
                        var tokens = {"access_token": "none",
                        "OAUTH_ECI": res.token
                    };

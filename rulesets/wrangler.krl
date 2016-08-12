@@ -157,7 +157,9 @@ services.
     }
     // last created eci.
     lastCreatedEci = function(){
-      ent:lastCreatedEci
+      channel = ent:lastCreatedEci;
+      eci = channel{'cid'};
+      eci
     }
     // takes name or eci as id returns single channle . needed for backwards combatablity 
     //

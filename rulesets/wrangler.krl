@@ -463,62 +463,13 @@ services.
                             }
               }
   };
-  devtoolsPrototype = {
-      "meta" : {
-                "discription": "devtools prototype"
-                },
-      "rids": [ 
-                "b507199x1.dev"// quick fix and a ugly one! bootstrap rid
-                 //"a169x625"
-              ],
-      "channels" : [{
-                      "name"       : "testDevtoolsPrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "devtool prototypes test attrs",
-                      "policy"     : "not implemented"
-                    },
-                    {
-                      "name"       : "testDevtools2PrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "devtool prototypes test attrs",
-                      "policy"     : "not implemented"
-                    }
-                    ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-      "subscriptions_request": [],
-      "Prototype_events" : [{
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event1',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event2',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event3',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            }
-                            ], 
-      "PDS" : {
-                "profile" : {},
-                "general" : {},
-                "settings": {}
-      }
-  };
+
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
-    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype }; // if no prototypes set to map so we can use put()
+    init_prototypes = ent:prototypes || {}; // if no prototypes set to map so we can use put()
     prototypes = init_prototypes.put(['base'],basePrototype);
     {
       'status' : true,

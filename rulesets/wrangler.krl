@@ -401,7 +401,8 @@ services.
                 "discription": "Wrangler base prototype"
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ "b507888x5.prod",//"v1_wrangler.dev",
+      "rids": [ "v1_wrangler.dev",
+                "b507888x5.prod",//"v1_wrangler.dev",
                 "b507199x8.dev" // pds
                 //"b507805x0.dev" developmet wrangler
                  //"a169x625"

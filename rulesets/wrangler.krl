@@ -261,8 +261,7 @@ services.
     createChannel = defaction(options){
       configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
-      eci = new_eci{"cid"};
-      nonsense = eci.pset(ent:lastCreatedEci); // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
+      nonsense = new_eci.pset(ent:lastCreatedEci); // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
       send_directive("created channel #{new_eci}");
     }
 // ********************************************************************************************

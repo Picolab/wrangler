@@ -886,7 +886,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci()); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;

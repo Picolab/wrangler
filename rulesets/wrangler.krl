@@ -1334,7 +1334,7 @@ services.
       noop();
     }
     always {
-      set ent:prototypes{prototype_name} proto_obj;
+      set ent:prototypes{[prototype_name]} proto_obj;
     raise wrangler event Prototype_type_added 
             attributes event:attrs();
     }

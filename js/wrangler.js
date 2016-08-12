@@ -51,8 +51,8 @@
     get_rid = function(name) {
         
         var rids = {
-            "rulesets": {"prod": "v1_wrangler.prod", 
-                         "dev": "v1_wrangler.dev"
+            "rulesets": {"prod": "b507888x5.prod",//"v1_wrangler.prod", 
+                         "dev" : "b507888x5.prod" //"v1_wrangler.dev"
 			},
             "bootstrap":{"prod": "b507199x1.prod", 
                          "dev": "b507199x1.dev"

@@ -38,12 +38,19 @@
 	return res;
     };
 
-    var mkEsl = function(parts,host) {
+    var mkEsl = function(parts,host,apiRoot) {
 	if (wrangler.host === "none") { // I dont think this will ever be true.....
             throw "No wrangler host defined";
 	}
-	parts.unshift(host); // adds host to beginning of array
-	var res = 'https://'+ parts.join("/"); // returns a url structure string
+  var res = "";
+  if (typeof apiRoot === "undefined"){
+      parts.unshift(host); // adds host to beginning of array
+      res = 'https://'+ parts.join("/"); // returns a url structure string
+  }else{
+      parts.shift(); // removes path from beginning of array
+      parts.unshift(apiRoot); // adds host to beginning of array
+      res = 'https://'+ parts.join("/"); // returns a url structure string
+  }
 	return res;
     };
 
@@ -106,7 +113,7 @@
             eid,
             eventDomain,
             eventType
-            ],options._host);
+            ],options._host,options._apiRoot);
 
          console.log("wrangler.raise ESL: ", esl);
          console.log("event attributes: ", eventAttributes);
@@ -155,7 +162,7 @@
           [ options._path ,
             module,
             func_name
-            ], options._host );
+            ], options._host,options._apiRoot );
 
         $.extend(parameters, { "_eci": eci });
 

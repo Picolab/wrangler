@@ -155,6 +155,12 @@ services.
               eciFromName(value);
       eci;       
     }
+    // last created eci.
+    lastCreatedEci = function(){
+      channel = ent:lastCreatedEci;
+      eci = channel{'cid'};
+      eci
+    }
     // takes name or eci as id returns single channle . needed for backwards combatablity 
     //
     channel = function(id,collection,filtered) { 
@@ -257,6 +263,7 @@ services.
     createChannel = defaction(options){
       configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
+      nonsense = new_eci.pset(ent:lastCreatedEci); // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
       send_directive("created channel #{new_eci}");
     }
 // ********************************************************************************************
@@ -838,7 +845,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;
@@ -880,7 +887,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;

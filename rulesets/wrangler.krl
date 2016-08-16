@@ -36,35 +36,41 @@ services.
   //}
   global {
     //functions
-    // taken from website, not tested. function call to a different pico on the same kre  
    
       //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
-      skyQuery = function(eci,_host, mod, func, params) {
-              host = _host || meta:host();
-              cloud_url = "https://#{host}/sky/cloud/";
-              response = http:get("#{cloud_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
-   
-              status = response{"status_code"};
+      // path must start with "/""
+    skyQuery = function(eci, mod, func, params,_host,_path,_root_url) {
+      createRootUrl = function (_host,_path){
+        host = _host || meta:host();
+        path = _path || "/sky/cloud/";
+        root_url = "https://#{host}#{path}";
+        root_url
+      };
+      root_url = _root_url.isnull() => createRootUrl(_host,_path) | _root_url ;
+      log = root_url.klog("root_url : ");
+      response = http:get("#{root_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
 
-              error_info = {
-                  "error": "sky cloud request was unsuccesful.",
-                  "httpStatus": {
-                      "code": status,
-                      "message": response{"status_line"}
-                  }
-              };
-   
-   
-              response_content = response{"content"}.decode();
-              response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
-              response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
-              error = error_info.put({"skyCloudError": response_error, "skyCloudErrorMsg": response_error_str, "skyCloudReturnValue": response_content});
-              is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
-   
-   
-              // if HTTP status was OK & the response was not null and there were no errors...
-              (status eq "200" && not is_bad_response) => response_content | error
-          };
+      status = response{"status_code"};
+
+      error_info = {
+        "error": "sky query request was unsuccesful.",
+        "httpStatus": {
+            "code": status,
+            "message": response{"status_line"}
+        }
+      };
+
+
+      response_content = response{"content"}.decode();
+      response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
+      response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
+      error = error_info.put({"skyQueryError": response_error, "skyQueryErrorMsg": response_error_str, "skyQueryReturnValue": response_content});
+      is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
+
+
+      // if HTTP status was OK & the response was not null and there were no errors...
+      (status eq "200" && not is_bad_response) => response_content | error
+    };
 
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
@@ -154,6 +160,12 @@ services.
               value |
               eciFromName(value);
       eci;       
+    }
+    // last created eci.
+    lastCreatedEci = function(){
+      channel = ent:lastCreatedEci;
+      eci = channel{'cid'};
+      eci
     }
     // takes name or eci as id returns single channle . needed for backwards combatablity 
     //
@@ -257,6 +269,7 @@ services.
     createChannel = defaction(options){
       configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
+      nonsense = new_eci.pset(ent:lastCreatedEci); // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
       send_directive("created channel #{new_eci}");
     }
 // ********************************************************************************************
@@ -463,62 +476,13 @@ services.
                             }
               }
   };
-  devtoolsPrototype = {
-      "meta" : {
-                "discription": "devtools prototype"
-                },
-      "rids": [ 
-                "b507199x1.dev"// quick fix and a ugly one! bootstrap rid
-                 //"a169x625"
-              ],
-      "channels" : [{
-                      "name"       : "testDevtoolsPrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "devtool prototypes test attrs",
-                      "policy"     : "not implemented"
-                    },
-                    {
-                      "name"       : "testDevtools2PrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "devtool prototypes test attrs",
-                      "policy"     : "not implemented"
-                    }
-                    ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-      "subscriptions_request": [],
-      "Prototype_events" : [{
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event1',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event2',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'devtools_prototype_event3',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            }
-                            ], 
-      "PDS" : {
-                "profile" : {},
-                "general" : {},
-                "settings": {}
-      }
-  };
+
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
-    init_prototypes = ent:prototypes || {"devtools" : devtoolsPrototype }; // if no prototypes set to map so we can use put()
+    init_prototypes = ent:prototypes || {}; // if no prototypes set to map so we can use put()
     prototypes = init_prototypes.put(['base'],basePrototype);
     {
       'status' : true,
@@ -887,7 +851,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;
@@ -929,7 +893,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;
@@ -1721,7 +1685,6 @@ services.
   } 
   rule removeSubscription {
     select when wrangler subscription_removal
-             or wrangler subscription_deletion_requested
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));

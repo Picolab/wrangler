@@ -36,35 +36,41 @@ services.
   //}
   global {
     //functions
-    // taken from website, not tested. function call to a different pico on the same kre  
    
       //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
-      skyQuery = function(eci,_host, mod, func, params) {
-              host = _host || meta:host();
-              cloud_url = "https://#{host}/sky/cloud/";
-              response = http:get("#{cloud_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
-   
-              status = response{"status_code"};
+      // path must start with "/""
+    skyQuery = function(eci, mod, func, params,_host,_path,_root_url) {
+      createRootUrl = function (_host,_path){
+        host = _host || meta:host();
+        path = _path || "/sky/cloud/";
+        root_url = "https://#{host}#{path}";
+        root_url
+      };
+      root_url = _root_url.isnull() => createRootUrl(_host,_path) | _root_url ;
+      log = root_url.klog("root_url : ");
+      response = http:get("#{root_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
 
-              error_info = {
-                  "error": "sky cloud request was unsuccesful.",
-                  "httpStatus": {
-                      "code": status,
-                      "message": response{"status_line"}
-                  }
-              };
-   
-   
-              response_content = response{"content"}.decode();
-              response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
-              response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
-              error = error_info.put({"skyCloudError": response_error, "skyCloudErrorMsg": response_error_str, "skyCloudReturnValue": response_content});
-              is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
-   
-   
-              // if HTTP status was OK & the response was not null and there were no errors...
-              (status eq "200" && not is_bad_response) => response_content | error
-          };
+      status = response{"status_code"};
+
+      error_info = {
+        "error": "sky query request was unsuccesful.",
+        "httpStatus": {
+            "code": status,
+            "message": response{"status_line"}
+        }
+      };
+
+
+      response_content = response{"content"}.decode();
+      response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
+      response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
+      error = error_info.put({"skyQueryError": response_error, "skyQueryErrorMsg": response_error_str, "skyQueryReturnValue": response_content});
+      is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
+
+
+      // if HTTP status was OK & the response was not null and there were no errors...
+      (status eq "200" && not is_bad_response) => response_content | error
+    };
 
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***

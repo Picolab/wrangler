@@ -498,9 +498,11 @@ services.
 // create child from protype will take the name with a option of a prototype with a default to base.
   createChild = defaction(name, prototype_name){ 
     configure using protype_name = prototype_name.defaultsTo("base", "Prototype not found"); // base must be installed by default for prototypeing to work 
+  createChild = defaction(name){ 
+    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
-    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found");
+    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
     rids = prototype{"rids"};
     // create child and give name
     attributes = {
@@ -520,8 +522,8 @@ services.
          .pset(ent:my_children);
     // bootstrap child
     //combine new_ruleset calls 
-    joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
-    a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
+    joined_rids_to_install = prototype_name eq "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids);
+    a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
     event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes
@@ -1001,7 +1003,7 @@ services.
 
    // if(checkPicoName(name)) then 
     {
-      createChild(name,prototype); //with protype_name = prototype; 
+      createChild(name) with protype_name = prototype; 
     }
     fired {
       log(standardOut("pico created with name #{name}"));

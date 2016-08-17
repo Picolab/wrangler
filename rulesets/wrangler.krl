@@ -36,35 +36,41 @@ services.
   //}
   global {
     //functions
-    // taken from website, not tested. function call to a different pico on the same kre  
    
       //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
-      skyQuery = function(eci,_host, mod, func, params) {
-              host = _host || meta:host();
-              cloud_url = "https://#{host}/sky/cloud/";
-              response = http:get("#{cloud_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
-   
-              status = response{"status_code"};
+      // path must start with "/""
+    skyQuery = function(eci, mod, func, params,_host,_path,_root_url) {
+      createRootUrl = function (_host,_path){
+        host = _host || meta:host();
+        path = _path || "/sky/cloud/";
+        root_url = "https://#{host}#{path}";
+        root_url
+      };
+      root_url = _root_url.isnull() => createRootUrl(_host,_path) | _root_url ;
+      log = root_url.klog("root_url : ");
+      response = http:get("#{root_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
 
-              error_info = {
-                  "error": "sky cloud request was unsuccesful.",
-                  "httpStatus": {
-                      "code": status,
-                      "message": response{"status_line"}
-                  }
-              };
-   
-   
-              response_content = response{"content"}.decode();
-              response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
-              response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
-              error = error_info.put({"skyCloudError": response_error, "skyCloudErrorMsg": response_error_str, "skyCloudReturnValue": response_content});
-              is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
-   
-   
-              // if HTTP status was OK & the response was not null and there were no errors...
-              (status eq "200" && not is_bad_response) => response_content | error
-          };
+      status = response{"status_code"};
+
+      error_info = {
+        "error": "sky query request was unsuccesful.",
+        "httpStatus": {
+            "code": status,
+            "message": response{"status_line"}
+        }
+      };
+
+
+      response_content = response{"content"}.decode();
+      response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
+      response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
+      error = error_info.put({"skyQueryError": response_error, "skyQueryErrorMsg": response_error_str, "skyQueryReturnValue": response_content});
+      is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
+
+
+      // if HTTP status was OK & the response was not null and there were no errors...
+      (status eq "200" && not is_bad_response) => response_content | error
+    };
 
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
@@ -154,6 +160,12 @@ services.
               value |
               eciFromName(value);
       eci;       
+    }
+    // last created eci.
+    lastCreatedEci = function(){
+      channel = ent:lastCreatedEci;
+      eci = channel{'cid'};
+      eci
     }
     // takes name or eci as id returns single channle . needed for backwards combatablity 
     //
@@ -257,6 +269,7 @@ services.
     createChannel = defaction(options){
       configure using eci = meta:eci();
       new_eci = pci:new_eci(eci, options);
+      nonsense = new_eci.pset(ent:lastCreatedEci); // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
       send_directive("created channel #{new_eci}");
     }
 // ********************************************************************************************
@@ -484,11 +497,15 @@ services.
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to base.
-  createChild = defaction(name){ 
-    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
+  createChild = defaction(name, prototype_name){ 
+    configure using protype_name = prototype_name.defaultsTo("base", "Prototype not found"); // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
+<<<<<<< HEAD
     prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
+=======
+    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found");
+>>>>>>> Picolab/master
     rids = prototype{"rids"};
     // create child and give name
     attributes = {
@@ -839,7 +856,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-            attributes event_attributes;
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;
@@ -881,7 +898,11 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
+<<<<<<< HEAD
             attributes event_attributes; 
+=======
+            attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
+>>>>>>> Picolab/master
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;
@@ -1673,7 +1694,6 @@ services.
   } 
   rule removeSubscription {
     select when wrangler subscription_removal
-             or wrangler subscription_deletion_requested
     pre{
       status = event:attr("status").defaultsTo("", standardError("status"));
       passedEci= event:attr("eci").defaultsTo("", standardError("eci"));

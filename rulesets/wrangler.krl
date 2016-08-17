@@ -496,8 +496,6 @@ services.
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to base.
-  createChild = defaction(name, prototype_name){ 
-    configure using protype_name = prototype_name.defaultsTo("base", "Prototype not found"); // base must be installed by default for prototypeing to work 
   createChild = defaction(name){ 
     configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.

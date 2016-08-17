@@ -415,7 +415,6 @@ services.
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
       "rids": [ "v1_wrangler.dev",
-                "b507888x5.prod",//"v1_wrangler.dev",
                 "b507199x8.dev" // pds
                 //"b507805x0.dev" developmet wrangler
                  //"a169x625"
@@ -497,15 +496,11 @@ services.
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to base.
-  createChild = defaction(name, prototype_name){ 
-    configure using protype_name = prototype_name.defaultsTo("base", "Prototype not found"); // base must be installed by default for prototypeing to work 
+  createChild = defaction(name){ 
+    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
-<<<<<<< HEAD
     prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
-=======
-    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found");
->>>>>>> Picolab/master
     rids = prototype{"rids"};
     // create child and give name
     attributes = {
@@ -898,11 +893,7 @@ services.
       log (standardOut("success created channels #{channel_name}"));
       log(">> successfully  >>");
       raise wrangler event 'channel_created' // event to nothing  
-<<<<<<< HEAD
-            attributes event_attributes; 
-=======
             attributes event_attributes.put(['eci'],lastCreatedEci().klog("lastCreatedEci: ")); // function to access a magic varible set during creation
->>>>>>> Picolab/master
           } 
     else {
       error warn "douplicate name, failed to create channel"+channel_name;

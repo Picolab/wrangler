@@ -415,7 +415,8 @@ services.
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
       "rids": [ "v1_wrangler.dev",
-                "b507199x8.dev" // pds
+      "rids": [ "b507888x5.prod",
+                "b507888x6.prod" // pds
                 //"b507805x0.dev" developmet wrangler
                  //"a169x625"
               ],

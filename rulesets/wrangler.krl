@@ -465,13 +465,22 @@ services.
                             }
                             ], // array of maps
       "PDS" : {
-                "profile" : {"name":"base"},
+                "profile" : {
+                            "name":"base",
+                            "description":"discription of the general pds created",
+                            "location":"40.252683,-111.657486",
+                            "model":"unknown",
+                            "model_description":"no model at this time",
+                            "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
+                            },
                 "general" : {"test":{"subtest":"just a test"}},
                 "settings": {"b507798x0.dev":{
                                               "name":"wrangler",
                                               "rid" :"b507798x0.dev",
                                               "data":{},
-                                              "schema":["im","a","schema"]
+                                              "schema":["im","a","schema"],
+                                              "attr":"first_key",
+                                              "value":"first_value"
                                               }
                             }
               }
@@ -1154,13 +1163,13 @@ services.
   rule initializePdsSettings {
     select when wrangler init_events
     pre {
-      attrs = basePrototype{['PDS','profile']};
+      attrs = basePrototype{['PDS','settings']};
     }
     {
       noop();
     }
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+    raise pds event add_settings 
             attributes attrs
     }
   }

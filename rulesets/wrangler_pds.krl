@@ -2,7 +2,7 @@ ruleset b506607x16 {
   meta {
     name "PDS"
     description <<
-      Spime Data Services
+      Pico Data Services (PDS), a common data base structure for all rulesets to use.
     >>
     author "Phil Windley & Ed Orcutt & PICOLABS"
 
@@ -273,20 +273,7 @@ ruleset b506607x16 {
            mapvalues = mapvalues;
     }
   }
-// should not be here !!!!!!!
-  rule add_spime_item { // uses different hash_path to add a varible
-    select when pds new_data2_available
-    pre {
-      namespace = event:attr("namespace").defaultsTo("", "no namespace");
-      spime = event:attr("spime").defaultsTo("", "no spime");
-      keyvalue = event:attr("keyvalue").defaultsTo("", "no keyvalue");
-      hash_path = [namespace, spime, keyvalue];
-      value =  event:attr("value").defaultsTo("", "no value");
-    }
-    always {
-      set ent:general{hash_path} value;
-    }
-  }
+
   // I dont think we need myCloud any more.
   /*
   rule SDS_init_mycloud {
@@ -349,7 +336,8 @@ ruleset b506607x16 {
     select when pds updated_profile
     pre {
       profile = ent:profile || defaultProfile;
-      newProfile = event:attrs().defaultsTo(0, "no attrs");
+      all_attrs = event:attrs().defaultsTo(0, "no attrs");
+      newProfile = all_attrs;
       created = function(){time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});};
       buildProfile = function(newProfile){
         ConstructedProfile = newProfile// does || work?
@@ -357,7 +345,7 @@ ruleset b506607x16 {
                   .put(["description"], (newProfile{"description"} || profile{"description"})) 
                   .put(["location"], (newProfile{"location"} || profile{"location"})) 
                   .put(["model"], (newProfile{"model"} || profile{"model"})) 
-                  .put(["model_description"], (profile{"model_description"} || profile{"model_description"})) 
+                  .put(["model_description"], (newProfile{"model_description"} || profile{"model_description"})) 
                   .put(["photo"], (newProfile{"photo"} || profile{"photo"})) 
                   .put(["_created"], (profile{"_created"}||created()))
                   .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
@@ -374,7 +362,10 @@ ruleset b506607x16 {
     }
     fired {
       set ent:profile newly_constructed_profile;
-      raise pds event "profile_updated" attributes event:attrs();
+      raise pds event "profile_updated" attributes all_attrs.put(["_status"],"success");
+    }
+    else{
+      raise pds event "profile_updated" attributes all_attrs.put(["_status"],"failure");
     }
   }
  /* rule SDS_update_profile {  // do we need this rule?
@@ -439,28 +430,28 @@ ruleset b506607x16 {
 //----------------------------settings
     // ent:settings 
     //     "a169x222" : {
-    //       "Name"   : "",
-    //       "RID"    : "a169x222",
-    //       "Data"   : {},
-    //       "Schema" : []
+    //       "name"   : "",
+    //       "rid"    : "a169x222",
+    //       "data"   : {set_attr:set_value},
+    //       "schema" : []
     //     }
   rule settings_added{ // will this fire with out kre stopping the failed passed varibles
     select when pds add_settings
     pre {
-      setName   = event:attr("Name").defaultsTo(0,"no Name");
-      setRID    = event:attr("RID").defaultsTo(0,"no RID");
-      setSchema = event:attr("Schema").defaultsTo(0,"no Schema");
-      setData   = event:attr("Data").defaultsTo(0,"no Data");
-      setAttr   = event:attr("setAttr").defaultsTo(0,"no setAttr");
-      setValue  = event:attr("Value").defaultsTo(0,"no Value");
+      set_name   = event:attr("name").defaultsTo(0,"no Name");
+      set_rid    = event:attr("rid").defaultsTo(0,"no RID");
+      set_schema = event:attr("schema").defaultsTo(0,"no Schema");
+      set_data   = event:attr("data").defaultsTo(0,"no Data");
+      set_attr   = event:attr("attr").defaultsTo(0,"no setAttr");
+      set_value  = event:attr("value").defaultsTo(0,"no Value");
 
     }
     always {
-      set ent:settings{[setRID, "Name"]}   setName if not setName;
-      set ent:settings{[setRID, "RID"]}    setRID if not setRID;
-      set ent:settings{[setRID, "Schema"]} setSchema if not setSchema;
-      //set ent:settings{[setRID, "Data"]}   setData if not setData;
-      set ent:settings{[setRID, "Data", setAttr]} setValue if not setAttr;
+      set ent:settings{[set_rid, "name"]}   set_name if not set_name;
+      set ent:settings{[set_rid, "rid"]}    set_rid if not set_rid;
+      set ent:settings{[set_rid, "schema"]} set_schema if not set_schema;
+      //set ent:settings{[set_rid, "data"]}   set_data if not set_data;
+      set ent:settings{[set_rid, "data", set_attr]} set_value if not set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }
@@ -521,8 +512,8 @@ ruleset b506607x16 {
     }
   }
  */ 
- rule SDS_spime_remove {
-    select when pds spime_uninstalled
+ rule clearPDS {
+    select when pds clear_all_data
     pre{
     }
     always {

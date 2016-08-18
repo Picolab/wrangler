@@ -332,7 +332,7 @@ services.
   }
 
   pdsName = function(this_eci,child) {
-    results = skyQuery(this_eci, null ,"b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
+    results = skyQuery(this_eci, "b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
     oldentnamestruc = results{"skyCloudError"}.isnull() => results | {"picoName":{}};
     oldentname = oldentnamestruc{"picoName"}.klog("child name");
     current_name = child{"name"}.typeof() eq 'str' => child{"name"}|"unknown";
@@ -1191,9 +1191,13 @@ services.
     select when wrangler init_settings
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (rid) 
     pre {
+<<<<<<< HEAD
       //key_array = rid.keys();
       mapedvalues = rid.values();
       attrs= mapedvalues[0];
+=======
+      attrs = basePrototype{['PDS','settings']};
+>>>>>>> master
     }
     {
       noop();

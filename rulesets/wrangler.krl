@@ -465,13 +465,22 @@ services.
                             }
                             ], // array of maps
       "PDS" : {
-                "profile" : {"name":"base"},
+                "profile" : {
+                            "name":"base",
+                            "description":"discription of the general pds created",
+                            "location":"40.252683,-111.657486",
+                            "model":"unknown",
+                            "model_description":"no model at this time",
+                            "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
+                            },
                 "general" : {"test":{"subtest":"just a test"}},
                 "settings": {"b507798x0.dev":{
                                               "name":"wrangler",
                                               "rid" :"b507798x0.dev",
                                               "data":{},
-                                              "schema":["im","a","schema"]
+                                              "schema":["im","a","schema"],
+                                              "attr":"first_key",
+                                              "value":"first_value"
                                               }
                             }
               }
@@ -1130,8 +1139,23 @@ services.
     }
   }
 
-  rule initializeGeneral {
+  rule storeGeneralOps {
     select when wrangler init_events 
+    pre {
+      ops =  basePrototype{['PDS','general']}.length();
+    }
+    {
+      noop();
+    }
+    always {
+      set ent:general_operations ops;
+      raise wrangler event init_general // init general  
+            attributes {}
+    }
+  }
+
+  rule initializeGeneral {
+    select when wrangler init_general
       foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (namespace) 
     pre {
       key_array = namespace.keys();
@@ -1150,17 +1174,33 @@ services.
             attributes attrs
     }
   }
-
-  rule initializePdsSettings {
-    select when wrangler init_events
+  rule storeSettingsOps {
+    select when wrangler init_events 
     pre {
-      attrs = basePrototype{['PDS','profile']};
+      ops =  basePrototype{['PDS','settings']}.length();
     }
     {
       noop();
     }
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+      set ent:settings_operations ops;
+      raise wrangler event init_settings // init settings  
+            attributes {}
+    }
+  }
+  rule initializePdsSettings {
+    select when wrangler init_settings
+      foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (rid) 
+    pre {
+      //key_array = rid.keys();
+      mapedvalues = rid.values();
+      attrs= mapedvalues[0];
+    }
+    {
+      noop();
+    }
+    always {
+    raise pds event add_settings 
             attributes attrs
     }
   }
@@ -1169,11 +1209,38 @@ services.
 // ***                                      Event Barrier                                   ***
 // ********************************************************************************************
  
-
-  rule initializedBarrier{// after base pds is initialize update prototype pds and raise prototype events
-    select when pds new_map_added // general inited
+  // since we use for each to initialize the pds, we can not use a the single raised events from pds for our barrier. this barrier will have to be re-constructed.
+  //this will fire every so offten during a picos life
+  rule initializedBarrierA{// after base pds is initialize update prototype pds and raise prototype events
+    select when count ent:general_operations (pds new_map_added) // general inited
+    pre {
+    }
+    {
+      noop();
+    }
+    always {
+    raise wrangler event new_map_added  
+            attributes {}
+    }
+  }
+  //this will fire every so offten during a picos life
+  rule initializedBarrierB{// after base pds is initialize update prototype pds and raise prototype events
+    select when count ent:settings_operations (pds settings_added) // settings inited
+    pre {
+    }
+    {
+      noop();
+    }
+    always {
+    raise wrangler event settings_added  
+            attributes {}
+    }
+  }
+    rule initializedBarrierC{// after base pds is initialize update prototype pds and raise prototype events
+    select when wrangler new_map_added // general inited
             and pds profile_updated // profile inited
-            and pds settings_added // settings inited
+            and wrangler settings_added // settings inited
+            and wrangler init_events // only fire when the pico is created
     pre {
     }
     {
@@ -1184,7 +1251,6 @@ services.
             attributes {}
     }
   }
-
 // ********************************************************************************************
 // ***                                      PDS  Prototype Updates                          ***
 // ********************************************************************************************

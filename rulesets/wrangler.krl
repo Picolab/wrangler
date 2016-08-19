@@ -6,7 +6,7 @@ ruleset v1_wrangler {
     description <<
 Wrangler Core Module
 
-   use module v1_wrangler.dev alias wrangler
+    use module v1_wrangler alias wrangler
 
 This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
 When a PICO is created or authenticated this ruleset will be installed to provide essential
@@ -17,11 +17,10 @@ services.
     logging off
 
     use module b16x24 alias system_credentials
-    use module b507199x8 alias pds
+    use module wrangler_pds alias pds
     // errors raised to.... unknown
 
-    // Accounting keys
-      //none
+
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 

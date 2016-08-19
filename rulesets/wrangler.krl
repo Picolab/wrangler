@@ -1190,13 +1190,9 @@ services.
     select when wrangler init_settings
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (rid) 
     pre {
-<<<<<<< HEAD
       //key_array = rid.keys();
       mapedvalues = rid.values();
       attrs= mapedvalues[0];
-=======
-      attrs = basePrototype{['PDS','settings']};
->>>>>>> master
     }
     {
       noop();

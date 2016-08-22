@@ -16,7 +16,7 @@ services.
     
     logging off
 
-    use module b16x24 alias system_credentials
+    use module b16x42 alias system_credentials
     use module wrangler_pds alias pds
     // errors raised to.... unknown
 

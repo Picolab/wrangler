@@ -61,8 +61,8 @@
             "rulesets": {"prod": "b507888x5.prod",//"v1_wrangler.prod", 
                          "dev" : "b507888x5.prod" //"v1_wrangler.dev"
 			},
-            "bootstrap":{"prod": "b507901x0.prod", 
-                         "dev": "b507901x0.dev"
+            "bootstrap":{"prod": "b507199x1.prod", 
+                         "dev": "b507199x1.dev"
 			}
         };
 

@@ -6,7 +6,7 @@ ruleset v1_wrangler {
     description <<
 Wrangler Core Module
 
-    use module v1_wrangler alias wrangler
+    use module b507901x1 alias wrangler
 
 This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
 When a PICO is created or authenticated this ruleset will be installed to provide essential
@@ -413,10 +413,9 @@ services.
                 "discription": "Wrangler base prototype"
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ "v1_wrangler.dev",
+      "rids": [ 
                  "b507901x1.prod",// adams wrangler version. 
                 "b507888x6.prod" // pds
-                //"b507805x0.dev" developmet wrangler
                  //"a169x625"
               ],
       "channels" : [{
@@ -474,9 +473,9 @@ services.
                             "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
                             },
                 "general" : {"test":{"subtest":"just a test"}},
-                "settings": {"b507798x0.dev":{
+                "settings": {"b507901x1.prod":{
                                               "name":"wrangler",
-                                              "rid" :"b507798x0.dev",
+                                              "rid" :"b507901x1.prod",
                                               "data":{},
                                               "schema":["im","a","schema"],
                                               "attr":"first_key",
@@ -685,7 +684,7 @@ services.
           
           names = picos.none(function(child){
             eci = child[0]; 
-            name_return = skyQuery(eci,meta:host(),"v1_wrangler.dev","name",noParam);
+            name_return = skyQuery(eci,meta:host(),"b507901x1.prod","name",noParam);
             pico_name = name_return{"picoName"};
             (pico_name eq name)
             });

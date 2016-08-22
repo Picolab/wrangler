@@ -59,10 +59,10 @@
         
         var rids = {
             "rulesets": {"prod": "b507901x1.prod",//"v1_wrangler.prod", 
-                         "dev" : "b507901x1.prod" //"v1_wrangler.dev"
+                         "dev" : "b507901x1.prod" //"v1_wrangler.prod"
 			},
             "bootstrap":{"prod": "b507901x0.prod", 
-                         "dev": "b507901x0.dev"
+                         "dev": "b507901x0.prod"
 			}
         };
 

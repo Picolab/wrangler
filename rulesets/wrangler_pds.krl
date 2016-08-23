@@ -59,7 +59,7 @@ ruleset b506607x16 {
       multipleItems = function(namespace) {
         ent:general{namespace}
       };
-      return = (key.isnull()) => multipleItems( namespace) | item(namespace, key) ;
+      return = (key.isnull()) => (namespace.isnull() => ent:general | multipleItems( namespace) ) | item(namespace, key) ;
       status = namespace.isnull() => "failed" | "success";
       {
        'status'   : ( status ),
@@ -154,7 +154,7 @@ ruleset b506607x16 {
         ent:settings{[rid, "Data",value]}
       };
       return = (Key.isnull()) => (get_setting(Rid) ) | (
-                              Rid.isnull() => "error" | 
+                              Rid.isnull() => get_setting_all() | 
                               ( (key eq "Data") => get_setting_value_default(Rid,Key,detail) | get_setting_value(Rid,Key)));
       {
        'status'   : "success",// update   
@@ -172,7 +172,7 @@ ruleset b506607x16 {
      ent:settings{[setRID, "Schema"]}
     };
 
-    // -------------------------------------------- I think sorting and filtering should be done by client or spime_management and not the server
+    // -------------------------------------------- I think sorting and filtering should be done by client 
     setting_data_value = function(setRID, setKey) {
       ent:settings{[setRID, "Data", setKey]}
     };

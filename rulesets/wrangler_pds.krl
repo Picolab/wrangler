@@ -10,7 +10,7 @@ ruleset b506607x16 {
 
     provides items, get_keys, // general
      profile, // profile
-     settings, get_config_value, get_setting_data_value , config_value// settings
+     settings, get_config_value, get_setting_data_value , config_value, settings_names// settings
 
     
     sharing on

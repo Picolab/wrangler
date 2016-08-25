@@ -1155,21 +1155,21 @@ services.
 
   rule initializeGeneral {
     select when wrangler init_general
-      foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (namespace) 
+      foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (key_of_map) // for each "key"
     pre {
-      key_array = namespace.keys();
-      mapedvalues = namespace.values();
-      maps= mapedvalues[0];
+      general_map = basePrototype{['PDS','general']};
+      namespace = key_of_map;
+      mapedvalues = general_map{key_of_map};
       attrs = {
-        'namespace': key_array[0],
-        'mapvalues': maps.encode()
+        'namespace': namespace,
+        'mapvalues': mapedvalues.encode()
       };
     }
     {
       noop();
     }
     always {
-      log(">> namespace #{namespace} >>");
+      log(">> namespace #{mapedvalues} >>");
       raise pds event map_item // init general  
             attributes attrs
     }

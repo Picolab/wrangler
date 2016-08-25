@@ -1169,6 +1169,7 @@ services.
       noop();
     }
     always {
+      log(">> namespace #{namespace} >>");
       raise pds event map_item // init general  
             attributes attrs
     }

@@ -1121,9 +1121,31 @@ services.
     }
   }
 // ********************************************************************************************
-// ***                                      PDS  Base Initializing                               ***
+// ***                                      PDS  Base Initializing                          ***
 // ********************************************************************************************
-
+/*      
+---------------structure-example---------------
+"PDS" : {
+      "profile" : {
+                  "name":"base",
+                  "description":"discription of the general pds created",
+                  "location":"40.252683,-111.657486",
+                  "model":"unknown",
+                  "model_description":"no model at this time",
+                  "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
+                  },
+      "general" : {"test":{"subtest":"just a test"}},
+      "settings": {"b507901x1.prod":{
+                                    "name":"wrangler",
+                                    "rid" :"b507901x1.prod",
+                                    "data":{},
+                                    "schema":["im","a","schema"],
+                                    "attr":"first_key",
+                                    "value":"first_value"
+                                    }
+                  }
+    }
+*/
   rule initializeProfile {// this rule should build pds data structure
     select when wrangler init_events
     pre {
@@ -1190,18 +1212,18 @@ services.
   }
   rule initializePdsSettings {
     select when wrangler init_settings
-      foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (rid) 
+      foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {
-      //key_array = rid.keys();
-      mapedvalues = rid.values();
-      attrs= mapedvalues[0];
+      settings_map = basePrototype{['PDS','settings']};
+      rid = key_of_map;
+      settings = settings_map{key_of_map}; // settings are all the attributes add_settings requires 
     }
     {
       noop();
     }
     always {
     raise pds event add_settings 
-            attributes attrs
+            attributes settings
     }
   }
 

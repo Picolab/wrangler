@@ -23,7 +23,7 @@ services.
 
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, operationCount,//pico 
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -483,6 +483,12 @@ services.
                             }
               }
   };
+operationCount = function() {
+  {'general':ent:general_operations,
+    'settings':ent:settings_operations
+
+  }
+};
 
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype

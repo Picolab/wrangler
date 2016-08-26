@@ -1191,7 +1191,7 @@ services.
       noop();
     }
     always {
-      log(">> namespace #{mapedvalues} >>");
+      log(">> mapped values #{mapedvalues} >>");
       raise pds event map_item // init general  
             attributes attrs
     }
@@ -1222,6 +1222,7 @@ services.
       noop();
     }
     always {
+      log(">> attrs #{settings} >>");
     raise pds event add_settings 
             attributes settings
     }

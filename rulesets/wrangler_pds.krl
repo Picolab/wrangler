@@ -441,7 +441,7 @@ ruleset b506607x16 {
       set_name   = event:attr("name").defaultsTo(0,"no Name");
       set_rid    = event:attr("rid").defaultsTo(0,"no RID");
       set_schema = event:attr("schema").defaultsTo(0,"no Schema");
-      set_data   = event:attr("data").defaultsTo(0,"no Data");
+      //set_data   = event:attr("data").defaultsTo(0,"no Data");
       set_attr   = event:attr("attr").defaultsTo(0,"no setAttr");
       set_value  = event:attr("value").defaultsTo(0,"no Value");
 

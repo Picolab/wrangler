@@ -432,7 +432,7 @@ ruleset b506607x16 {
     //     "a169x222" : {
     //       "name"   : "",
     //       "rid"    : "a169x222",
-    //       "data"   : {set_attr:set_value},
+    //       "data"   : {data_key:set_value},
     //       "schema" : []
     //     }
   rule settings_added{ // will this fire with out kre stopping the failed passed varibles
@@ -443,7 +443,7 @@ ruleset b506607x16 {
       set_rid    = event:attr("keyed_rid").defaultsTo(0,"no keyed_rid");// rid is remove when passed in by prototype. changing rid to unique att.
       set_schema = event:attr("schema").defaultsTo(0,"no Schema");
       //set_data   = event:attr("data").defaultsTo(0,"no Data");
-      set_attr   = event:attr("attr").defaultsTo(0,"no setAttr");
+      set_attr   = event:attr("data_key").defaultsTo(0,"no setAttr");
       set_value  = event:attr("value").defaultsTo(0,"no Value");
 
     }

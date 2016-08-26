@@ -475,7 +475,7 @@ services.
                 "general" : {"test":{"subtest":"just a test"}},
                 "settings": {"b507901x1.prod":{
                                               "name":"wrangler",
-                                              "rid" :"b507901x1.prod",
+                                              "keyed_rid" :"b507901x1.prod",
                                               "data":{},
                                               "schema":["im","a","schema"],
                                               "attr":"first_key",
@@ -1137,7 +1137,7 @@ services.
       "general" : {"test":{"subtest":"just a test"}},
       "settings": {"b507901x1.prod":{
                                     "name":"wrangler",
-                                    "rid" :"b507901x1.prod",
+                                    "keyed_rid" :"b507901x1.prod",
                                     "data":{},
                                     "schema":["im","a","schema"],
                                     "attr":"first_key",

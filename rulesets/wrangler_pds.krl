@@ -440,7 +440,7 @@ ruleset b506607x16 {
     pre {
       b= event:attrs().klog("all attrs: ");
       set_name   = event:attr("name").defaultsTo(0,"no Name");
-      set_rid    = event:attr("rid").defaultsTo(0,"no RID");
+      set_rid    = event:attr("keyed_rid").defaultsTo(0,"no RID");// rid is remove when passed in by prototype. changing rid to unique att.
       set_schema = event:attr("schema").defaultsTo(0,"no Schema");
       //set_data   = event:attr("data").defaultsTo(0,"no Data");
       set_attr   = event:attr("attr").defaultsTo(0,"no setAttr");

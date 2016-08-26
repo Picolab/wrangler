@@ -1246,7 +1246,7 @@ operationCount = function() {
   //this will fire every so offten during a picos life
   rule initializedBarrierA{// after base pds is initialize update prototype pds and raise prototype events
     //select when count ent:general_operations (pds new_map_added) // general inited// does not work
-    select when count 1 (pds new_map_added) // count will need to be updated as base prototype is changed
+    select when count 0 (pds new_map_added) // count will need to be updated as base prototype is changed
     pre {
     }
     {
@@ -1260,7 +1260,7 @@ operationCount = function() {
   //this will fire every so offten during a picos life
   rule initializedBarrierB{// after base pds is initialize update prototype pds and raise prototype events
     //select when count ent:settings_operations (pds settings_added) // settings inited// does not work
-    select when count 1 (pds settings_added)  // count will need to be updated as base prototype is changed
+    select when count 0 (pds settings_added)  // count will need to be updated as base prototype is changed
     pre {
     }
     {

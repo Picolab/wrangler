@@ -1215,14 +1215,14 @@ services.
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {
       settings_map = basePrototype{['PDS','settings']};
-      rid = key_of_map;
-      settings = settings_map{key_of_map}; // settings are all the attributes add_settings requires 
+      //rid = key_of_map;
+      settings = settings_map{key_of_map}.klog("settings attrs: "); // settings are all the attributes add_settings requires 
     }
     {
       noop();
     }
     always {
-      log(">> attrs #{settings} >>");
+      log(">> attrs #{key_of_map} >>");
     raise pds event add_settings 
             attributes settings
     }

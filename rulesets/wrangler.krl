@@ -1355,11 +1355,11 @@ operationCount = function() {
       Prototype_attrs = Prototype_event{'attrs'};
     }
     {
-      noop();
+      event:send({'cid':meta:eci()}, Prototype_domain, Prototype_type)
+        with attrs = Prototype_attrs;
     }
     always {
-    raise wrangler event Prototype_type 
-            attributes Prototype_attrs
+      log "raise a prototype event with event send.";
     }
   }
 
@@ -1377,11 +1377,11 @@ operationCount = function() {
       Prototype_attrs = Prototype_event{'attrs'}.decode();
     }
     {
-      noop();
+      event:send({'cid':meta:eci()}, Prototype_domain, Prototype_type)
+        with attrs = Prototype_attrs;
     }
     always {
-    raise Prototype_domain event Prototype_type 
-            attributes Prototype_attrs
+      log "raise a prototype event with event send.";
     }
   }
 

@@ -438,6 +438,7 @@ ruleset b506607x16 {
   rule settings_added{ // will this fire with out kre stopping the failed passed varibles
     select when pds add_settings
     pre {
+      b= event:attrs().klog("all attrs: ");
       set_name   = event:attr("name").defaultsTo(0,"no Name");
       set_rid    = event:attr("rid").defaultsTo(0,"no RID");
       set_schema = event:attr("schema").defaultsTo(0,"no Schema");

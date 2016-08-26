@@ -449,9 +449,9 @@ ruleset b506607x16 {
     always {
       set ent:settings{[set_rid, "name"]}   set_name ;
       set ent:settings{[set_rid, "rid"]}    set_rid ;
-      set ent:settings{[set_rid, "schema"]} set_schema if not set_schema;
+      set ent:settings{[set_rid, "schema"]} set_schema if set_schema;
       //set ent:settings{[set_rid, "data"]}   set_data if not set_data;
-      set ent:settings{[set_rid, "data", set_attr]} set_value if not set_attr;
+      set ent:settings{[set_rid, "data", set_attr]} set_value if set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }

@@ -1162,7 +1162,7 @@ operationCount = function() {
             attributes attrs
     }
   }
-
+/*
   rule storeGeneralOps {
     select when wrangler init_events 
     pre {
@@ -1177,9 +1177,10 @@ operationCount = function() {
             attributes {}
     }
   }
+  */
 
   rule initializeGeneral {
-    select when wrangler init_general
+    select when wrangler init_events
       foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (key_of_map) // for each "key"
     pre {
       general_map = basePrototype{['PDS','general']};
@@ -1199,6 +1200,7 @@ operationCount = function() {
             attributes attrs
     }
   }
+  /*
   rule storeSettingsOps {
     select when wrangler init_events 
     pre {
@@ -1213,8 +1215,9 @@ operationCount = function() {
             attributes {}
     }
   }
+  */
   rule initializePdsSettings {
-    select when wrangler init_settings
+    select when wrangler init_events
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {
       settings_map = basePrototype{['PDS','settings']};
@@ -1238,7 +1241,8 @@ operationCount = function() {
   // since we use for each to initialize the pds, we can not use a the single raised events from pds for our barrier. this barrier will have to be re-constructed.
   //this will fire every so offten during a picos life
   rule initializedBarrierA{// after base pds is initialize update prototype pds and raise prototype events
-    select when count 1 (pds new_map_added) // general inited
+    //select when count ent:general_operations (pds new_map_added) // general inited// does not work
+    select when count 1 (pds new_map_added) // count will need to be updated as base prototype is changed
     pre {
     }
     {
@@ -1251,7 +1255,8 @@ operationCount = function() {
   }
   //this will fire every so offten during a picos life
   rule initializedBarrierB{// after base pds is initialize update prototype pds and raise prototype events
-    select when count ent:settings_operations (pds settings_added) // settings inited
+    //select when count ent:settings_operations (pds settings_added) // settings inited// does not work
+    select when count 1 (pds settings_added)  // count will need to be updated as base prototype is changed
     pre {
     }
     {
@@ -1262,6 +1267,8 @@ operationCount = function() {
             attributes {}
     }
   }
+  
+  // count will need to be updated with base prototype.
     rule initializedBarrierC{// after base pds is initialize update prototype pds and raise prototype events
     select when wrangler new_map_added // general inited
             and pds profile_updated // profile inited
@@ -1297,14 +1304,14 @@ operationCount = function() {
   }
   rule updatePrototypeGeneral {
     select when wrangler pds_inited 
-      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype PDS general: ") setting (namespace) 
+      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype PDS general: ")  setting (key_of_map) // for each "key"
     pre {
-      key_array = namespace.keys();
-      mapedvalues = namespace.values();
-      maps= mapedvalues[0];
+      general_map = ent:prototypes{['at_creation','PDS','general']};
+      namespace = key_of_map;
+      mapedvalues = general_map{key_of_map};
       attrs = {
-        'namespace': key_array[0],
-        'mapvalues': maps.encode()
+        'namespace': namespace,
+        'mapvalues': mapedvalues.encode()
       };
     }
     {
@@ -1316,17 +1323,21 @@ operationCount = function() {
     }
   }
 
-  rule updatePrototypePdsSettings {// this rule should build pds data structure
+  rule updatePrototypePdsSettings {
     select when wrangler pds_inited
+   foreach basePrototype{['at_creation','PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {
-      attrs = ent:prototypes{['at_creation','PDS','settings']};
+      settings_map = basePrototype{['at_creation','PDS','settings']};
+      //rid = key_of_map;
+      settings = settings_map{key_of_map}.klog("settings attrs: "); // settings are all the attributes add_settings requires 
     }
     {
       noop();
     }
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
-            attributes attrs
+      log(">> attrs #{key_of_map} >>");
+    raise pds event add_settings 
+            attributes settings
     }
   }
 
@@ -1360,6 +1371,7 @@ operationCount = function() {
     select when wrangler pds_inited
     foreach ent:prototypes{['at_creation','Prototype_events']} setting (Prototype_event)
     pre {
+      a= Prototype_event.klog("prototype event: ");
       Prototype_domain = Prototype_event{'domain'};
       Prototype_type = Prototype_event{'type'};
       Prototype_attrs = Prototype_event{'attrs'};

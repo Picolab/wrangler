@@ -1238,7 +1238,7 @@ operationCount = function() {
   // since we use for each to initialize the pds, we can not use a the single raised events from pds for our barrier. this barrier will have to be re-constructed.
   //this will fire every so offten during a picos life
   rule initializedBarrierA{// after base pds is initialize update prototype pds and raise prototype events
-    select when count ent:general_operations (pds new_map_added) // general inited
+    select when count 1 (pds new_map_added) // general inited
     pre {
     }
     {

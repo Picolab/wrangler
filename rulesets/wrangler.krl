@@ -1287,7 +1287,7 @@ operationCount = function() {
 // ********************************************************************************************
 // ***                                      PDS  Prototype Updates                          ***
 // ********************************************************************************************
-
+// NEED TO UPDATE RULES TO NOT FIRE IF NO Prototype UPDATES ARE NEEDED.
 
   rule updatePrototypeProfile {
     select when wrangler pds_inited
@@ -1374,13 +1374,13 @@ operationCount = function() {
       a= Prototype_event.klog("prototype event: ");
       Prototype_domain = Prototype_event{'domain'};
       Prototype_type = Prototype_event{'type'};
-      Prototype_attrs = Prototype_event{'attrs'};
+      Prototype_attrs = Prototype_event{'attrs'}.decode();
     }
     {
       noop();
     }
     always {
-    raise wrangler event Prototype_type 
+    raise Prototype_domain event Prototype_type 
             attributes Prototype_attrs
     }
   }

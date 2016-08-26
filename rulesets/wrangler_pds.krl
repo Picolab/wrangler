@@ -153,8 +153,8 @@ ruleset b506607x16 {
       get_setting_value_default = function(rid, varible, value) {
         ent:settings{[rid, "Data",value]}
       };
-      return = (Key.isnull()) => (get_setting(Rid) ) | (
-                              Rid.isnull() => get_setting_all() | 
+      return =  Rid.isnull() => get_setting_all() | (Key.isnull()) => (get_setting(Rid) ) | (
+                             
                               ( (key eq "Data") => get_setting_value_default(Rid,Key,detail) | get_setting_value(Rid,Key)));
       {
        'status'   : "success",// update   

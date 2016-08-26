@@ -23,7 +23,7 @@ services.
 
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, operationCount,//pico 
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //operationCount,//pico 
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -353,11 +353,14 @@ services.
   profile = function(key) {
     pds:profile(key);
   }
-  pico = function(namespace) {
+  pico = function() {
+    profile_return = pds:profile();
+    settings_return = pds:settings();
+    general_return = pds:items();
     {
-      "profile" : pds:profile(),
-      "settings" : pds:settings(),
-      "general" : pds:items(namespace)
+      "profile" : profile_return{'profile'},
+      "settings" : settings_return{'settings'},
+      "general" : general_return{'general'}
     }
   }
 
@@ -483,13 +486,14 @@ services.
                             }
               }
   };
+  /*
 operationCount = function() {
   {'general':ent:general_operations,
     'settings':ent:settings_operations
 
   }
 };
-
+*/
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
@@ -537,7 +541,7 @@ operationCount = function() {
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
     event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
-      with attrs = attributes
+      with attrs = attributes;
   }
 
 // ********************************************************************************************

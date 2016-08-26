@@ -476,9 +476,8 @@ services.
                 "settings": {"b507901x1.prod":{
                                               "name":"wrangler",
                                               "keyed_rid" :"b507901x1.prod",
-                                              "data":{},
                                               "schema":["im","a","schema"],
-                                              "attr":"first_key",
+                                              "data_key":"first_key",
                                               "value":"first_value"
                                               }
                             }
@@ -1138,10 +1137,8 @@ services.
       "settings": {"b507901x1.prod":{
                                     "name":"wrangler",
                                     "keyed_rid" :"b507901x1.prod",
-                                    "data":{},
+                                    "data":{"first_key":"first_value"},
                                     "schema":["im","a","schema"],
-                                    "attr":"first_key",
-                                    "value":"first_value"
                                     }
                   }
     }

@@ -23,7 +23,7 @@ services.
 
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, //pico 
+    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, pico, //operationCount,
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
@@ -353,11 +353,14 @@ services.
   profile = function(key) {
     pds:profile(key);
   }
-  pico = function(namespace) {
+  pico = function() {
+    profile_return = pds:profile();
+    settings_return = pds:settings();
+    general_return = pds:items();
     {
-      "profile" : pds:profile(),
-      "settings" : pds:settings(),
-      "general" : pds:items(namespace)
+      "profile" : profile_return{'profile'},
+      "settings" : settings_return{'settings'},
+      "general" : general_return{'general'}
     }
   }
 
@@ -414,8 +417,7 @@ services.
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
       "rids": [ "v1_wrangler.dev",
-                "b507199x8.dev" // pds
-                //"b507805x0.dev" developmet wrangler
+                "v1_wrangler_pds.dev" // pds
                  //"a169x625"
               ],
       "channels" : [{
@@ -475,16 +477,22 @@ services.
                 "general" : {"test":{"subtest":"just a test"}},
                 "settings": {"b507798x0.dev":{
                                               "name":"wrangler",
-                                              "rid" :"b507798x0.dev",
-                                              "data":{},
+                                              "keyed_rid" :"b507798x0.dev",
                                               "schema":["im","a","schema"],
-                                              "attr":"first_key",
+                                              "data_key":"first_key",
                                               "value":"first_value"
                                               }
                             }
               }
   };
+  /*
+operationCount = function() {
+  {'general':ent:general_operations,
+    'settings':ent:settings_operations
 
+  }
+};
+*/
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
 
@@ -504,11 +512,11 @@ services.
 // protype has a meta, rids, channels, events( creation events ) 
 
 // create child from protype will take the name with a option of a prototype with a default to base.
-  createChild = defaction(name, prototype_name){ 
-    configure using protype_name = prototype_name.defaultsTo("base", "Prototype not found"); // base must be installed by default for prototypeing to work 
+  createChild = defaction(name){ 
+    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
-    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found");
+    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
     rids = prototype{"rids"};
     // create child and give name
     attributes = {
@@ -528,11 +536,11 @@ services.
          .pset(ent:my_children);
     // bootstrap child
     //combine new_ruleset calls 
-    joined_rids_to_install = basePrototype{"rids"}.append(rids).klog('rids to be installed in child: ');
-    a = pci:new_ruleset(newPicoEci,joined_rids_to_install); // install base/prototype rids (bootstrap child) 
+    joined_rids_to_install = prototype_name eq "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids);
+    a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
     event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
-      with attrs = attributes
+      with attrs = attributes;
   }
 
 // ********************************************************************************************
@@ -1009,7 +1017,7 @@ services.
 
    // if(checkPicoName(name)) then 
     {
-      createChild(name,prototype); //with protype_name = prototype; 
+      createChild(name) with protype_name = prototype; 
     }
     fired {
       log(standardOut("pico created with name #{name}"));
@@ -1121,9 +1129,29 @@ services.
     }
   }
 // ********************************************************************************************
-// ***                                      PDS  Base Initializing                               ***
+// ***                                      PDS  Base Initializing                          ***
 // ********************************************************************************************
-
+/*      
+---------------structure-example---------------
+"PDS" : {
+      "profile" : {
+                  "name":"base",
+                  "description":"discription of the general pds created",
+                  "location":"40.252683,-111.657486",
+                  "model":"unknown",
+                  "model_description":"no model at this time",
+                  "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
+                  },
+      "general" : {"test":{"subtest":"just a test"}},
+      "settings": {"b507901x1.prod":{
+                                    "name":"wrangler",
+                                    "keyed_rid" :"b507901x1.prod",
+                                    "data":{"first_key":"first_value"},
+                                    "schema":["im","a","schema"],
+                                    }
+                  }
+    }
+*/
   rule initializeProfile {// this rule should build pds data structure
     select when wrangler init_events
     pre {
@@ -1137,39 +1165,75 @@ services.
             attributes attrs
     }
   }
+/*
+  rule storeGeneralOps {
+    select when wrangler init_events 
+    pre {
+      ops =  basePrototype{['PDS','general']}.length();
+    }
+    {
+      noop();
+    }
+    always {
+      set ent:general_operations ops;
+      raise wrangler event init_general // init general  
+            attributes {}
+    }
+  }
+  */
 
   rule initializeGeneral {
-    select when wrangler init_events 
-      foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (namespace) 
+    select when wrangler init_events
+      foreach basePrototype{['PDS','general']}.klog("PDS General: ") setting (key_of_map) // for each "key"
     pre {
-      key_array = namespace.keys();
-      mapedvalues = namespace.values();
-      maps= mapedvalues[0];
+      general_map = basePrototype{['PDS','general']};
+      namespace = key_of_map;
+      mapedvalues = general_map{key_of_map};
       attrs = {
-        'namespace': key_array[0],
-        'mapvalues': maps.encode()
+        'namespace': namespace,
+        'mapvalues': mapedvalues.encode()
       };
     }
     {
       noop();
     }
     always {
+      log(">> mapped values #{mapedvalues} >>");
       raise pds event map_item // init general  
             attributes attrs
     }
   }
-
-  rule initializePdsSettings {
-    select when wrangler init_events
+  /*
+  rule storeSettingsOps {
+    select when wrangler init_events 
     pre {
-      attrs = basePrototype{['PDS','settings']};
+      ops =  basePrototype{['PDS','settings']}.length();
     }
     {
       noop();
     }
     always {
+      set ent:settings_operations ops;
+      raise wrangler event init_settings // init settings  
+            attributes {}
+    }
+  }
+  */
+  rule initializePdsSettings {
+    select when wrangler init_events
+      foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
+    pre {
+      settings_map = basePrototype{['PDS','settings']};
+      //rid = key_of_map;
+      settings = settings_map{key_of_map}.klog("settings attrs: "); // settings are all the attributes add_settings requires 
+    }
+    {
+      noop();
+    }
+    always {
+      log(">> attrs #{key_of_map} >>");
     raise pds event add_settings 
-            attributes attrs
+            attributes settings
     }
   }
 
@@ -1177,11 +1241,42 @@ services.
 // ***                                      Event Barrier                                   ***
 // ********************************************************************************************
  
-
-  rule initializedBarrier{// after base pds is initialize update prototype pds and raise prototype events
-    select when pds new_map_added // general inited
+  // since we use for each to initialize the pds, we can not use a the single raised events from pds for our barrier. this barrier will have to be re-constructed.
+  //this will fire every so offten during a picos life
+  rule initializedBarrierA{// after base pds is initialize update prototype pds and raise prototype events
+    //select when count ent:general_operations (pds new_map_added) // general inited// does not work
+    select when count 0 (pds new_map_added) // count will need to be updated as base prototype is changed
+    pre {
+    }
+    {
+      noop();
+    }
+    always {
+    raise wrangler event new_map_added  
+            attributes {}
+    }
+  }
+  //this will fire every so offten during a picos life
+  rule initializedBarrierB{// after base pds is initialize update prototype pds and raise prototype events
+    //select when count ent:settings_operations (pds settings_added) // settings inited// does not work
+    select when count 0 (pds settings_added)  // count will need to be updated as base prototype is changed
+    pre {
+    }
+    {
+      noop();
+    }
+    always {
+    raise wrangler event settings_added  
+            attributes {}
+    }
+  }
+  
+  // count will need to be updated with base prototype.
+    rule initializedBarrierC{// after base pds is initialize update prototype pds and raise prototype events
+    select when wrangler new_map_added // general inited
             and pds profile_updated // profile inited
-            and pds settings_added // settings inited
+            and wrangler settings_added // settings inited
+            and wrangler init_events // only fire when the pico is created
     pre {
     }
     {
@@ -1192,11 +1287,10 @@ services.
             attributes {}
     }
   }
-
 // ********************************************************************************************
 // ***                                      PDS  Prototype Updates                          ***
 // ********************************************************************************************
-
+// NEED TO UPDATE RULES TO NOT FIRE IF NO Prototype UPDATES ARE NEEDED.
 
   rule updatePrototypeProfile {
     select when wrangler pds_inited
@@ -1213,14 +1307,14 @@ services.
   }
   rule updatePrototypeGeneral {
     select when wrangler pds_inited 
-      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype PDS general: ") setting (namespace) 
+      foreach ent:prototypes{['at_creation','PDS','general']}.klog("Prototype PDS general: ")  setting (key_of_map) // for each "key"
     pre {
-      key_array = namespace.keys();
-      mapedvalues = namespace.values();
-      maps= mapedvalues[0];
+      general_map = ent:prototypes{['at_creation','PDS','general']};
+      namespace = key_of_map;
+      mapedvalues = general_map{key_of_map};
       attrs = {
-        'namespace': key_array[0],
-        'mapvalues': maps.encode()
+        'namespace': namespace,
+        'mapvalues': mapedvalues.encode()
       };
     }
     {
@@ -1232,17 +1326,21 @@ services.
     }
   }
 
-  rule updatePrototypePdsSettings {// this rule should build pds data structure
+  rule updatePrototypePdsSettings {
     select when wrangler pds_inited
+   foreach basePrototype{['at_creation','PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {
-      attrs = ent:prototypes{['at_creation','PDS','settings']};
+      settings_map = basePrototype{['at_creation','PDS','settings']};
+      //rid = key_of_map;
+      settings = settings_map{key_of_map}.klog("settings attrs: "); // settings are all the attributes add_settings requires 
     }
     {
       noop();
     }
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
-            attributes attrs
+      log(">> attrs #{key_of_map} >>");
+    raise pds event add_settings 
+            attributes settings
     }
   }
 
@@ -1260,11 +1358,11 @@ services.
       Prototype_attrs = Prototype_event{'attrs'};
     }
     {
-      noop();
+      event:send({'cid':meta:eci()}, Prototype_domain, Prototype_type)
+        with attrs = Prototype_attrs;
     }
     always {
-    raise wrangler event Prototype_type 
-            attributes Prototype_attrs
+      log "raise a prototype event with event send.";
     }
   }
 
@@ -1276,16 +1374,17 @@ services.
     select when wrangler pds_inited
     foreach ent:prototypes{['at_creation','Prototype_events']} setting (Prototype_event)
     pre {
+      a= Prototype_event.klog("prototype event: ");
       Prototype_domain = Prototype_event{'domain'};
       Prototype_type = Prototype_event{'type'};
-      Prototype_attrs = Prototype_event{'attrs'};
+      Prototype_attrs = Prototype_event{'attrs'}.decode();
     }
     {
-      noop();
+      event:send({'cid':meta:eci()}, Prototype_domain, Prototype_type)
+        with attrs = Prototype_attrs;
     }
     always {
-    raise wrangler event Prototype_type 
-            attributes Prototype_attrs
+      log "raise a prototype event with event send.";
     }
   }
 

@@ -10,7 +10,7 @@ ruleset b506607x16 {
 
     provides items, get_keys, // general
      profile, // profile
-     settings, get_config_value, get_setting_data_value , config_value// settings
+     settings, get_config_value, get_setting_data_value , config_value, settings_names// settings
 
     
     sharing on
@@ -59,7 +59,7 @@ ruleset b506607x16 {
       multipleItems = function(namespace) {
         ent:general{namespace}
       };
-      return = (key.isnull()) => multipleItems( namespace) | item(namespace, key) ;
+      return = (key.isnull()) => (namespace.isnull() => ent:general | multipleItems( namespace) ) | item(namespace, key) ;
       status = namespace.isnull() => "failed" | "success";
       {
        'status'   : ( status ),
@@ -153,8 +153,8 @@ ruleset b506607x16 {
       get_setting_value_default = function(rid, varible, value) {
         ent:settings{[rid, "Data",value]}
       };
-      return = (Key.isnull()) => (get_setting(Rid) ) | (
-                              Rid.isnull() => "error" | 
+      return =  Rid.isnull() => get_setting_all() | (Key.isnull()) => (get_setting(Rid) ) | (
+                             
                               ( (key eq "Data") => get_setting_value_default(Rid,Key,detail) | get_setting_value(Rid,Key)));
       {
        'status'   : "success",// update   
@@ -172,7 +172,7 @@ ruleset b506607x16 {
      ent:settings{[setRID, "Schema"]}
     };
 
-    // -------------------------------------------- I think sorting and filtering should be done by client or spime_management and not the server
+    // -------------------------------------------- I think sorting and filtering should be done by client 
     setting_data_value = function(setRID, setKey) {
       ent:settings{[setRID, "Data", setKey]}
     };
@@ -432,26 +432,27 @@ ruleset b506607x16 {
     //     "a169x222" : {
     //       "name"   : "",
     //       "rid"    : "a169x222",
-    //       "data"   : {set_attr:set_value},
+    //       "data"   : {data_key:set_value},
     //       "schema" : []
     //     }
   rule settings_added{ // will this fire with out kre stopping the failed passed varibles
     select when pds add_settings
     pre {
+      b= event:attrs().klog("all attrs: ");
       set_name   = event:attr("name").defaultsTo(0,"no Name");
-      set_rid    = event:attr("rid").defaultsTo(0,"no RID");
+      set_rid    = event:attr("keyed_rid").defaultsTo(0,"no keyed_rid");// rid is remove when passed in by prototype. changing rid to unique att.
       set_schema = event:attr("schema").defaultsTo(0,"no Schema");
-      set_data   = event:attr("data").defaultsTo(0,"no Data");
-      set_attr   = event:attr("attr").defaultsTo(0,"no setAttr");
+      //set_data   = event:attr("data").defaultsTo(0,"no Data");
+      set_attr   = event:attr("data_key").defaultsTo(0,"no setAttr");
       set_value  = event:attr("value").defaultsTo(0,"no Value");
 
     }
     always {
-      set ent:settings{[set_rid, "name"]}   set_name if not set_name;
-      set ent:settings{[set_rid, "rid"]}    set_rid if not set_rid;
-      set ent:settings{[set_rid, "schema"]} set_schema if not set_schema;
+      set ent:settings{[set_rid, "name"]}   set_name ;
+      set ent:settings{[set_rid, "rid"]}    set_rid ;
+      set ent:settings{[set_rid, "schema"]} set_schema if set_schema;
       //set ent:settings{[set_rid, "data"]}   set_data if not set_data;
-      set ent:settings{[set_rid, "data", set_attr]} set_value if not set_attr;
+      set ent:settings{[set_rid, "data", set_attr]} set_value if set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }

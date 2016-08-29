@@ -1,15 +1,16 @@
-# wrangler
+# Wrangler
 
 
-Wrangler is an open-source set of software services for [picos](http://www.windley.com/archives/2015/11/reactive_programming_with_picos.shtml). 
+Wrangler is an set of software services for [picos](http://www.windley.com/archives/2015/11/reactive_programming_with_picos.shtml). 
 
-Wrangler provides developers and users alike with significant benefits, including:
+Wrangler lets developers of reactive systems using picos:
 
-* Less code to write for *speed to market*
-* Support for *inter-pico channels* that support rich sharing.
-* Event-based for *real-time interactions*
-* *User control* of data and privacy-by-design
-* Open source
+* Write less code for *speed to market*
+* Easily create *inter-pico channels* that support rich sharing.
+* Use event-based programming for *real-time interactions*
+* Support *User control* of data and privacy-by-design
+
+Wrangler is open source. 
 
 Wrangler is the replacement for an earlier operating system for picos (which were then called personal clouds) called CloudOS. Here are a few earlier topics on CloudOS. 
 

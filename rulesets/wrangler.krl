@@ -539,7 +539,7 @@ operationCount = function() {
     joined_rids_to_install = prototype_name eq "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids);
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
-    event:send({"eci":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
+    event:send({'cid':newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes;
   }
 

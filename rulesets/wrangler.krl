@@ -434,6 +434,10 @@ services.
                     }
                     ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
                     // belongs in relationManager 
+      "prototypes" : [{
+                      "url" : "https://raw.githubusercontent.com/burdettadam/Practice-with-KRL/master/prototype.json",
+                      "prototype_name": "base_add_test"
+                      }],// add prototype by url
       "subscriptions_request": [{
                                   "name"          : "basePrototypeName",
                                   "name_space"    : "basePrototypeNameSpace",
@@ -513,10 +517,10 @@ operationCount = function() {
 
 // create child from protype will take the name with a option of a prototype with a default to base.
   createChild = defaction(name){ 
-    configure using protype_name = "base"; // base must be installed by default for prototypeing to work 
+    configure using prototype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
-    prototype = prototypes{protype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
+    prototype = prototypes{prototype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
     rids = prototype{"rids"};
     // create child and give name
     attributes = {
@@ -539,7 +543,7 @@ operationCount = function() {
     joined_rids_to_install = prototype_name eq "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids);
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
-    event:send({'cid':newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
+    event:send({"cid":newPicoEci}, "wrangler", "create_prototype") // event to child to handle prototype creation 
       with attrs = attributes;
   }
 
@@ -1010,14 +1014,13 @@ operationCount = function() {
   rule createChild { 
     select when wrangler child_creation
     pre {
-      attribute = event:attrs();
       name = event:attr("name").defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
       prototype = event:attr("prototype").defaultsTo("devtools", standardError("missing event attr prototype"));           
     }
 
    // if(checkPicoName(name)) then 
     {
-      createChild(name) with protype_name = prototype; 
+      createChild(name) with prototype_name = prototype; 
     }
     fired {
       log(standardOut("pico created with name #{name}"));
@@ -1066,7 +1069,7 @@ operationCount = function() {
       noop();
     }
     always {
-      log("init pds");
+      log("init channels");
       raise wrangler event "channel_creation_requested" 
             attributes attrs.klog("attributes : ")
     }
@@ -1083,8 +1086,25 @@ operationCount = function() {
       noop();
     }
     always {
-      log("init pds");
+      log("init subscription");
       raise wrangler event "subscription" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+
+// ---------------------- base Prototypes adding ----------------------
+  rule initializebasePrototypes {
+    select when wrangler init_events 
+      foreach basePrototype{'prototypes'}.klog("Prototype base add prototypes: ") setting (prototypes_url)
+    pre {
+      attrs = prototypes_url;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init add prototypes");
+      raise wrangler event "add_prototype" 
             attributes attrs.klog("attributes : ")
     }
   }
@@ -1112,6 +1132,7 @@ operationCount = function() {
             attributes attrs.klog("attributes : ")
     }
   }
+
 // ---------------------- prototype subscription creation ----------------------
   rule initializePrototypeSubscriptions {
     select when wrangler init_events 
@@ -1128,6 +1149,24 @@ operationCount = function() {
             attributes attrs.klog("attributes : ")
     }
   }
+
+// ---------------------- base Prototypes adding ----------------------
+  rule initializePrototypePrototypes {
+    select when wrangler init_events 
+      foreach ent:prototypes{['at_creation','prototypes']}.klog("Prototype add prototypes: ") setting (prototypes_url)
+    pre {
+      attrs = prototypes_url;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init add prototypes");
+      raise wrangler event "add_prototype" 
+            attributes attrs.klog("attributes : ");
+    }
+  }
+  
 // ********************************************************************************************
 // ***                                      PDS  Base Initializing                          ***
 // ********************************************************************************************
@@ -1396,8 +1435,15 @@ operationCount = function() {
     select when wrangler add_prototype
             or  wrangler update_prototype
     pre {
-      prototype = event:attr("prototype").klog("prototype: ");
-      proto_obj = prototype.decode().klog("decoded_proto: ");
+      proto_from_url = function(){
+        prototype_url = event:attr("url").klog("prototype_url: ");
+        response = http:get(prototype_url, {});
+        response_content = response{"content"}.decode();
+        response_content
+      };
+
+      prototype = event:attr("url").isnull() => event:attr("prototype").klog("prototype: ") | proto_from_url();
+      proto_obj = prototype.decode().klog("decoded_proto: "); // this decode is redundant, but the rule works so Im not messing with it.
       prototype_name = event:attr("prototype_name");
     }
     // should we always add something?

@@ -421,53 +421,39 @@ services.
                  //"a169x625"
               ],
       "channels" : [{
-                      "name"       : "testPrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "prototypes test attrs",
-                      "policy"     : "not implemented"
-                    },
-                    {
-                      "name"       : "test2PrototypChannel",
-                      "type"       : "ProtoType",
-                      "attributes" : "prototypes test attrs",
+                      "name"       : "wellknown",
+                      "type"       : "wrangler",
+                      "attributes" : "wrangler test attrs",
                       "policy"     : "not implemented"
                     }
-                    ], // could be [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-                    // belongs in relationManager 
-      "prototypes" : [{
+                    ], // we could instead use tuples  [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
+      "prototypes" : [{// belongs in relationManager 
                       "url" : "https://raw.githubusercontent.com/burdettadam/Practice-with-KRL/master/prototype.json",
                       "prototype_name": "base_add_test"
                       }],// add prototype by url
-      "subscriptions_request": [{
-                                  "name"          : "basePrototypeName",
-                                  "name_space"    : "basePrototypeNameSpace",
-                                  "my_role"       : "son",
-                                  "subscriber_role"     : "test",
-                                  "subscriber_eci"    : "1654165",
-                                  "channel_type"  : "ProtoType",
+      "children" : [
+                    /*{
+                      "name" : "testChild",
+                      "prototype" : "base_add_test"
+                      }*/
+                      ],// add prototype by url
+      "subscriptions_request": [/*{
+                                  "name"          : "parent-child",
+                                  "name_space"    : "wrangler",
+                                  "my_role"       : "child",
+                                  "subscriber_role"     : "parent",
+                                  "subscriber_eci"    : ["owner"],
+                                  "channel_type"  : "wrangler",
                                   "attrs"         : "nogiven"
-                                }],
-      "Prototype_events" : [{
+                                }*/],
+      "Prototype_events" : [
+                            /*{
                               'domain': 'wrangler',
                               'type'  : 'base_prototype_event1',
                               'attrs' : {'attr1':'1',
                                           'attr2':'2'
                                         }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'base_prototype_event2',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            },
-                            {
-                              'domain': 'wrangler',
-                              'type'  : 'base_prototype_event3',
-                              'attrs' : {'attr1':'1',
-                                          'attr2':'2'
-                                        }
-                            }
+                            }*/
                             ], // array of maps
       "PDS" : {
                 "profile" : {
@@ -1017,7 +1003,6 @@ operationCount = function() {
       name = event:attr("name").defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
       prototype = event:attr("prototype").defaultsTo("devtools", standardError("missing event attr prototype"));           
     }
-
    // if(checkPicoName(name)) then 
     {
       createChild(name) with prototype_name = prototype; 
@@ -1075,29 +1060,12 @@ operationCount = function() {
     }
   }
 
-// ---------------------- base subscription creation ----------------------
-  rule initializebaseSubscriptions {
-    select when wrangler init_events 
-      foreach basePrototype{'subscriptions_request'}.klog("Prototype base subscriptions_request: ") setting (subscription)
-    pre {
-      attrs = subscription;
-    }
-    {
-      noop();
-    }
-    always {
-      log("init subscription");
-      raise wrangler event "subscription" 
-            attributes attrs.klog("attributes : ")
-    }
-  }
-
 // ---------------------- base Prototypes adding ----------------------
   rule initializebasePrototypes {
     select when wrangler init_events 
-      foreach basePrototype{'prototypes'}.klog("Prototype base add prototypes: ") setting (prototypes_url)
+      foreach basePrototype{'prototypes'}.klog("Prototype base add prototypes: ") setting (prototype)
     pre {
-      attrs = prototypes_url;
+      attrs = prototype;
     }
     {
       noop();
@@ -1108,6 +1076,75 @@ operationCount = function() {
             attributes attrs.klog("attributes : ")
     }
   }
+// ---------------------- base Prototypes children creation ----------------------
+  rule initializebasechildren {
+    select when wrangler init_events 
+      foreach basePrototype{'children'}.klog("Prototype base create children: ") setting (child)
+    pre {
+      attrs = child;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init add prototypes");
+      raise wrangler event "child_creation" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+
+// ---------------------- base subscription creation ----------------------
+  rule initializebaseSubscriptions {
+    select when wrangler init_events 
+      foreach basePrototype{'subscriptions_request'}.klog("Prototype base subscriptions_request: ") setting (subscription)
+    pre {
+      getRootEci = function (eci){
+        results = pci:list_parent(eci);
+        myRooteci = (results.typeof() eq "array") => getRootEci(results[0]) | eci ;
+        myRooteci;
+      };
+
+      getOedipus = function (eci,child_eci){
+        myParent = pci:list_parent(eci);
+        a = child_eci;
+        myRooteci = (myParent.typeof() eq "array") => getOedipus(myParent[0],eci) | skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
+        myRooteci
+      };
+
+      Oedipus_results = getOedipus(meta:eci()).klog("Oedipus: ");
+      Oedipus = Oedipus_results{"picoName"};
+      root_eci = getRootEci(meta:eci()).klog("root_eci: ");
+
+
+      getTargetEci = function (path, eci) {
+        return = skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
+        children = return{"children"};
+        child_name = path.head();
+        child_name_look_up = (child_name eq "__Oedipus_") => Oedipus | child_name;
+        child_name = child_name_look_up;
+        child_objects  = children.filter( function(child) {child{"name"} eq child_name});
+        child_object = child_objects[0];
+        child_eci  = (child_object{"name"} neq child_name) => "error" | child_object{"eci"};
+        new_path = path.klog("path :").tail().klog("child_eci: #{child_eci},eci: #{eci},new_path: ");
+        target_eci = (path.length() eq 0 ) => eci | (child_eci eq "error") => child_eci | getTargetEci(new_path,child_eci) ;
+        target_eci;
+      };
+
+      attrs = subscription;
+      target = attrs{"subscriber_eci"};
+      target_eci = ( target.typeof() eq "array" ) => getTargetEci(target.tail(),root_eci) | target ;
+      attr = attrs.put({"subscriber_eci" : target_eci.klog("target_eci: ")}); 
+    }
+    {
+      noop();
+    }
+    always {
+      log("init subscription");
+      raise wrangler event "subscription" 
+            attributes attr.klog("attributes : ")
+    }
+  }
+
 // ********************************************************************************************
 // ***                                      Prototype Depandancies                          ***
 // ********************************************************************************************
@@ -1133,29 +1170,12 @@ operationCount = function() {
     }
   }
 
-// ---------------------- prototype subscription creation ----------------------
-  rule initializePrototypeSubscriptions {
-    select when wrangler init_events 
-      foreach ent:prototypes{['at_creation','subscriptions_request']}.klog("Prototype subscriptions_request: ") setting (subscription)
-    pre {
-      attrs = subscription;
-    }
-    {
-      noop();
-    }
-    always {
-      log("init pds");
-      raise wrangler event "subscription" 
-            attributes attrs.klog("attributes : ")
-    }
-  }
-
-// ---------------------- base Prototypes adding ----------------------
+// ---------------------- Prototype adding ----------------------
   rule initializePrototypePrototypes {
     select when wrangler init_events 
-      foreach ent:prototypes{['at_creation','prototypes']}.klog("Prototype add prototypes: ") setting (prototypes_url)
+      foreach ent:prototypes{['at_creation','prototypes']}.klog("Prototype add prototypes: ") setting (prototype)
     pre {
-      attrs = prototypes_url;
+      attrs = prototype;
     }
     {
       noop();
@@ -1166,7 +1186,75 @@ operationCount = function() {
             attributes attrs.klog("attributes : ");
     }
   }
-  
+  // ---------------------- Prototype children creation ----------------------
+  rule initializePrototypeChildren {
+    select when wrangler init_events 
+      foreach ent:prototypes{['at_creation','children']}.klog("Prototype base create children: ") setting (child)
+    pre {
+      attrs = child;
+    }
+    {
+      noop();
+    }
+    always {
+      log("init add prototypes");
+      raise wrangler event "child_creation" 
+            attributes attrs.klog("attributes : ")
+    }
+  }
+
+// ---------------------- prototype subscription creation ----------------------
+  rule initializePrototypeSubscriptions {
+    select when wrangler init_events 
+      foreach ent:prototypes{['at_creation','subscriptions_request']}.klog("Prototype subscriptions_request: ") setting (subscription)
+    pre {
+      getRootEci = function (eci){
+        results = pci:list_parent(eci);
+        myRooteci = (results.typeof() eq "array") => getRootEci(results[0]) | eci ;
+        myRooteci;
+      };
+
+      getOedipus = function (eci,child_eci){
+        myParent = pci:list_parent(eci);
+        a = child_eci;
+        myRooteci = (myParent.typeof() eq "array") => getOedipus(myParent[0],eci) | skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
+        myRooteci
+      };
+
+      Oedipus_results = getOedipus(meta:eci()).klog("Oedipus: ");
+      Oedipus = Oedipus_results{"picoName"};
+      root_eci = getRootEci(meta:eci()).klog("root_eci: ");
+
+
+      getTargetEci = function (path, eci) {
+        return = skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
+        children = return{"children"};
+        child_name = path.head();
+        child_name_look_up = (child_name eq "__Oedipus_") => Oedipus | child_name;
+        child_name = child_name_look_up;
+        child_objects  = children.filter( function(child) {child{"name"} eq child_name});
+        child_object = child_objects[0];
+        child_eci  = (child_object{"name"} neq child_name) => "error" | child_object{"eci"};
+        new_path = path.klog("path :").tail().klog("child_eci: #{child_eci},eci: #{eci},new_path: ");
+        target_eci = (path.length() eq 0 ) => eci | (child_eci eq "error") => child_eci | getTargetEci(new_path,child_eci) ;
+        target_eci;
+      };
+
+      attrs = subscription;
+      target = attrs{"subscriber_eci"};
+      target_eci = ( target.typeof() eq "array" ) => getTargetEci(target.tail(),root_eci) | target ;
+      attr = attrs.put({"subscriber_eci" : target_eci.klog("target_eci: ")}); 
+    }
+    {
+      noop();
+    }
+    always {
+      log("init subscription");
+      raise wrangler event "subscription" 
+            attributes attr.klog("attributes : ")
+    }
+  }
+
 // ********************************************************************************************
 // ***                                      PDS  Base Initializing                          ***
 // ********************************************************************************************
@@ -1258,7 +1346,7 @@ operationCount = function() {
     }
   }
   */
-  rule initializePdsSettings {
+  rule initializePdsSettings { // limits to how many data varibles in a settings at creation exist....
     select when wrangler init_events
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
     pre {

@@ -4,41 +4,31 @@ ruleset v1_wrangler {
   meta {
     name "Wrangler Core"
     description <<
-Wrangler Core Module
-
-    use module v1_wrangler alias wrangler
-
-This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
-When a PICO is created or authenticated this ruleset will be installed to provide essential
-services.
->>
+      Wrangler Core Module,
+      use example, use module v1_wrangler alias wrangler .
+      This Ruleset/Module provides a developer interface to the PICO (persistent computer object).
+      When a PICO is created or authenticated this ruleset will be installed to provide essential
+      services.
+    >>
     author "BYU Pico Lab"
-    
     logging off
-
     use module b16x24 alias system_credentials
     use module wrangler_pds alias pds
     // errors raised to.... unknown
-
-
     provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, children_FixitFelix , parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, pico, //operationCount,
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, createChild, deleteChild, pico,
     subscriptions, eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError
     sharing on
-
   }
-
-  //dispatch {
-    //domain "ktest.heroku.com"
-  //}
   global {
-    //functions
-   
-      //add _host for host make it defaultsTo meta:host(), create function to make cloud_url string from host 
-      // path must start with "/""
-    skyQuery = function(eci, mod, func, params,_host,_path,_root_url) {
+// ********************************************************************************************
+// ***                                                                                      ***
+// ***                                      FUNCTIONS                                       ***
+// ***                                                                                      ***
+// ******************************************************************************************** 
+    skyQuery = function(eci, mod, func, params,_host,_path,_root_url) { // path must start with "/""
       createRootUrl = function (_host,_path){
         host = _host || meta:host();
         path = _path || "/sky/cloud/";
@@ -46,11 +36,8 @@ services.
         root_url
       };
       root_url = _root_url.isnull() => createRootUrl(_host,_path) | _root_url ;
-      log = root_url.klog("root_url : ");
       response = http:get("#{root_url}#{mod}/#{func}", (params || {}).put(["_eci"], eci));
-
-      status = response{"status_code"};
-
+      status = response{"status_code"};// pass along the status 
       error_info = {
         "error": "sky query request was unsuccesful.",
         "httpStatus": {
@@ -58,15 +45,12 @@ services.
             "message": response{"status_line"}
         }
       };
-
-
+      // clean up http return
       response_content = response{"content"}.decode();
       response_error = (response_content.typeof() eq "hash" && response_content{"error"}) => response_content{"error"} | 0;
       response_error_str = (response_content.typeof() eq "hash" && response_content{"error_str"}) => response_content{"error_str"} | 0;
       error = error_info.put({"skyQueryError": response_error, "skyQueryErrorMsg": response_error_str, "skyQueryReturnValue": response_content});
       is_bad_response = (response_content.isnull() || response_content eq "null" || response_error || response_error_str);
-
-
       // if HTTP status was OK & the response was not null and there were no errors...
       (status eq "200" && not is_bad_response) => response_content | error
     };
@@ -74,19 +58,15 @@ services.
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
 // ********************************************************************************************
-  //-------------------- Rulesets --------------------
     rulesets = function() {
-      eci = meta:eci()
-      //.klog("eci: ")
-      ;
-      results = pci:list_ruleset(eci).klog("results of pci list_ruleset");//defaultsTo("error",standardError("pci list_ruleset failed"));  
+      eci = meta:eci();
+      results = pci:list_ruleset(eci); 
       rids = results{'rids'}.defaultsTo("error",standardError("no hash key rids"));
       {
        'status'   : (rids neq "error"),
         'rids'     : rids
-      };
+      }.klog("rulesets :");
     }
-    // pci method? 
     rulesetsInfo = function(rids) {//takes an array of rids as parameter // can we write this better???????
       //check if its an array vs string, to make this more robust.
       rids_string = ( rids.typeof() eq "array" ) => rids.join(";") | ( rids.typeof() eq "str" ) => rids | "" ;
@@ -96,25 +76,20 @@ services.
       {
        'status'   : (resp{"status_code"} eq "200"),
        'description'     : results
-      };
+      }.klog("rulesetsInfo :");
     }
-    // add defaultsto for eci so it defaultsto meta:eci
-    // everywhere installRulesets defaction will need a with eci for any out side 
+    // installRulesets defaction will need a "with eci" for external picos eci 
     installRulesets = defaction(rids){
       configure using eci = meta:eci() and name="none";
-
       pico_eci = (name eq "none") => eci
                                    | picoECIFromName(name);
-
       new_ruleset = pci:new_ruleset(pico_eci, rids);
       send_directive("installed #{rids}");
     }
-    
     uninstallRulesets = defaction(rids){
       configure using eci = meta:eci() and name="none";
       pico_eci = (name eq "none") => eci
                                    | picoECIFromName(name);
-
       deleted = pci:delete_ruleset(pico_eci, rids.klog("rids "));
       send_directive("uninstalled #{rids} in pico #{pico_eci}");
     }
@@ -122,60 +97,33 @@ services.
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ******************************************************************************************** 
-  
-  //-------------------- Channels --------------------
-  /* can be deleted after channel testing.
-    internalChannel = function (value){
-      eci = meta:eci();
-      results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
-      channels = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      
-      // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
-      attribute = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
-              'eci' |
-              'name';
-      channel_list = channels.defaultsTo("no Channel",standardOut("no channel found, by channels"));
-      filtered_channels = channel_list.filter(function(channel){
-        (channel{attribute} eq value);}); 
-      result = filtered_channels.head().defaultsTo("",standardError("no channel found, by .head()"));
-      (result);
-    }
-  */
-    nameFromEci = function(eci){ 
-      //eci = meta:eci();
+    nameFromEci = function(eci){ // internal function call
       results = channel(eci);
       channel_single = results{'channels'};
       channel_single{'name'};
     } 
-
     eciFromName = function(name){
       results = channel(name);
       channel_single = results{'channels'};
       channel_single{'eci'};
     }
-    // always return a eci weather given a eci or name
-    alwaysEci = function(value){
+    alwaysEci = function(value){   // always return a eci weather given a eci or name
       eci = (value.match(re/(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)/)) => 
               value |
               eciFromName(value);
       eci;       
     }
-    // last created eci.
     lastCreatedEci = function(){
       channel = ent:lastCreatedEci;
       eci = channel{'cid'};
-      eci
+      eci;
     }
-    // takes name or eci as id returns single channle . needed for backwards combatablity 
-    //
+    // takes name or eci as id returns single channel . needed for backwards combatablity 
     channel = function(id,collection,filtered) { 
       eci = meta:eci();
       results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       chans = results{'channels'}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
-                                          //  chan = channel.put(["eci"],channel{"eci"}); 
-                                          //  chann = chan.delete(["eci"]);
-                                          //  chann // return reconstructed channel 
                                             {
                                               "last_active":channel{"last_active"},
                                               "policy":channel{"policy"},
@@ -190,9 +138,7 @@ services.
                 'eci' |
                 'name';
         channel_list = chans;
-        filtered_channels = channel_list.filter(function(channel){
-          (channel{attribute} eq value);}); 
-
+        filtered_channels = channel_list.filter(function(channel){(channel{attribute} eq value);}); 
         result = filtered_channels.head().defaultsTo({},standardError("no channel found, by .head()"));
         (result);
       };
@@ -207,12 +153,11 @@ services.
       {
         'status'   : (channels neq "error"),
         'channels' : results
-      }.klog("channels");
+      }.klog("channels: ");
     }
     channelAttributes = function(eci,name) {
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
       results = pci:get_eci_attributes(Eci
-        //.klog("get_eci_attributes passed eci: ")
         ).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
         'status'   : (results neq "error"),
@@ -227,15 +172,14 @@ services.
         'policy' : results
       }.klog("policy");
     }
-
     channelType = function(eci,name) { // old accounts may have different structure as there types, "type : types"
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo('','no name or eci provided'),'no eci going with name') ;
       getType = function(eci) { 
         type = pci:get_eci_type(eci).defaultsTo("error",standardError("undefined"));
         // this code below belongs higher up in software layer
-       // temp = (type.typeof() eq "str" ) => type | type.typeof() eq "array" => type[0] |  type.keys();
-       // type2 = (temp.typeof() eq "array") => temp[0] | temp;   
-       // type2;
+        // temp = (type.typeof() eq "str" ) => type | type.typeof() eq "array" => type[0] |  type.keys();
+        // type2 = (temp.typeof() eq "array") => temp[0] | temp;   
+        // type2;
         type;
       };
       type = getType(Eci);
@@ -259,7 +203,6 @@ services.
       set_type = pci:set_eci_type(eci, type); 
       send_directive("updated channel type for #{eci}");
     }
-    // should delete all channels with that name.
     deleteChannel = defaction(value) {
       eci = alwaysEci(value);
       deleteeci = pci:delete_eci(eci);
@@ -274,14 +217,9 @@ services.
 // ********************************************************************************************
 // ***                                      Picos                                           ***
 // ******************************************************************************************** 
-  //-------------------- Picos --------------------
-   /// should children and parent functions return a map instead of an array??
   children = function() {
-    self = meta:eci()
-    //.klog("meta eci for list_children:  ")
-    ;
+    self = meta:eci();
     children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
-
     ent_my_children = ent:my_children;
     my_child_list = children.map(function(tuple)
                                           {
@@ -290,7 +228,6 @@ services.
                                               {
                                                 ent_child{"eci"} eq this_eci
                                               })
-                                            //.klog("first filter: ")
                                             ;
                                             return = return1.length() > 0 => return1[0] | // if child with name return the name structure  
                                                               {  // if child with no name return with unknown name structure
@@ -298,58 +235,22 @@ services.
                                                                 "eci": this_eci
                                                               }
                                             return
-                                            //.klog("second filter: ")
                                           })
-                                          //.klog("map : ")
                                           ;
-
     {
       'status' : (children neq "error"),
       'children' : my_child_list
-    }
+    }.klog("children :");
   }
-  children_FixitFelix = function() {
-    self = meta:eci().klog("meta eci for list_children:  ");
-    children = pci:list_children(self).defaultsTo("error", standardError("pci children list failed"));
-    ent_my_children = ent:my_children;
-    my_child_list = children.map(function(tuple)
-                                          {
-                                            this_eci = tuple[0];
-                                            return1 = ent_my_children.filter(function(ent_child)
-                                              {
-                                                ent_child{"eci"} eq this_eci
-                                              }).klog("first filter: ");
-                                            return = /*return1.length() > 0 => return1[0] |*/ pdsName(this_eci,return1[0]);// if child with name return the name structure  
-                                                              
-                                            return.klog("second filter: ")
-                                          }).klog("map : ");
-    foo = my_child_list.pset(ent:my_children)
-    {
-      'status' : (children neq "error"),
-      'children' : my_child_list
-    }
-  }
-
-  pdsName = function(this_eci,child) {
-    results = skyQuery(this_eci, "b507199x5","name", null).klog("sky : ");// old wrangler ent:name 
-    oldentnamestruc = results{"skyCloudError"}.isnull() => results | {"picoName":{}};
-    oldentname = oldentnamestruc{"picoName"}.klog("child name");
-    current_name = child{"name"}.typeof() eq 'str' => child{"name"}|"unknown";
-    name = (oldentname.typeof() eq 'str') => oldentname | current_name;
-    { 
-      "name": name,
-      "eci": this_eci
-    }
-  }
-
   parent = function() {
     self = meta:eci();
     parent = pci:list_parent(self).defaultsTo("error", standardError("pci parent retrieval failed"));
     {
       'status' : (parent neq "error"),
       'parent' : parent
-    }
+    }.klog("parent :");
   }
+
   profile = function(key) {
     pds:profile(key);
   }
@@ -361,7 +262,7 @@ services.
       "profile" : profile_return{'profile'},
       "settings" : settings_return{'settings'},
       "general" : general_return{'general'}
-    }
+    }.klog("pico :");
   }
 
   // slows down website, and creates dependscies, store name as a ent in wrangler
@@ -375,42 +276,33 @@ services.
      // 'status' : pdsProfiles{"status"},
       'status' : "",
       'picoName' : return
-    }.klog("name :")
+    }.klog("name :");
   }
-
+/*// is this code dead?
   attributes = function() {
     {
       'status' : true,
       'attributes' : ent:attributes
-    }
+    }.klog("attributes :");
   }
-
+*/
   picoECIFromName = function (name) {
     pico = ent:my_children.filter(function(rec){rec{"name"} eq name})
                           .head()
     pico{"eci"}
   };
-
-  
   deleteChild = defaction(name) {
     results = children();
     ent_my_children = results{"children"};
     child_rec = ent_my_children.filter(function(rec){rec{"name"} eq name})
-                               .head()
-             .defaultsTo({})
-                               .klog("Child to delete: ");
-
+                               .head().defaultsTo({});
     eci_to_delete = child_rec{"eci"};
     new_child_list = ent_my_children
                                .filter(function(rec){rec{"name"} neq name})
-                               .klog("Children to keep: ")
-             .pset(ent:my_children)
-             ;
-
+             .pset(ent:my_children);
     noret = pci:delete_pico(eci_to_delete, {"cascade":1});
     send_directive("deleted pico #{eci_to_delete}");
   }
-  
   basePrototype = {
       "meta" : {
                 "discription": "Wrangler base prototype"
@@ -475,17 +367,7 @@ services.
                             }
               }
   };
-  /*
-operationCount = function() {
-  {'general':ent:general_operations,
-    'settings':ent:settings_operations
-
-  }
-};
-*/
-
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
-
 // we will store base prototypes as hard coded varibles with, 
   prototypes = function() {
     init_prototypes = ent:prototypes || {}; // if no prototypes set to map so we can use put()
@@ -493,22 +375,17 @@ operationCount = function() {
     {
       'status' : true,
       'prototypes' : prototypes
-    }
+    }.klog("prototypes :");
   };
-
-// create a ent:prototype_at_creationg, ent:predefined_prototype. 
 // at creation wrangler will create child and send protype to child and 
 // then wrangle in the child will handle the creation of the pico and its prototypes
-// protype has a meta, rids, channels, events( creation events ) 
-
-// create child from protype will take the name with a option of a prototype with a default to base.
+// create child from protype will take the name with a option of a prototype that defaults to base.
   createChild = defaction(name){ 
     configure using prototype_name = "base"; // base must be installed by default for prototypeing to work 
     results = prototypes(); // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"};
     prototype = prototypes{prototype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ");
     rids = prototype{"rids"};
-    // create child and give name
     attributes = {
       "name": name,
       "prototype": prototype.encode()
@@ -516,16 +393,15 @@ operationCount = function() {
     // create child 
     newPicoInfo = pci:new_pico(meta:eci()); // we need pci updated to take a name.
     newPicoEci = newPicoInfo{"cid"};// store child eci
-    // store name
+    // create child object
     child_rec = {"name": name,
                  "eci": newPicoEci
                 };
-    my_children = ent:my_children => ent:my_children | []; // first child
+    my_children = ent:my_children => ent:my_children | []; // [] if first child
     foo = my_children.append(child_rec)
-                     .klog("New Child List: ")
+                     //.klog("New Child List: ")
          .pset(ent:my_children);
-    // bootstrap child
-    //combine new_ruleset calls 
+    //install a combination of prototypes ruleset in child 
     joined_rids_to_install = prototype_name eq "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids);
     a = pci:new_ruleset(newPicoEci,joined_rids_to_install.klog('rids to be installed in child: ')); // install base/prototype rids (bootstrap child) 
     // update child ent:prototype_at_creation with prototype
@@ -536,11 +412,7 @@ operationCount = function() {
 // ********************************************************************************************
 // ***                                      Subscriptions                                   ***
 // ******************************************************************************************** 
-// 
-// this comment could break the kre server.
-  //-------------------- Subscriptions ----------------------
-    // name subscriptions and add results status 
-    allSubscriptions = function (){// slow, whats a better way to prevent channel call, bigO(n^2)
+    allSubscriptions = function (){
       // list of channels
       channels_result = channel();
       channel_list = channels_result{'channels'};
@@ -556,31 +428,25 @@ operationCount = function() {
         ;
 
       }); 
-      // reconstruct list, to have a inbound in attributes.
+      // reconstruct list, to have a inbound_eci and channel name in attributes.
       subs = filtered_channels.map( function(channel){
            channel.put(["attributes","inbound_eci"],channel{"eci"})
                   .put(["attributes","channel_name"],channel{"name"}); // hard to get channel name when its the key... so we add it here.
       });
-      // name to attributes hash
+      // reconstruct subscription to be subscription_name to attributes hash
       subsript = subs.map( function(channel){
-      //    {channel{'name'}:channel{'attributes'}}
           attributes = channel{'attributes'};
-          //subscription_name = attributes{'subscription_name'};
           {
             attributes{'subscription_name'} : attributes
           }
       });
-      /*  
-      {"18:floppy" :
-          {"status":"inbound","relationship":"","name_space":"18",..}
-      */
       subsript;
     };
 
     subscriptions = function(id,collection,filtered) { 
       subsript = allSubscriptions();
       /*  
-      {"18:floppy" :
+      {"floppy" :
           {"status":"inbound","relationship":"","name_space":"18",..}
       */
      //types = ['name','channel_name','inbound','name_space','relationship',....] could check imput for validness. 
@@ -605,13 +471,8 @@ operationCount = function() {
         subscription_list = subs;
         filtered_subscriptions = subscription_list.filter(function(subscription){
           attr_value = type(subscription,attribute
-            //.klog('attribute ')
-            )
-            //.klog('types function: ')
-          ;
-          (attr_value eq value)
-          //.klog('found ? ')
-          ;
+            );
+          (attr_value eq value);
           }); 
 
         result = filtered_subscriptions
@@ -628,7 +489,7 @@ operationCount = function() {
       {
         'status' : (subscriptions neq "error"),
         'subscriptions'  : results
-      }.klog('return: ');
+      }.klog('subscriptions: ');
 
     };
 
@@ -673,7 +534,7 @@ operationCount = function() {
         name = names{"unique"} || [];
 
         unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
-        (unique_name).klog("results : ");
+        (unique_name).klog("randomPicoName : ");
     }
 
     checkPicoName = function(name){
@@ -686,7 +547,7 @@ operationCount = function() {
             pico_name = name_return{"picoName"};
             (pico_name eq name)
             });
-          (names).klog("results : ");
+          (names).klog("checkPicoName : ");
 
     }      
     checkSubscriptionName = function(name,name_space){
@@ -733,17 +594,6 @@ operationCount = function() {
       attributes;
     } 
 
-
-    /*findVehicleByinbound = function (bc) {
-       garbage = bc.klog(">>>> back channel <<<<<");
-       vehicle_ecis = wrangler:subscriptionList(common:namespace(),"Vehicle");
-        vehicle_ecis_by_inbound = vehicle_ecis
-                                        .collect(function(x){x{"inbound"}})
-                                     .map(function(k,v){v.head()})
-                                        ;
-    vehicle_ecis_by_inbound{bc} || {}
-     };*/
-
 // ********************************************************************************************
 // ***                                      Utilities                                       ***
 // ******************************************************************************************** 
@@ -768,23 +618,15 @@ operationCount = function() {
   // string or array return string
 
 // ********************************************************************************************
-// ***                                      Rules                                           ***
-// ********************************************************************************************
-
-
-
-// ********************************************************************************************
+// ***                                                                                      ***
 // ***                                      Rulesets                                        ***
+// ***                                                                                      ***
 // ********************************************************************************************
-  //------------------------------------------------------------------------------------Rules
-  //-------------------- Rulesets --------------------
   
   rule installRulesets {
     select when wrangler install_rulesets_requested
     pre { 
-     // eci = meta:eci();
       rids = event:attr("rids").defaultsTo("",standardError(" "));
-      // this will never get an array from a url/event ?
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     if(rids neq "") then { // should we be valid checking?
@@ -801,10 +643,7 @@ operationCount = function() {
   rule uninstallRulesets { // should this handle multiple uninstalls ??? 
     select when wrangler uninstall_rulesets_requested
     pre {
-     // eci = meta:eci();
-      rids = event:attr("rids").defaultsTo("", ">>  >> ")
-      //.klog(">> rids attribute <<")
-      ;
+      rids = event:attr("rids").defaultsTo("", ">>  >> ");
       rid_list = rids.typeof() eq "array" => rids | rids.split(re/;/); 
     }
     { 
@@ -822,13 +661,10 @@ operationCount = function() {
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ********************************************************************************************
- //-------------------- Channels --------------------
   rule createChannelFromMetaEci {
     select when wrangler channel_creation_requested where eci.isnull() eq true
     pre {
       event_attributes = event:attrs();
-      //eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided"));
-     // eci = event:attr("eci").defaultsTo(meta:eci(), standardError("no eci provided"));
     /*  <eci options>
     name     : <string>        // default is "Generic ECI channel" 
     eci_type : <string>        // default is "PCI"
@@ -956,7 +792,6 @@ operationCount = function() {
     select when wrangler update_channel_type_requested 
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."));
-      //eci = event:attr("eci").defaultsTo("", standardError("missing event attr channels")); // should we force... use meta:eci()
       type = event:attr("channel_type").defaultsTo("error", standardError("undefined"));// policy needs to be a map, do we need to cast types?
     }
     if(eci neq "" && type neq "error") then { // check?? redundant?? whats better??
@@ -994,8 +829,6 @@ operationCount = function() {
 // ********************************************************************************************
 // ***                                      Picos                                           ***
 // ********************************************************************************************
-
-
   //-------------------- Picos initializing  ----------------------
   rule createChild { 
     select when wrangler child_creation
@@ -1292,22 +1125,6 @@ operationCount = function() {
             attributes attrs
     }
   }
-/*
-  rule storeGeneralOps {
-    select when wrangler init_events 
-    pre {
-      ops =  basePrototype{['PDS','general']}.length();
-    }
-    {
-      noop();
-    }
-    always {
-      set ent:general_operations ops;
-      raise wrangler event init_general // init general  
-            attributes {}
-    }
-  }
-  */
 
   rule initializeGeneral {
     select when wrangler init_events
@@ -1330,22 +1147,7 @@ operationCount = function() {
             attributes attrs
     }
   }
-  /*
-  rule storeSettingsOps {
-    select when wrangler init_events 
-    pre {
-      ops =  basePrototype{['PDS','settings']}.length();
-    }
-    {
-      noop();
-    }
-    always {
-      set ent:settings_operations ops;
-      raise wrangler event init_settings // init settings  
-            attributes {}
-    }
-  }
-  */
+
   rule initializePdsSettings { // limits to how many data varibles in a settings at creation exist....
     select when wrangler init_events
       foreach basePrototype{['PDS','settings']}.klog("PDS settings: ") setting (key_of_map) // for each "key" (rid)
@@ -1524,14 +1326,14 @@ operationCount = function() {
             or  wrangler update_prototype
     pre {
       proto_from_url = function(){
-        prototype_url = event:attr("url").klog("prototype_url: ");
+        prototype_url = event:attr("url");
         response = http:get(prototype_url, {});
         response_content = response{"content"}.decode();
         response_content
       };
 
-      prototype = event:attr("url").isnull() => event:attr("prototype").klog("prototype: ") | proto_from_url();
-      proto_obj = prototype.decode().klog("decoded_proto: "); // this decode is redundant, but the rule works so Im not messing with it.
+      prototype = event:attr("url").isnull() => event:attr("prototype")| proto_from_url();
+      proto_obj = prototype.decode(); // this decode is redundant, but the rule works so Im not messing with it.
       prototype_name = event:attr("prototype_name");
     }
     // should we always add something?
@@ -1544,21 +1346,7 @@ operationCount = function() {
             attributes event:attrs();
     }
   }
- /* rule updatePrototype {
-    select when wrangler update_prototype
-    pre {
-      prototype = event:attr("prototype");
-      prototype_name = event:attr("prototype_name");
-    }
-    {
-      noop();
-    }
-    always {
-      set ent:prototypes{prototype_name} prototype;
-    raise wrangler event Prototype_type_updated
-            attributes event:attrs();
-    }
-  }*/
+
   rule removePrototype {
     select when wrangler remove_prototype
     pre {
@@ -1822,7 +1610,7 @@ operationCount = function() {
       subscription_map = {
             "eci" : outbound_eci
       }.klog("subscription Map: ");
-    }// this is a possible place to create a channel for subscription
+    }
     if (outbound_eci neq "no outbound_eci") then
     {
       event:send(subscription_map, "wrangler", "pending_subscription_approved") // pending_subscription_approved..
@@ -1951,13 +1739,11 @@ operationCount = function() {
       eci = ( status eq "inbound_subscription_rejection" || status eq "subscription_cancellation" ) => meta:eci() |
              (status eq "outbound_subscription_cancellation") => eciLookUpFromEvent( passedEci ) |
                 passedEci; // passed is used to deleted inbound on self 
-
       channel_name = nameFromEci(eci); // for event to nothing
 
     }
     {
-      //clean up channel
-     deleteChannel(eci.klog("eci being deleted. : ")); 
+     deleteChannel(eci.klog("eci being deleted. : "));  //clean up channel
     }
     always {
       log (standardOut("success, attemped to remove subscription"));
@@ -1965,27 +1751,5 @@ operationCount = function() {
         with removed_channel_name = channel_name;
     } 
   } 
-  /* 
-  rule update{
-    // check status is subscribed
-
-    // raise mod/updated attrs event to both subscribed picos 
-
-  }
-  rule update/modChannelAttributes {
-      select when wrangler subscription_attribute_update
-            pre{
-   
-            //get all attributes to be updated. passed in
-
-            //get current attributes.
-
-            //"put" updated values into current
-          
-            // use deffaction to update attributes
-  */
-
-// unsubscribed all, check event from parent // just cancelSubscription... 
-// let all your connection know your leaving.
-
+ 
 }

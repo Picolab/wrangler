@@ -319,10 +319,10 @@ ruleset v1_wrangler {
                       "policy"     : "not implemented"
                     }
                     ], // we could instead use tuples  [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-      "prototypes" : [{// belongs in relationManager 
+      "prototypes" : [/*{// belongs in relationManager 
                       "url" : "https://raw.githubusercontent.com/burdettadam/Practice-with-KRL/master/prototype.json",
                       "prototype_name": "base_add_test"
-                      }],// add prototype by url
+                      }*/],// add prototype by url
       "children" : [
                     /*{
                       "name" : "testChild",
@@ -540,11 +540,11 @@ ruleset v1_wrangler {
     checkPicoName = function(name){
           return = children();
           picos = return{"children"};
-          
+          /*
+          {"name":"closet","eci":"2C8457C0-76BF-11E6-B407-9BD5E71C24EA"}
+           */
           names = picos.none(function(child){
-            eci = child[0]; 
-            name_return = skyQuery(eci,meta:host(),"v1_wrangler.dev","name",noParam);
-            pico_name = name_return{"picoName"};
+            pico_name = child{"name"};
             (pico_name eq name)
             });
           (names).klog("checkPicoName : ");
@@ -836,7 +836,7 @@ ruleset v1_wrangler {
       name = event:attr("name").defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
       prototype = event:attr("prototype").defaultsTo("devtools", standardError("missing event attr prototype"));           
     }
-   // if(checkPicoName(name)) then 
+    if(checkPicoName(name)) then 
     {
       createChild(name) with prototype_name = prototype; 
     }

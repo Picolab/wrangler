@@ -1560,7 +1560,7 @@ ruleset v1_wrangler {
           // should this go into the hash above?
       unique_name = (status eq "inbound") => 
             //randomName(pending_subscriptions{'name_space'}) 
-            name_space + ":" + event:attr("name")
+            event:attr("name_space") + ":" + event:attr("name")
             |
             channel_name;
       options = {

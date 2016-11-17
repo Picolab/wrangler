@@ -239,7 +239,7 @@ ruleset v1_wrangler {
                                           ;
     {
       'status' : (children neq "error"),
-      'children' : my_child_list
+      'children' : (children neq "error") => my_child_list | []
     }.klog("children :");
   }
   parent = function() {
@@ -247,7 +247,7 @@ ruleset v1_wrangler {
     parent = pci:list_parent(self).defaultsTo("error", standardError("pci parent retrieval failed"));
     {
       'status' : (parent neq "error"),
-      'parent' : parent
+      'parent' : (parent neq "error") => parent | []
     }.klog("parent :");
   }
 

@@ -247,7 +247,7 @@ ruleset v1_wrangler {
     parent = pci:list_parent(self).defaultsTo("error", standardError("pci parent retrieval failed"));
     {
       'status' : (parent neq "error"),
-      'parent' : (parent neq "error") => parent | []
+      'parent' :  parent 
     }.klog("parent :");
   }
 

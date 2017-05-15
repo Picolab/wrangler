@@ -109,8 +109,9 @@ ruleset wrangler {
     // takes name or eci as id returns single channel . needed for backwards compatability 
     channel = function(id,collection,filtered) { 
       eci = meta:eci;
-      results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
-      chans = results{"channels"}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
+      //results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
+      chans = ent:channels;
+      //chans = results{"channels"}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
       channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
                                             {
                                               "last_active":channel{"last_active"},
@@ -209,15 +210,17 @@ ruleset wrangler {
         "policy" : decoded_policy//{"policy" : policy}
       }*/
 
-    createChannel = defaction(options, _eci){
-      //configure using eci = meta:eci
-      id = _eci || ent:id //meta:eci
-      channel = engine:newChannel(
-        { "name":options.name, "type": options.eci_type, "pico_id": id })
-      eci = channel{"id"}
-      //pci:new_eci(eci, options)
+    createChannel = function(options, _id){
+      id = _id || ent:id;
+      channel = engine:newChannel({ "name":options.name, "type": options.eci_type, "pico_id": id });
+      updated_channel = ent:channels;
+      channnel_rec = channel.put(["eci"],channel.id);
+      eci = channel{"id"};
+      {"status": channel.isnull(),
+       "channel": channel;
+       "updated_channel": }
       // nonsense = new_eci.pset(ent:lastCreatedEci) // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
-      send_directive("created channel #{new_eci}")
+      //send_directive("created channel #{new_eci}")
     }
 // ********************************************************************************************
 // ***                                      Picos                                           ***
@@ -530,62 +533,25 @@ ruleset wrangler {
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ********************************************************************************************
-  rule createChannelFromMetaEci {
-    select when wrangler channel_creation_requested where eci.isnull() ==  true
-    pre {
-      event_attributes = event:attrs()
-    /*  <eci options>
+  /*  <eci options>
     name     : <string>        // default is "Generic ECI channel" 
     eci_type : <string>        // default is "PCI"
     attributes: <array>
     policy: <map>  */
-      channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"))
-      type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"))
-      attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"))
-      attrs =  decodeDefaults(attributes)
-      policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"))
-      // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode() || policy
-      options = {
-        "name" : channel_name,
-        "eci_type" : type,
-        "attributes" : {"channel_attributes" : attrs},
-        "policy" : decoded_policy//{"policy" : policy}
-      }.klog("options for channel cration")
-          }
-          // do we need to check the format of name? is it wrangler"s job?
-    if(checkName(channel_name)) then  //channel_name.match(re#\w[\w-]*#)) then 
-      createChannel(options)  
-    fired {
-     channel_name.klog (standardOut("success created channels "));
-     null.klog(">> successfully  >>");
-      raise wrangler event "channel_created" // event to nothing  
-            attributes event_attributes.put(["eci"],lastCreatedEci().klog("lastCreatedEci: ")) // function to access a magic varible set during creation
-          } 
-    else {
-      //error warn "douplicate name, failed to create channel"+channel_name;
-    channel_name.klog(">> could not create channels >>")
-          }
-    }
 
-  rule createChannelFromGivenEci {
+  rule createChannel {
     select when wrangler channel_creation_requested where eci.isnull() ==  false
     pre {
       event_attributes = event:attrs()
-      //eci = event:attr("eci").defaultsTo(meta:eci, standardError("no eci provided"))
       eci = event:attr("eci").defaultsTo(meta:eci, standardError("no eci provided")) // should never default 
-    /*  <eci options>
-    name     : <string>        // default is "Generic ECI channel" 
-    eci_type : <string>        // default is "PCI"
-    attributes: <array>
-    policy: <map>  */
       channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"))
       type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"))
       attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"))
+
       attrs =  decodeDefaults(attributes)
       policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"))
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode() || policy
+      decoded_policy = policy.decode() || policy //what does .decode() return on failure??
       options = {
         "name" : channel_name,
         "eci_type" : type,
@@ -596,7 +562,7 @@ ruleset wrangler {
           // do we need to check the format of name? is it wrangler"s job?
     if(checkName(channel_name)) then  //channel_name.match(re#\w[\w-]*#)) then 
          
-      createChannel(options) with eci = eci
+      createChannel(options)
          
     fired {
      channel_name.klog(standardOut("success created channels "));

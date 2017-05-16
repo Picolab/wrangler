@@ -109,18 +109,17 @@ ruleset wrangler {
     // takes name or eci as id returns single channel . needed for backwards compatability 
     channel = function(id,collection,filtered) { 
       eci = meta:eci;
-      //results = pci:list_eci(eci).defaultsTo({},standardError("undefined")); // list of ECIs assigned to userid
       chans = ent:channels;
-      //chans = results{"channels"}.defaultsTo("error",standardError("undefined")); // list of channels if list_eci request was valid
-      channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
+      channels = chans;
+      /*channels = chans.map(function(channel){ // reconstruct each channel to have eci not eci
                                             {
                                               "last_active":channel{"last_active"},
                                               "policy":channel{"policy"},
                                               "name":channel{"name"},
                                               "type":channel{"type"},
-                                              "eci":channel{"cid"},
+                                              "eci":channel{"eci"},
                                               "attributes":channel{"attributes"}
-                                              } });
+                                              } });*/
       single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
         attribute = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) => 
@@ -217,7 +216,7 @@ ruleset wrangler {
                     "eci": channel.id,
                     "type": channel.type,
                     "attributes": options.attributes 
-                    };
+                    }.klog("new channel");
       all_channels = ent:channels => ent:channels | []; // [] if first channel
       updated_channel = all_channels.append(channel_rec).klog("new channel list: ");
       {

@@ -213,13 +213,18 @@ ruleset wrangler {
     createChannel = function(options, _id){
       id = _id || ent:id;
       channel = engine:newChannel({ "name":options.name, "type": options.eci_type, "pico_id": id });
-      updated_channel = ent:channels;
-      channnel_rec = channel.put(["eci"],channel.id);
-      eci = channel{"id"};
-      {"status": channel.isnull(),
-       "channel": channel;
-       "updated_channel": }
-      // nonsense = new_eci.pset(ent:lastCreatedEci) // store eci in magic varible for use in post event. will change when defaction setting varible is implemented.
+      channel_rec = {"name": channel.name,
+                    "eci": channel.id,
+                    "type": channel.type,
+                    "attributes": options.attributes 
+                    };
+      all_channels = ent:channels => ent:channels | []; // [] if first channel
+      updated_channel = all_channels.append(channel_rec).klog("new channel list: ");
+      {
+       "status": channel.isnull(),
+       "channel": channel,
+       "updated_channels": updated_channel
+      }
       //send_directive("created channel #{new_eci}")
     }
 // ********************************************************************************************
@@ -230,8 +235,8 @@ ruleset wrangler {
   }
 
   children = function() {
-    _children = ent:children.defaultsTo([]);
-    status = _children.isnull();
+    _children = ent:my_children.defaultsTo([]);
+    status = (not(_children.isnull()));
     {
       "status" : status,
       "children" : _children
@@ -240,7 +245,7 @@ ruleset wrangler {
 
   parent = function() {
     _parent = ent:parent.defaultsTo({});
-    status = _parent.isnull();
+    status = not _parent.isnull();
     {
       "status" : status,
       "parent" :  _parent 
@@ -251,7 +256,6 @@ ruleset wrangler {
     /*PDS not implemented */ //pds:profile(key)
     {}
   }
-
   pico = function() {
     profile_return = {};/*PDS not implemented */ //pds:profile();
     settings_return = {};/*PDS not implemented */ //pds:settings();
@@ -266,7 +270,7 @@ ruleset wrangler {
   name = function() {
     return = ent:name;
     {
-      "status" : return.isnull(),
+      "status" : not return.isnull(),
       "picoName" : return
     }.klog("name :")
   }
@@ -389,7 +393,7 @@ ruleset wrangler {
 // then wrangle in the child will handle the creation of the pico and its prototypes
 // create child from protype will take the name with a option of a prototype that defaults to base.
 
-  outfitChild = defaction(child,prototype_name){ 
+  outfitChild = defaction(parent,child,prototype_name){ 
     //configure using prototype_name = "base" // base must be installed by default for prototypeing to work 
     results = prototypes() // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"}
@@ -397,6 +401,7 @@ ruleset wrangler {
     rids = prototype{"rids"}
     attributes = {
       "name": child{"name"},
+      "parent": parent,
       "prototype": prototype.encode()
     }
     //install a combination of prototypes ruleset in child 
@@ -480,10 +485,11 @@ ruleset wrangler {
       error
     }
     decodeDefaults = function(value) {
-      decoded_value = value.decode().klog("decoded_value: ");
-      error = decoded_value{"error"};
-      return = (error.typeof() ==  "array") =>  error[0].defaultsTo(decoded_value,"decoded: ") | decoded_value;
-      return.klog("return: ")
+      //decoded_value = value.decode().klog("decoded_value: ");
+      //error = decoded_value{"error"};
+      //return = (error.typeof() ==  "array") =>  error[0].defaultsTo(decoded_value,"decoded: ") | decoded_value;
+      //return.klog("return: ")
+      value
     }
   }
   // string or array return array 
@@ -540,31 +546,35 @@ ruleset wrangler {
     policy: <map>  */
 
   rule createChannel {
-    select when wrangler channel_creation_requested where eci.isnull() ==  false
+    select when wrangler channel_creation_requested
     pre {
       event_attributes = event:attrs()
-      eci = event:attr("eci").defaultsTo(meta:eci, standardError("no eci provided")) // should never default 
+      // eci = event:attr("eci").defaultsTo(meta:eci.klog("meta eci), standardError("no eci provided")) // should never default 
       channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"))
       type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"))
       attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"))
 
       attrs =  decodeDefaults(attributes)
-      policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"))
+      // policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"))
       // do we need to check if we need to decode ?? what would we check?
-      decoded_policy = policy.decode() || policy //what does .decode() return on failure??
+      // decoded_policy = policy.decode() || policy //what does .decode() return on failure??
       options = {
         "name" : channel_name,
         "eci_type" : type,
-        "attributes" : {"channel_attributes" : attrs},
-        "policy" : decoded_policy//{"policy" : policy}
-      }.klog("options for channel cration")
-          }
+        "attributes" : {"channel_attributes" : attrs}
+        //,"policy" : decoded_policy//{"policy" : policy}
+      }.klog("options for channel cration");
+      check_name = checkName(channel_name);
+      channel_results = check_name => createChannel(options) | noop()
+     }
           // do we need to check the format of name? is it wrangler"s job?
-    if(checkName(channel_name)) then  //channel_name.match(re#\w[\w-]*#)) then 
+    if(check_name) then  //channel_name.match(re#\w[\w-]*#)) then 
          
-      createChannel(options)
+      noop()
          
     fired {
+     ent:channels := channel_results.updated_channels;
+     ent:lastCreatedEci := channel_results.channel;
      channel_name.klog(standardOut("success created channels "));
      null.klog(">> successfully  >>");
       raise wrangler event "channel_created" // event to nothing  
@@ -667,12 +677,13 @@ ruleset wrangler {
     select when wrangler child_creation
     pre {
       name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
+      
       prototype = event:attr("prototype").defaultsTo("base", "using base prototype");
       check = checkPicoName(name).klog("checkName ");   
       children = check => newPico(name)| noop() ; // this breaks best practice         
     }
     if(check) then 
-     outfitChild(children{"child"}, prototype)
+     outfitChild(myself(),children{"child"}, prototype)
     fired {
       ent:my_children := children{"updated_children"};
       name.klog("Pico created with name: ");
@@ -687,6 +698,7 @@ ruleset wrangler {
     pre {
       prototype_at_creation = event:attr("prototype").decode(); // no defaultto????
       pico_name = event:attr("name");
+      parent = event:attr("parent");
     }
     
       noop()
@@ -696,6 +708,7 @@ ruleset wrangler {
      null.klog("inited prototype");
       ent:prototypes{["at_creation"]} := prototype_at_creation;
       ent:name := pico_name;
+      ent:parent := parent;
       raise wrangler event "init_events"
             attributes {};
     }
@@ -1208,6 +1221,4 @@ ruleset wrangler {
      null.klog ("deletion failed because no child was specified");
     }
   }
-
- 
 }

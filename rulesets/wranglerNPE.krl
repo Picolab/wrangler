@@ -278,16 +278,21 @@ ruleset wrangler {
                           .head();
     pico{"eci"}
   }
-  deleteChild = defaction(name) {
-    results = children()
-    ent_my_children = results{"children"}
+  deleteChild = function(name) {
+    results = children();
+    ent_my_children = results{"children"};
     child_rec = ent_my_children.filter(function(rec){rec{"name"} ==  name})
-                               .head().defaultsTo({})
-    eci_to_delete = child_rec{"eci"}
+                               .head().defaultsTo({});
+    child_id= child_rec{"id"};
     new_child_list = ent_my_children
-                               .filter(function(rec){rec{"name"} !=  name})
-    noret = engine:removePico(child_id) //pci:delete_pico(eci_to_delete, {"cascade":1})
-    send_directive("deleted pico #{eci_to_delete}")
+                               .filter(function(rec){rec{"name"} !=  name});
+    noret = engine:removePico(child_id);
+    //send_directive("deleted pico #{eci_to_delete}")
+    {
+     "status": not noret.isnull(),
+     "child": child_id,
+     "updated_children": new_child_list 
+    }
   }
   basePrototype = {
       "meta" : {
@@ -1211,12 +1216,15 @@ ruleset wrangler {
     select when wrangler child_deletion
     pre {
       pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
+      results = deleteChild(pico_name)
     }
     if(pico_name !=  "") then
-    
-      deleteChild(pico_name)
-    
-    notfired {
+    noop()
+    fired{
+     ent:my_children := results.updated_children;
+     results.child.klog("successfully removed child, ")
+    }
+    else {
      null.klog ("deletion failed because no child was specified");
     }
   }

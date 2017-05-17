@@ -230,11 +230,11 @@ ruleset wrangler {
 // ***                                      Picos                                           ***
 // ******************************************************************************************** 
   myself = function(){
-      { "id": ent:id, "eci": ent:eci }
+      { "id": ent:id, "eci": ent:eci, "name": ent:name }
   }
 
   children = function() {
-    _children = ent:my_children.defaultsTo([]);
+    _children = ent:children.defaultsTo([]);
     status = (not(_children.isnull()));
     {
       "status" : status,
@@ -274,17 +274,17 @@ ruleset wrangler {
     }.klog("name :")
   }
   picoECIFromName = function (name) {
-    pico = ent:my_children.filter(function(rec){rec{"name"} ==  name})
+    pico = ent:children.filter(function(rec){rec{"name"} ==  name})
                           .head();
     pico{"eci"}
   }
   deleteChild = function(name) {
     results = children();
-    ent_my_children = results{"children"};
-    child_rec = ent_my_children.filter(function(rec){rec{"name"} ==  name})
+    ent_children = results{"children"};
+    child_rec = ent_children.filter(function(rec){rec{"name"} ==  name})
                                .head().defaultsTo({});
     child_id= child_rec{"id"};
-    new_child_list = ent_my_children
+    new_child_list = ent_children
                                .filter(function(rec){rec{"name"} !=  name});
     noret = engine:removePico(child_id);
     //send_directive("deleted pico #{eci_to_delete}")
@@ -370,8 +370,8 @@ ruleset wrangler {
                    "id" : newPicoInfo{"id"},
                    "eci": newPicoEci
                   };
-      my_children = ent:my_children => ent:my_children | []; // [] if first child
-      updated_children = my_children.append(child_rec)
+      children = ent:children => ent:children | []; // [] if first child
+      updated_children = children.append(child_rec)
                      .klog("New Child List: ");
       { 
         "status" : child_rec.isnull(),
@@ -404,7 +404,7 @@ ruleset wrangler {
     prototype = prototypes{prototype_name.defaultsTo("base","using base")}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ")
     rids = prototype{"rids"}
     attributes = {
-      "name": child{"name"},
+      "child": child,
       "parent": parent,
       "prototype": prototype.encode()
     }
@@ -684,12 +684,12 @@ ruleset wrangler {
       
       prototype = event:attr("prototype").defaultsTo("base", "using base prototype");
       check = checkPicoName(name).klog("checkName ");   
-      children = check => newPico(name)| noop() ; // this breaks best practice         
+      children = check => newPico(name)| {} ; // this breaks best practice         
     }
     if(check) then 
      outfitChild(myself(),children{"child"}, prototype)
     fired {
-      ent:my_children := children{"updated_children"};
+      ent:children := children{"updated_children"};
       name.klog("Pico created with name: ");
     }
     else{
@@ -701,8 +701,8 @@ ruleset wrangler {
     select when wrangler create_prototype //raised from parent in new child
     pre {
       prototype_at_creation = event:attr("prototype").decode(); // no defaultto????
-      pico_name = event:attr("name");
-      parent = event:attr("parent");
+      child = event:attr("child");
+      parent = event:attr("parent").klog("parent: ");
     }
     
       noop()
@@ -711,7 +711,9 @@ ruleset wrangler {
     always {
      null.klog("inited prototype");
       ent:prototypes{["at_creation"]} := prototype_at_creation;
-      ent:name := pico_name;
+      ent:name := child.name;
+      ent:id := child.id;
+      ent:eci := child.eci;
       ent:parent := parent;
       raise wrangler event "init_events"
             attributes {};
@@ -1221,7 +1223,7 @@ ruleset wrangler {
     if(pico_name !=  "") then
     noop()
     fired{
-     ent:my_children := results.updated_children;
+     ent:children := results.updated_children;
      results.child.klog("successfully removed child, ")
     }
     else {

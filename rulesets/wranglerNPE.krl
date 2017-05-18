@@ -64,22 +64,34 @@ ruleset wrangler {
     }
 */
     // installRulesets defaction will need a "with eci" for external picos eci 
-    installRulesets = defaction(rids, _eci, name){
-      //configure using eci = meta:eci and name = "none"
-      eci =  "cj2mlhueu0000m8ny9n2qbmpd" //_eci || ent:id ||  //meta:eci
-      name =  name || "none"
-      pico_eci = (name == "none") => eci | picoECIFromName(name) /* this will need to be pico_id and not eci */
-      new_ruleset = engine:installRuleset( { "pico_id": eci.klog("pico_id: "), "rid": rids.klog("rids: ") } ).klog("new_bananas") 
+//    installRulesets = defaction(rids, _eci, name){
+//      //configure using eci = meta:eci and name = "none"
+//      eci =  "cj2mlhueu0000m8ny9n2qbmpd" //_eci || ent:id ||  //meta:eci
+//      name =  name || "none"
+//      pico_eci = (name == "none") => eci | picoECIFromName(name) /* this will need to be pico_id and not eci */
+//      //new_ruleset = engine:installRuleset( { "pico_id": eci.klog("pico_id: "), "rid": rids.klog("rids: ") } ).klog("new_bananas") 
+//      new_ruleset = engine:installRuleset( ent:id ) setting(resp) with base = <base> and url = <url>
+//      send_directive("installed #{rids}")
+//    }
+
+    installRulesets = defaction(rids){
+      new_ruleset = engine:installRuleset(ent:id, rids)
       send_directive("installed #{rids}")
     }
 
-    uninstallRulesets = defaction(rids, _eci, name){
-      //configure using eci = meta:eci and name="none"
-      eci = _eci || ent:id  //meta:eci
-      name = (name.typeof() == "String") => name | "none"
-      pico_eci = /* this will need to be pico_id and not eci */ (name== "none") => eci | picoECIFromName(name)
-      deleted = /* not implemented */ engine:uninstallRuleset( { "pico_id": eci, "rid": rids } ) //pci:delete_ruleset(pico_eci, rids.klog("rids "))
-      send_directive("uninstalled #{rids} in pico #{pico_eci}")
+//    uninstallRulesets = defaction(rids, _eci, name){
+//      //configure using eci = meta:eci and name="none"
+//      eci = _eci || ent:id  //meta:eci
+//      name = (name.typeof() == "String") => name | "none"
+//      pico_eci = /* this will need to be pico_id and not eci */ (name== "none") => eci | picoECIFromName(name)
+//      //deleted = /* not implemented */ engine:uninstallRuleset( { "pico_id": eci, "rid": rids } )
+//      deleted = engine:uninstallRuleset( { "pico_id": eci, "rid": rids } )
+//      send_directive("uninstalled #{rids} in pico #{pico_eci}")
+//    }
+
+    uninstallRulesets = defaction(rids){
+      deleted = engine:uninstallRuleset(ent:id, rids)
+      send_directive("uninstalled #{rids} in pico #{ent:id}")
     }
 
 // ********************************************************************************************
@@ -192,13 +204,18 @@ ruleset wrangler {
       send_directive("updated channel type for #{eci}")
     }
     
-    deleteChannel = defaction(value) {
-      eci = alwaysEci(value)
-      self = myself()
-      deleteeci = engine:removeChannel({
-        "pico_id": self{"id"},
-        "eci": eci.klog("eci to be removed")
-      })
+//    deleteChannel = defaction(value) {
+//      //eci = alwaysEci(value)
+//      self = myself()
+//      deleteeci = engine:removeChannel({
+//        "pico_id": self{"id"},
+//        "eci": eci.klog("eci to be removed")
+//      })
+//      send_directive("deleted channel #{eci}")
+//    }
+    
+    deleteChannel = defaction(eci) {
+      deleteeci = engine:removeChannel(eci)
       send_directive("deleted channel #{eci}")
     }
 
@@ -211,7 +228,8 @@ ruleset wrangler {
 
     createChannel = function(options, _id){
       id = _id || ent:id;
-      channel = engine:newChannel({ "name":options.name, "type": options.eci_type, "pico_id": id });
+      //channel = engine:newChannel({ "name":options.name, "type": options.eci_type, "pico_id": id });
+      channel = engine:newChannel(id, options.name, options.eci_type);
       channel_rec = {"name": channel.name,
                     "eci": channel.id,
                     "type": channel.type,
@@ -360,8 +378,8 @@ ruleset wrangler {
     newPico = function(name){
       child = engine:newPico();
       child_id = child.id;
-      channel = engine:newChannel(
-        { "name": "main", "type": "secret", "pico_id": child_id });
+      //channel = engine:newChannel({ "name": "main", "type": "secret", "pico_id": child_id });
+      channel = engine:newChannel(child_id, "main", "secret");
       child_eci = channel.id;
       newPicoInfo = { "id": child_id, "eci": child_eci };
       newPicoEci = newPicoInfo{"eci"}; // store child eci
@@ -410,7 +428,8 @@ ruleset wrangler {
     }
     //install a combination of prototypes ruleset in child 
     joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
-    a = engine:installRuleset({"pico_id": child{"id"}.klog("child_id_Potter_Head"), "rid": joined_rids_to_install.klog("rids to be installed in child: ")}) 
+    //a = engine:installRuleset({"pico_id": child{"id"}.klog("child_id_Potter_Head"), "rid": joined_rids_to_install.klog("rids to be installed in child: ")}) 
+    engine:installRuleset(child.id.klog("child_id_Potter_Head"), joined_rids_to_install.klog("rids to be installed in child: ")) setting(a)
     // update child ent:prototype_at_creation with prototype
     event:send({"eci": child.eci.klog("Potter_Head2"), "eid": "ProtoOutfit",
           "domain": "wrangler", "type": "create_prototype",
@@ -569,7 +588,7 @@ ruleset wrangler {
         //,"policy" : decoded_policy//{"policy" : policy}
       }.klog("options for channel cration");
       check_name = checkName(channel_name);
-      channel_results = check_name => createChannel(options) | noop()
+      channel_results = check_name => createChannel(options) | {}
      }
           // do we need to check the format of name? is it wrangler"s job?
     if(check_name) then  //channel_name.match(re#\w[\w-]*#)) then 

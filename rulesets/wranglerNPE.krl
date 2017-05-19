@@ -382,11 +382,11 @@ ruleset wrangler {
       channel = engine:newChannel(child_id, "main", "secret");
       child_eci = channel.id;
       newPicoInfo = { "id": child_id, "eci": child_eci };
-      newPicoEci = newPicoInfo{"eci"}; // store child eci
       // create child object
       child_rec = {"name": name,
-                   "id" : newPicoInfo{"id"},
-                   "eci": newPicoEci
+                   "id" : newPicoInfo.id,
+                   "eci": newPicoInfo.eci,
+                   "status": "pending_initialization"
                   };
       children = ent:children => ent:children | []; // [] if first child
       updated_children = children.append(child_rec)
@@ -396,6 +396,15 @@ ruleset wrangler {
         "child"  : child_rec,
         "updated_children" : updated_children
       }
+    }
+
+    updateChildCompletion = function(name){
+      children_map = ent:children.collect(function(child){
+                                            (child.name == name) => "childToUpdate" | "otherChildren"
+                                          });//separate the children, returns two arrays
+      updated_child = children_map.childToUpdate.head().put(["status"], "initialized");//update the status
+      updated_children = children_map.otherChildren.append(updated_child);//reunite with the other children
+      updated_children
     }
 
 // intialize ent;prototype, check if it has a prototype and default to hard coded prototype
@@ -699,20 +708,36 @@ ruleset wrangler {
   rule createChild { 
     select when wrangler child_creation
     pre {
-      name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
-      
+      name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));    
       prototype = event:attr("prototype").defaultsTo("base", "using base prototype");
       check = checkPicoName(name).klog("checkName ");   
-      children = check => newPico(name)| {} ; // this breaks best practice         
+      children = check => newPico(name)| {} ; // this breaks best practice  
+
+      //send this info back to whatever ruleset raised it
+      attrs = event:attrs().put(["updated_info"], children);
+      return_rid = event:attr("return_rid") || "";//what ruleset to send the new pico's info back to
     }
     if(check) then 
-     outfitChild(myself(),children{"child"}, prototype)
+      outfitChild(myself(),children{"child"}, prototype)
     fired {
       ent:children := children{"updated_children"};
+      raise information event "child_created" //for return_rid
+          attributes attrs;
       name.klog("Pico created with name: ");
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");
+    }
+  }
+
+  rule childComplete{
+    select when wrangler child_completed
+    pre{
+      updated_children = updateChildCompletion(event:attrs("name")).klog("Status updated children: ");
+    }
+    noop()
+    fired{
+      ent:children := updated_children;
     }
   }
    
@@ -993,7 +1018,7 @@ ruleset wrangler {
       noop()
     
     always {
-    raise pds event updated_profile 
+    raise pds event "updated_profile" 
             attributes attrs
     }
   }
@@ -1015,7 +1040,7 @@ ruleset wrangler {
     
     always {
      mapedvalues.klog(">> mapped values >>");
-      raise pds event map_item // init general  
+      raise pds event "map_item" // init general  
             attributes attrs
     }
   }
@@ -1033,7 +1058,7 @@ ruleset wrangler {
     
     always {
      key_of_map.klog(">> attrs >>");
-    raise pds event add_settings 
+    raise pds event "add_settings" 
             attributes settings
     }
   }
@@ -1053,7 +1078,7 @@ ruleset wrangler {
       noop()
     
     always {
-    raise wrangler event new_map_added  
+    raise wrangler event "new_map_added"  
             attributes {}
     }
   }
@@ -1067,7 +1092,7 @@ ruleset wrangler {
       noop()
     
     always {
-    raise wrangler event settings_added  
+    raise wrangler event "settings_added"  
             attributes {}
     }
   }
@@ -1084,8 +1109,10 @@ ruleset wrangler {
       noop()
     
     always {
-    raise wrangler event pds_inited  
-            attributes {}
+    raise wrangler event "pds_inited"  
+            attributes {};
+    raise wrangler event "child_completed"
+            attributes event:attrs()
     }
   }
 // ********************************************************************************************
@@ -1102,7 +1129,7 @@ ruleset wrangler {
       noop()
     
     always {
-    raise pds event updated_profile // init prototype  // rule in pds needs to be created.
+    raise pds event "updated_profile" // init prototype  // rule in pds needs to be created.
             attributes attrs
     }
   }
@@ -1122,7 +1149,7 @@ ruleset wrangler {
       noop()
     
     always {
-      raise pds event map_item  
+      raise pds event "map_item"  
             attributes attrs
     }
   }
@@ -1140,7 +1167,7 @@ ruleset wrangler {
     
     always {
      null.klog(">> attrs #{key_of_map} >>");
-    raise pds event add_settings 
+    raise pds event "add_settings" 
             attributes settings
     }
   }
@@ -1214,7 +1241,7 @@ ruleset wrangler {
     
     always {
       ent:prototypes{[prototype_name]} := proto_obj;
-    raise wrangler event Prototype_type_added 
+    raise wrangler event "Prototype_type_added" 
             attributes event:attrs();
     }
   }
@@ -1229,7 +1256,7 @@ ruleset wrangler {
     
     always {
       //clear ent:prototypes{prototype_name} ; making an issue to support "clear"
-    raise wrangler event Prototype_type_removed 
+    raise wrangler event "Prototype_type_removed" 
             attributes event:attrs();
     }
   }

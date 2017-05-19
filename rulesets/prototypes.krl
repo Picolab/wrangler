@@ -13,7 +13,7 @@ ruleset prototypes {
                 },
                 //array of maps for meta data of rids .. [{rid : id},..}  
       "rids": [ 
-                "wrangler", "Subscriptions", "io.picolabs.visual_params"
+                "wrangler", "Subscriptions", "io.picolabs.visual_params", "prototypes"
               ],
       "channels" : [{
                       "name"       : "wellknown",

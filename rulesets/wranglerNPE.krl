@@ -35,7 +35,7 @@ ruleset wrangler {
 // ***                                                                                      ***
 // ******************************************************************************************** 
     getPrototypes = function(){
-      prototypes:prototypes()
+      prototypes:prototypes().prototypes
     }
     hasChild = function(child){
       temp = children().union(child);
@@ -358,14 +358,15 @@ ruleset wrangler {
     prototypes = results{"prototypes"}
     prototype = prototypes{prototype_name.defaultsTo("base","using base")}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ")
     rids = prototype{"rids"}
+    basePrototype = getPrototypes().base
     attributes = {
       "child": child,
       "parent": parent,
       "prototype": prototype.encode()
     }
     //install a combination of prototypes ruleset in child 
+    //joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
     joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
-    //a = engine:installRuleset({"pico_id": child{"id"}.klog("child_id_Potter_Head"), "rid": joined_rids_to_install.klog("rids to be installed in child: ")}) 
     engine:installRuleset(child.id.klog("child_id_Potter_Head"), joined_rids_to_install.klog("rids to be installed in child: ")) setting(a)
     // update child ent:prototype_at_creation with prototype
     event:send({"eci": child.eci.klog("Potter_Head2"), "eid": "ProtoOutfit",

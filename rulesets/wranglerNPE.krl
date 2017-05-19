@@ -44,28 +44,24 @@ ruleset wrangler {
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
 // ********************************************************************************************
-/*    rulesets = function() { // needss.
+    rulesets = function() { 
       eci = meta:eci;
-      results = //http:get(web_hook.klog("URL"), {}.put(params)).klog("response ");
-      results = //pci:list_ruleset(eci); 
-      rids = results{"rids"}.defaultsTo("error",standardError("no hash key rids"));
+      rids = engine:listAllEnabledRIDs();
       {
        "status"   : (rids !=  "error"),
         "rids"     : rids
       }.klog("rulesets :")
     }
-    rulesetsInfo = function(rids) {//takes an array of rids as parameter // can we write this better???????
+    rulesetsInfo = function(_rids) {//takes an array of rids as parameter // can we write this better???????
       //check if its an array vs string, to make this more robust.
-      rids_string = ( rids.typeof() == "array" ) => rids.join(";") | ( rids.typeof() == "str" ) => rids | "" ;
-      describe_url = "https://#{meta:host}/ruleset/describe/#{$rids_string}";
-      resp = http:get(describe_url);
-      results = resp{"content"}.decode().defaultsTo("",standardError("content failed to return"));
+      rids = ( _rids.typeof() == "Array" ) => _rids | ( _rids.typeof() == "String" ) => _rids.split(";") | "" ;
+      results = rids.map(function(rid) {engine:describeRuleset(rid);});
       {
-       "status"   : (resp{"status_code"} ==  "200"),
+       "status"   : not results.isnull(),
        "description"     : results
       }.klog("rulesetsInfo :")
     }
-*/
+
     // installRulesets defaction will need a "with eci" for external picos eci 
 //    installRulesets = defaction(rids, _eci, name){
 //      //configure using eci = meta:eci and name = "none"

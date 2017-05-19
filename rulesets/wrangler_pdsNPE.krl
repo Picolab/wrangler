@@ -64,8 +64,8 @@ ruleset io.picolabs.wrangler.PDS {
       return = (key.isnull()) => (namespace.isnull() => ent:general | multipleItems( namespace) ) | item(namespace, key) ;
       status = namespace.isnull() => "failed" | "success";
       {
-       'status'   : ( status ),
-        'general'     : return
+       "status"   : ( status ),
+        "general"     : return
       };
     }
     // set up pagination. look at fuse_fuel.krl allfillup -DEAD?
@@ -123,8 +123,8 @@ ruleset io.picolabs.wrangler.PDS {
         return = (key.isnull()) => get_all_profile() | get_profile(key);
         // status update 
         {
-       'status'   : ("success"),
-        'profile'     : return
+       "status"   : ("success"),
+        "profile"     : return
         };
     };
 
@@ -159,8 +159,8 @@ ruleset io.picolabs.wrangler.PDS {
                              
                               ( (key eq "Data") => get_setting_value_default(Rid,Key,detail) | get_setting_value(Rid,Key)));
       {
-       'status'   : "success",// update   
-        'settings' : return
+       "status"   : "success",// update   
+        "settings" : return
       };
     }
 
@@ -212,7 +212,8 @@ ruleset io.picolabs.wrangler.PDS {
       value =  event:attr("value").defaultsTo("", "no value");
     }
     always {
-      set ent:general{hash_path} value;
+      //set ent:general{hash_path} value;
+      ent:general := ent:general.put([hash_path], value);
       raise pds event data_added with 
          namespace = namespace and
          keyvalue = keyvalue;
@@ -221,14 +222,16 @@ ruleset io.picolabs.wrangler.PDS {
 
   rule update_item { 
     select when pds updated_data_available
-    	foreach(event:attr("value") || {}) setting(akey, avalue)
+    	//foreach(event:attr("value") || {}) setting(akey, avalue)
+        foreach(event:attr("value") || {}) setting(avalue, akey)
     pre {
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
       keyvalue = event:attr("key").defaultsTo("", "no key");
       hash_path = [namespace, keyvalue, akey];
     }
     always {
-      set ent:general{ hash_path } avalue;
+      //set ent:general{ hash_path } avalue;
+      ent:general := ent:general.put([hash_path], avalue);
       raise pds event data_updated with 
         namespace = namespace and
         keyvalue = keyvalue if last;
@@ -243,7 +246,8 @@ ruleset io.picolabs.wrangler.PDS {
       hash_path = [namespace, keyvalue];
     }
     always {
-      clear ent:general{hash_path};
+      //clear ent:general{hash_path};
+      ent:general := ent:general.delete(hash_path);
       raise pds event data_deleted with 
         namespace = namespace and
         keyvalue = keyvalue;
@@ -256,7 +260,8 @@ ruleset io.picolabs.wrangler.PDS {
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
     }
     always {
-      clear ent:general{namespace};
+      //clear ent:general{namespace};
+      ent:general := ent:general.delete(namespace);
       raise pds event namespace_deleted with 
         namespace = namespace;
     }
@@ -269,7 +274,8 @@ ruleset io.picolabs.wrangler.PDS {
       mapvalues = event:attr("mapvalues").defaultsTo("", "no mapvalues").decode();
     }
     always {
-      set ent:general{namespace} mapvalues;
+      //set ent:general{namespace} mapvalues;
+      ent:general := ent:general.put([namespace], mapvalues);
       raise pds event new_map_added  with 
            namespace = namespace and
            mapvalues = mapvalues;
@@ -359,11 +365,11 @@ ruleset io.picolabs.wrangler.PDS {
                                       "nothing to update";
       
     }
-    if (newly_constructed_profile neq "nothing to update") then { 
-      noop(); 
-    }
+    if (newly_constructed_profile != "nothing to update") then  
+      noop()
     fired {
-      set ent:profile newly_constructed_profile;
+      //set ent:profile newly_constructed_profile;
+      ent:profile := newly_constructed_profile;
       raise pds event "profile_updated" attributes all_attrs.put(["_status"],"success");
     }
     else{
@@ -391,7 +397,8 @@ ruleset io.picolabs.wrangler.PDS {
 // pass any number of key value pair 
   rule SDS_update_profile_partial {
     select when sds updated_profile_item_available
-    foreach event:attrs() setting(profile_key, profile_value)
+    //foreach event:attrs() setting(profile_key, profile_value)
+    foreach event:attrs() setting(profile_value, profile_key)//NPE sets value before key
 
     {
       noop();
@@ -450,11 +457,14 @@ ruleset io.picolabs.wrangler.PDS {
 
     }
     always {
-      set ent:settings{[set_rid, "name"]}   set_name ;
-      set ent:settings{[set_rid, "rid"]}    set_rid ;
-      set ent:settings{[set_rid, "schema"]} set_schema if set_schema;
-      //set ent:settings{[set_rid, "data"]}   set_data if not set_data;
-      set ent:settings{[set_rid, "data", set_attr]} set_value if set_attr;
+      //set ent:settings{[set_rid, "name"]}   set_name ;
+      ent:settings := ent:settings.put([set_rid, "name"], set_name);
+      //set ent:settings{[set_rid, "rid"]}    set_rid ;
+      ent:settings := ent:settings.put([set_rid, "rid"], set_rid);
+      //set ent:settings{[set_rid, "schema"]} set_schema if set_schema;
+      ent:settings := ent:settings.put([set_rid, "schema"], set_schima) if set_schema;
+      //set ent:settings{[set_rid, "data", set_attr]} set_value if set_attr;
+      ent:settings := ent:settings.put([set_rid, "data"], set_attr) if set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }
@@ -520,9 +530,12 @@ ruleset io.picolabs.wrangler.PDS {
     pre{
     }
     always {
-      clear ent:general;
-      clear ent:profile;
-      clear ent:settings;
+      //clear ent:general;
+      //clear ent:profile;
+      //clear ent:settings;
+      ent:general := null;
+      ent:profile := null;
+      ent:settings := null;
     }
   }
   // ------------------------------------------------------------------------

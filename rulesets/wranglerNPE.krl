@@ -719,12 +719,15 @@ ruleset wrangler {
     select when wrangler child_deletion
     pre {
       pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
-      results = deleteChild(pico_name)
+      results = deleteChild(pico_name);
+      attrs = event:attrs().put(["results"],results);
     }
     if(pico_name !=  "") then
     noop()
     fired{
      ent:children := results.updated_children;
+     raise information event "child_deleted"
+       attributes attrs;
      results.child.klog("successfully removed child, ")
     }
     else {

@@ -211,10 +211,11 @@ ruleset io.picolabs.wrangler.PDS {
       hash_path = [namespace, keyvalue]; //array of keys
       value =  event:attr("value").defaultsTo("", "no value");
     }
+    noop()
     always {
       //set ent:general{hash_path} value;
       ent:general := ent:general.put([hash_path], value);
-      raise pds event data_added with 
+      raise pds event "data_added" with 
          namespace = namespace and
          keyvalue = keyvalue;
     }
@@ -222,17 +223,18 @@ ruleset io.picolabs.wrangler.PDS {
 
   rule update_item { 
     select when pds updated_data_available
-    	//foreach(event:attr("value") || {}) setting(akey, avalue)
-        foreach(event:attr("value") || {}) setting(avalue, akey)
+      //foreach(event:attr("value") || {}) setting(akey, avalue)
+        foreach(event:attr("value") || {}) setting(avalue, akey)//NPE binds value first, then key
     pre {
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
       keyvalue = event:attr("key").defaultsTo("", "no key");
       hash_path = [namespace, keyvalue, akey];
     }
+    noop()
     always {
       //set ent:general{ hash_path } avalue;
       ent:general := ent:general.put([hash_path], avalue);
-      raise pds event data_updated with 
+      raise pds event "data_updated" with 
         namespace = namespace and
         keyvalue = keyvalue if last;
     }
@@ -245,10 +247,11 @@ ruleset io.picolabs.wrangler.PDS {
       keyvalue = event:attr("key").defaultsTo("", "no key");
       hash_path = [namespace, keyvalue];
     }
+    noop()
     always {
       //clear ent:general{hash_path};
       ent:general := ent:general.delete(hash_path);
-      raise pds event data_deleted with 
+      raise pds event "data_deleted" with 
         namespace = namespace and
         keyvalue = keyvalue;
     }
@@ -259,10 +262,11 @@ ruleset io.picolabs.wrangler.PDS {
     pre{
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
     }
+    noop()
     always {
       //clear ent:general{namespace};
       ent:general := ent:general.delete(namespace);
-      raise pds event namespace_deleted with 
+      raise pds event "namespace_deleted" with 
         namespace = namespace;
     }
   }
@@ -273,10 +277,11 @@ ruleset io.picolabs.wrangler.PDS {
       namespace = event:attr("namespace").defaultsTo("", "no namespace");
       mapvalues = event:attr("mapvalues").defaultsTo("", "no mapvalues").decode();
     }
+    noop()
     always {
       //set ent:general{namespace} mapvalues;
       ent:general := ent:general.put([namespace], mapvalues);
-      raise pds event new_map_added  with 
+      raise pds event "new_map_added"  with 
            namespace = namespace and
            mapvalues = mapvalues;
     }
@@ -286,7 +291,8 @@ ruleset io.picolabs.wrangler.PDS {
   /*
   rule SDS_init_mycloud {
     select when web sessionReady
-    if (ent:general{"myCloud"} == 0) then { noop(); }
+    if (ent:general{"myCloud"} == 0) then 
+    noop()
     fired {
       set ent:general{"myCloud"} defaultCloud;
     }
@@ -298,7 +304,8 @@ ruleset io.picolabs.wrangler.PDS {
     pre {
       schema = ent:general{["myCloud", "mySchemaName"]};
     }
-    if (schema eq "person") then { noop(); }
+    if (schema eq "person") then  
+    noop()
     fired {
       set ent:general{["myCloud", "mySchemaName"]} "Person";
     }
@@ -332,9 +339,9 @@ ruleset io.picolabs.wrangler.PDS {
                                       "profile exsist";
       
     }
-    if (profile == 0) then { 
-      noop(); 
-    }
+    if (profile == 0) then  
+      noop()
+    
     fired {
       set ent:profile newly_constructed_profile;
     }
@@ -388,6 +395,7 @@ ruleset io.picolabs.wrangler.PDS {
                 .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
                 ;
     }
+    noop()
     always {
       set ent:profile newProfileWithImage;
       raise sds event "profile_updated" attributes newProfileWithImage;
@@ -400,9 +408,9 @@ ruleset io.picolabs.wrangler.PDS {
     //foreach event:attrs() setting(profile_key, profile_value)
     foreach event:attrs() setting(profile_value, profile_key)//NPE sets value before key
 
-    {
-      noop();
-    }
+    
+      noop()
+    
 
     fired {
       set ent:profile {} if not ent:profile; // creates a profile ent if not aready there
@@ -411,7 +419,7 @@ ruleset io.picolabs.wrangler.PDS {
     }
 
   }
-/*
+
   rule SDS_new_profile_schema {
     select when sds new_profile_schema
     pre{
@@ -419,6 +427,7 @@ ruleset io.picolabs.wrangler.PDS {
       mySchemaName = event:attr("mySchemaName").defaultsTo("", "no mySchemaName");
 
     }
+    noop()
     always {
       set ent:general{hash_path} mySchemaName; // why is this stored in general and not profile?
     }
@@ -430,6 +439,7 @@ ruleset io.picolabs.wrangler.PDS {
       doorbell = event:attr("doorbell").defaultsTo("", "no doorbell");
       hash_path = ["myCloud", "myDoorbell"];
     }
+    noop()
     always {// why do we put this in both profile and general ??? 
       set ent:profile{"myDoorbell"} doorbell;
       set ent:general{hash_path} doorbell;
@@ -456,6 +466,7 @@ ruleset io.picolabs.wrangler.PDS {
       set_value  = event:attr("value").defaultsTo(0,"no Value");
 
     }
+    noop()
     always {
       //set ent:settings{[set_rid, "name"]}   set_name ;
       ent:settings := ent:settings.put([set_rid, "name"], set_name);
@@ -480,6 +491,7 @@ ruleset io.picolabs.wrangler.PDS {
       gotData = ent:settings{[setRID, "setData"]};
 
     }
+    noop()
     always {
       set ent:settings{[setRID, "Name"]}   setName;
       set ent:settings{[setRID, "RID"]}    setRID;
@@ -495,6 +507,7 @@ ruleset io.picolabs.wrangler.PDS {
       setData   = event:attr("Data").defaultsTo({},"no Data");
       hash_path = [setRID, "setData"];
     }
+    noop()
     always {
       set ent:settings{hash_path} setData;
     }
@@ -507,6 +520,7 @@ ruleset io.picolabs.wrangler.PDS {
       setData   = event:attr("Data").defaultsTo({},"no Data");
       hash_path     = [setRID, "setData"];
     }
+    noop()
     always {
       set ent:settings{hash_path} setData.delete(["setRID"]); // why not use clear????
     }
@@ -520,6 +534,7 @@ ruleset io.picolabs.wrangler.PDS {
       setValue  = event:attr("Value").defaultsTo("unknown","no Value");
       hash_path = [setRID, "setData", setAttr];
     }
+    noop()
     always {
       set ent:settings{hash_path} setValue;
     }
@@ -529,6 +544,7 @@ ruleset io.picolabs.wrangler.PDS {
     select when pds clear_all_data
     pre{
     }
+    noop()
     always {
       //clear ent:general;
       //clear ent:profile;

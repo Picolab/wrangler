@@ -15,14 +15,15 @@ ruleset wrangler {
     //use module b16x42 alias system_credentials
     //use module b507901x3 alias pds
     // errors raised to.... unknown
-    use module prototypes
+    //ause module prototypes
+    use module io.picolabs.wrangler.common alias common
     logging on
-    provides skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
+    provides rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, 
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults
-    shares skyQuery, rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
+    shares rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, 
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
@@ -35,7 +36,7 @@ ruleset wrangler {
 // ***                                                                                      ***
 // ******************************************************************************************** 
     getPrototypes = function(){
-      prototypes:prototypes().prototypes
+      common:prototypes().prototypes
     }
     hasChild = function(child){
       temp = children().union(child);
@@ -352,8 +353,7 @@ ruleset wrangler {
 // then wrangle in the child will handle the creation of the pico and its prototypes
 // create child from protype will take the name with a option of a prototype that defaults to base.
 
-  outfitChild = defaction(parent,child,prototype_name){ 
-    //configure using prototype_name = "base" // base must be installed by default for prototypeing to work 
+  outfitChildP1 = defaction(parent,child,prototype_name){
     results = getPrototypes() // get prototype from ent varible and default to base if not found.
     prototypes = results{"prototypes"}
     prototype = prototypes{prototype_name.defaultsTo("base","using base")}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ")
@@ -368,6 +368,23 @@ ruleset wrangler {
     //joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
     joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
     engine:installRuleset(child.id.klog("child_id_Potter_Head"), joined_rids_to_install.klog("rids to be installed in child: ")) setting(a)
+  }
+ 
+  outfitChildP2 = defaction(parent,child,prototype_name){ 
+    //configure using prototype_name = "base" // base must be installed by default for prototypeing to work 
+    results = getPrototypes() // get prototype from ent varible and default to base if not found.
+    prototypes = results{"prototypes"}
+    prototype = prototypes{prototype_name.defaultsTo("base","using base")}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ")
+    rids = prototype{"rids"}
+    basePrototype = getPrototypes().base
+    attributes = {
+      "child": child,
+      "parent": parent,
+      "prototype": prototype.encode()
+    }
+    //install a combination of prototypes ruleset in child 
+    joined_rids_to_install = prototype_name ==  "base" =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
+    //engine:installRuleset(child.id.klog("child_id_Potter_Head"), joined_rids_to_install.klog("rids to be installed in child: ")) setting(a)
     // update child ent:prototype_at_creation with prototype
     event:send({"eci": child.eci.klog("Potter_Head2"), "eid": "ProtoOutfit",
           "domain": "wrangler", "type": "create_prototype",
@@ -646,8 +663,10 @@ ruleset wrangler {
       attrs = event:attrs().put(["updated_info"], children);
       return_rid = event:attr("return_rid") || "";//what ruleset to send the new pico's info back to
     }
-    if(check) then 
-      outfitChild(myself(),children{"child"}, prototype)
+    if(check) then {
+      outfitChildP1(myself(),children{"child"}, prototype)
+      outfitChildP2(myself(),children{"child"}, prototype)
+    }
     fired {
       ent:children := children{"updated_children"};
       raise information event "child_created" //for return_rid

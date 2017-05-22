@@ -1,86 +1,14 @@
 ruleset prototypes {
   meta {
-    use module wrangler
-    provide prototypes
-    shares __testing, prototypes
+    //use module wrangler
+    use module io.picolabs.wrangler.common alias common
+    shares __testing
   }
   global {
     __testing = { "queries": [ { "name": "__testing" } ],
                   "events": [ ] }
-    basePrototype = {
-      "meta" : {
-                "discription": "Wrangler base prototype"
-                },
-                //array of maps for meta data of rids .. [{rid : id},..}  
-      "rids": [ 
-                "wrangler", "Subscriptions", "io.picolabs.visual_params", "prototypes", "io.picolabs.wrangler.PDS"
-              ],
-      "channels" : [{
-                      "name"       : "wellknown",
-                      "type"       : "wrangler",
-                      "attributes" : "wrangler test attrs",
-                      "policy"     : "not implemented"
-                    }
-                    ], // we could instead use tuples  [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-      "prototypes" : [/*{// belongs in relationManager 
-                      "url" : "https://raw.githubusercontent.com/burdettadam/Practice-with-KRL/master/prototype.json",
-                      "prototype_name": "base_add_test"
-                      }*/],// add prototype by url
-      "children" : [
-                    /*{
-                      "name" : "testChild",
-                      "prototype" : "base_add_test"
-                      }*/
-                      ],// add prototype by url
-      "subscriptions_request": [/*{
-                                  "name"          : "parent-child",
-                                  "name_space"    : "wrangler",
-                                  "my_role"       : "child",
-                                  "subscriber_role"     : "parent",
-                                  "subscriber_eci"    : ["owner"],
-                                  "channel_type"  : "wrangler",
-                                  "attrs"         : "nogiven"
-                                }*/],
-      "Prototype_events" : [
-                            /*{
-                              "domain": "wrangler",
-                              "type"  : "base_prototype_event1",
-                              "attrs" : {"attr1":"1",
-                                          "attr2":"2"
-                                        }
-                            }*/
-                            ], // array of maps
-      "PDS" : {
-                "profile" : {
-                            "name":"base",
-                            "description":"discription of the general pds created",
-                            "location":"40.252683,-111.657486",
-                            "model":"unknown",
-                            "model_description":"no model at this time",
-                            "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
-                            },
-                "general" : {"test":{"subtest":"just a test"}},
-                "settings": {"b507901x1.prod":{
-                                              "name":"wrangler",
-                                              "keyed_rid" :"b507901x1.prod",
-                                              "schema":["im","a","schema"],
-                                              "data_key":"first_key",
-                                              "value":"first_value"
-                                              }
-                            }
-              }
-  }
-
-// intialize ent;prototype, check if it has a prototype and default to hard coded prototype
-// we will store base prototypes as hard coded varibles with, 
-
-    prototypes = function() {
-      init_prototypes = ent:prototypes || {}; // if no prototypes set to map so we can use put()
-      prototypes = init_prototypes.put(["base"],basePrototype);
-      {
-        "status" : true,
-        "prototypes" : prototypes
-      }.klog("prototypes :")
+    getPrototypes = function(){
+      common:prototypes().prototypes
     }
   }
 
@@ -169,7 +97,7 @@ ruleset prototypes {
       getOedipus = function (eci,child_eci){
         myParent = pci:list_parent(eci);
         a = child_eci;
-        myRooteci = (myParent.typeof() ==  "array") => getOedipus(myParent[0],eci) | skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
+        myRooteci = (myParent.typeof() ==  "array") => getOedipus(myParent[0],eci) | common:skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
         myRooteci
       };
 
@@ -179,7 +107,7 @@ ruleset prototypes {
 
 
       getTargetEci = function (path, eci) {
-        return = wrangler:skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
+        return = common:skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
         children = return{"children"};
         child_name = path.head();
         child_name_look_up = (child_name ==  "__Oedipus_") => Oedipus | child_name;
@@ -213,7 +141,7 @@ ruleset prototypes {
 // ---------------------- prototype channels creation -----------------------
   rule initializePrototypeChannels {
     select when wrangler init_events 
-      foreach ent:prototypes{["at_creation","channels"]}.klog("Prototype_channels : ") setting (PT_channel)
+      foreach getPrototypes(){["at_creation","channels"]}.klog("Prototype_channels : ") setting (PT_channel)
     pre {
       attrs = {
                   "channel_name" : PT_channel{"name"},
@@ -235,7 +163,7 @@ ruleset prototypes {
 // ---------------------- Prototype adding ----------------------
   rule initializePrototypePrototypes {
     select when wrangler init_events 
-      foreach ent:prototypes{["at_creation","prototypes"]}.klog("Prototype add prototypes: ") setting (prototype)
+      foreach getPrototypes(){["at_creation","prototypes"]}.klog("Prototype add prototypes: ") setting (prototype)
     pre {
       attrs = prototype;
     }
@@ -251,7 +179,7 @@ ruleset prototypes {
   // ---------------------- Prototype children creation ----------------------
   rule initializePrototypeChildren {
     select when wrangler init_events 
-      foreach ent:prototypes{["at_creation","children"]}.klog("Prototype base create children: ") setting (child)
+      foreach getPrototypes(){["at_creation","children"]}.klog("Prototype base create children: ") setting (child)
     pre {
       attrs = child;
     }
@@ -268,7 +196,7 @@ ruleset prototypes {
 // ---------------------- prototype subscription creation ----------------------
   rule initializePrototypeSubscriptions {
     select when wrangler init_events 
-      foreach ent:prototypes{["at_creation","subscriptions_request"]}.klog("Prototype subscriptions_request: ") setting (subscription)
+      foreach getPrototypes(){["at_creation","subscriptions_request"]}.klog("Prototype subscriptions_request: ") setting (subscription)
     pre {
       getRootEci = function (eci){
         results = pci:list_parent(eci);
@@ -279,7 +207,7 @@ ruleset prototypes {
       getOedipus = function (eci,child_eci){
         myParent = pci:list_parent(eci);
         a = child_eci;
-        myRooteci = (myParent.typeof() ==  "array") => getOedipus(myParent[0],eci) | skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
+        myRooteci = (myParent.typeof() ==  "array") => getOedipus(myParent[0],eci) | common:skyQuery(child_eci,"b507901x1.prod","name",{},null,null,null);
         myRooteci
       };
 
@@ -289,7 +217,7 @@ ruleset prototypes {
 
 
       getTargetEci = function (path, eci) {
-        return = skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
+        return = common:skyQuery(eci,"b507901x1.prod","children",{},null,null,null);
         children = return{"children"};
         child_name = path.head();
         child_name_look_up = (child_name ==  "__Oedipus_") => Oedipus | child_name;
@@ -454,7 +382,7 @@ ruleset prototypes {
 
   rule raisePrototypeEvents {
     select when wrangler pds_inited
-    foreach ent:prototypes{["at_creation","Prototype_events"]} setting (Prototype_event)
+    foreach getPrototypes(){["at_creation","Prototype_events"]} setting (Prototype_event)
     pre {
       a= Prototype_event.klog("prototype event: ");
       Prototype_domain = Prototype_event{"domain"};
@@ -471,61 +399,6 @@ ruleset prototypes {
   }
 
 // ********************************************************************************************
-// ***                                    Prototypes Management                             ***
-// ********************************************************************************************
-  rule initializePrototype { 
-    select when wrangler create_prototype //raised from parent in new child
-    pre {
-      prototype_at_creation = event:attr("prototype").decode(); // no defaultto????
-    }
-    noop()
-    always {
-      ent:prototypes{["at_creation"]} := prototype_at_creation;
-    }
-  }
-
-  rule addPrototype {
-    select when wrangler add_prototype
-            or  wrangler update_prototype
-    pre {
-      proto_from_url = function(){
-        prototype_url = event:attr("url");
-        response = http:get(prototype_url, {});
-        response_content = response{"content"}.decode();
-        response_content
-      };
-
-      prototype = event:attr("url").isnull() => event:attr("prototype")| proto_from_url();
-      proto_obj = prototype.decode(); // this decode is redundant, but the rule works so Im not messing with it.
-      prototype_name = event:attr("prototype_name");
-    }
-    // should we always add something?
-    
-      noop()
-    
-    always {
-      ent:prototypes{[prototype_name]} := proto_obj;
-    raise wrangler event "Prototype_type_added" 
-            attributes event:attrs();
-    }
-  }
-
-  rule removePrototype {
-    select when wrangler remove_prototype
-    pre {
-      prototype_name = event:attr("prototype_name");
-    }
-    
-      noop()
-    
-    always {
-      //clear ent:prototypes{prototype_name} ; making an issue to support "clear"
-    raise wrangler event "Prototype_type_removed" 
-            attributes event:attrs();
-    }
-  }
-
-// ********************************************************************************************
 // ***                                      PDS  Prototype Updates                          ***
 // ********************************************************************************************
 // NEED TO UPDATE RULES TO NOT FIRE IF NO Prototype UPDATES ARE NEEDED.
@@ -533,7 +406,7 @@ ruleset prototypes {
   rule updatePrototypeProfile {
     select when wrangler pds_inited
     pre {
-      attrs = ent:prototypes{["at_creation","PDS","profile"]};
+      attrs = getPrototypes(){["at_creation","PDS","profile"]};
     }
     
       noop()
@@ -545,9 +418,9 @@ ruleset prototypes {
   }
   rule updatePrototypeGeneral {
     select when wrangler pds_inited 
-      foreach ent:prototypes{["at_creation","PDS","general"]}.klog("Prototype PDS general: ")  setting (key_of_map) // for each "key"
+      foreach getPrototypes(){["at_creation","PDS","general"]}.klog("Prototype PDS general: ")  setting (key_of_map) // for each "key"
     pre {
-      general_map = ent:prototypes{["at_creation","PDS","general"]};
+      general_map = getPrototypes(){["at_creation","PDS","general"]};
       namespace = key_of_map;
       mapedvalues = general_map{key_of_map};
       attrs = {

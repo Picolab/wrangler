@@ -5,7 +5,10 @@ ruleset io.picolabs.wrangler.common {
   }
   global {
     __testing = { "queries": [ { "name": "__testing" } ],
-                  "events": [ ] }
+                  "events": [ { "domain": "wrangler", "type": "add_prototype",
+                                "attrs": [ "url", "prototype_name" ] },
+                              { "domain": "wrangler", "type": "remove_prototype",
+                                "attrs": [ "prototype_name" ] } ] }
     
     /*
       skyQuery is used to programmatically call function inside of other picos from inside a rule.
@@ -71,48 +74,33 @@ ruleset io.picolabs.wrangler.common {
       "rids": [ 
                 "wrangler", "Subscriptions", "io.picolabs.visual_params", "prototypes", "io.picolabs.wrangler.PDS", "io.picolabs.wrangler.common"
               ],
-      "channels" : [{
-                      "name"       : "wellknown",
-                      "type"       : "wrangler",
-                      "attributes" : "wrangler test attrs",
-                      "policy"     : "not implemented"
-                    }
-                    ], // we could instead use tuples  [["","","",""]], // array of arrrays [[name,type,attributes,policy]]
-      "prototypes" : [/*{// belongs in relationManager 
-                      "url" : "https://raw.githubusercontent.com/burdettadam/Practice-with-KRL/master/prototype.json",
-                      "prototype_name": "base_add_test"
-                      }*/],// add prototype by url
-      "children" : [
-                    /*{
-                      "name" : "testChild",
-                      "prototype" : "base_add_test"
-                      }*/
-                      ],// add prototype by url
-      "subscriptions_request": [/*{
-                                  "name"          : "parent-child",
-                                  "name_space"    : "wrangler",
-                                  "my_role"       : "child",
-                                  "subscriber_role"     : "parent",
-                                  "subscriber_eci"    : ["owner"],
-                                  "channel_type"  : "wrangler",
-                                  "attrs"         : "nogiven"
-                                }*/],
-      "Prototype_events" : [
-                            /*{
+      "initialization_events" : [
+                            {
                               "domain": "wrangler",
                               "type"  : "base_prototype_event1",
                               "attrs" : {"attr1":"1",
                                           "attr2":"2"
                                         }
-                            }*/
+                            },
+                            {
+                              "domain": "wrangler",
+                              "type"  : "base_prototype_event2",
+                              "attrs" : {"attr1":"3",
+                                          "attr2":"4"
+                                        }
+                            },
+                            {
+                              "domain": "wrangler",
+                              "type"  : "base_prototype_event3",
+                              "attrs" : {"attr1":"5",
+                                          "attr2":"6"
+                                        }
+                            }
                             ], // array of maps
       "PDS" : {
                 "profile" : {
                             "name":"base",
                             "description":"discription of the general pds created",
-                            "location":"40.252683,-111.657486",
-                            "model":"unknown",
-                            "model_description":"no model at this time",
                             "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
                             },
                 "general" : {"test":{"subtest":"just a test"}},
@@ -127,7 +115,7 @@ ruleset io.picolabs.wrangler.common {
               }
     }
     prototypes = function() {
-      init_prototypes = ent:prototypes || {}; // if no prototypes set to map so we can use put()
+      init_prototypes = app:prototypes || {}; // if no prototypes set to map so we can use put()
       prototypes = init_prototypes.put(["base"],basePrototype);
       {
         "status" : true,
@@ -147,7 +135,7 @@ ruleset io.picolabs.wrangler.common {
     }
     noop()
     always {
-      ent:prototypes{["at_creation"]} := prototype_at_creation;
+      app:prototypes{["at_creation"]} := prototype_at_creation;
     }
   }
 
@@ -162,7 +150,7 @@ ruleset io.picolabs.wrangler.common {
         response_content
       };
 
-      prototype = event:attr("url").isnull() => event:attr("prototype")| proto_from_url();
+      prototype = event:attr("url").isnull() => event:attr("prototype")| proto_from_url().klog("The proto from url: ");
       proto_obj = prototype.decode(); // this decode is redundant, but the rule works so Im not messing with it.
       prototype_name = event:attr("prototype_name");
     }
@@ -171,8 +159,9 @@ ruleset io.picolabs.wrangler.common {
       noop()
     
     always {
-      ent:prototypes{[prototype_name]} := proto_obj;
-    raise wrangler event "Prototype_type_added" 
+      //app:prototypes{[prototype_name]} := proto_obj.klog("Proto_obj: ");
+      app:prototypes := app:prototypes.put([prototype_name], proto_obj.klog("Proto_obj: ")).klog("app:prototypes: ");
+      raise wrangler event "Prototype_type_added" 
             attributes event:attrs();
     }
   }
@@ -186,9 +175,11 @@ ruleset io.picolabs.wrangler.common {
       noop()
     
     always {
-      //clear ent:prototypes{prototype_name} ; making an issue to support "clear"
-    raise wrangler event "Prototype_type_removed" 
+      //clear (app:prototypes){prototype_name} ; //making an issue to support "clear"
+      app:prototypes := {};
+      raise wrangler event "Prototype_type_removed" 
             attributes event:attrs();
     }
   }
 }//End Ruleset
+ 

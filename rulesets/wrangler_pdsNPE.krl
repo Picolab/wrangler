@@ -15,7 +15,7 @@ ruleset io.picolabs.wrangler.PDS {
     
     shares items, get_keys, // general
      profile, // profile
-     settings, get_config_value, get_setting_data_value , config_value, settings_names// settings
+     settings, get_config_value, get_setting_data_value , config_value, settings_names, __testing// settings
 
   }
 
@@ -25,9 +25,6 @@ ruleset io.picolabs.wrangler.PDS {
     //       {
     //        "name": "",
     //        "description": "",
-    //        "location": "",
-    //        "model": "",
-    //        "model_description": "",
     //        "photo": "https://s3.amazonaws.com/k-mycloud/a169x672/unknown.png"
     //      }
     // ent:general
@@ -47,12 +44,10 @@ ruleset io.picolabs.wrangler.PDS {
 
 
   global {
+    __testing = { "queries": [ { "name": "__testing" } ],
+                  "events": [ { "domain": "pds", "type": "updated_profile",
+                                "attrs": [ "name", "description", "photo" ] } ] }
 
-   /* // -for debugging???-------------------------------------------
-    get_all_items = function() {
-      ent:general;
-    };
-  */
     items = function (namespace, key){
       item = function(namespace, keyvalue) {
         ent:general{[namespace, keyvalue]}
@@ -68,50 +63,6 @@ ruleset io.picolabs.wrangler.PDS {
         "general"     : return
       };
     }
-    // set up pagination. look at fuse_fuel.krl allfillup -DEAD?
-    sorted_values = function(namespace, sort_opt, num_to_return) {
-        the_keys = this2that:transform(ent:general{[namespace]}, sort_opt); // get all the keys sorted by the key value provided in sort_opt
-        the_keys.isnull()          => [] |
-        not num_to_return.isnull() => the_keys.slice(0,num_to_return-1) // only return how much we want
-                                    | the_keys
-    };
-    /*
-   trips = function(id, limit, offset) {
-       // x_id = id.isnull().klog(">>>> id >>>>>");
-       // x_limit = limit.klog(">>>> limit >>>>>");
-       // x_offset = offset.klog(">>>> offset >>>>>"); 
-
-      id.isnull() || id eq "" => allTrips(limit, offset)
-                               | ent:trips_by_id{mkTid(id)};
-    };
-
-    allTrips = function(limit, offset) {
-      sort_opt = {
-        "path" : ["endTime"],
-  "reverse": true,
-  "compare" : "datetime"
-      };
-
-      max_returned = 25;
-
-      hard_offset = offset.isnull() 
-                 || offset eq ""        => 0               // default
-                  |                        offset;
-
-      hard_limit = limit.isnull() 
-                || limit eq ""          => 10              // default
-                 | limit > max_returned => max_returned
-     |                         limit; 
-
-      global_opt = {
-        "index" : hard_offset,
-  "limit" : hard_limit
-      }; 
-
-      sorted_keys = this2that:transform(ent:trip_summaries, sort_opt, global_opt.klog(">>>> transform using global options >>>> "));
-      sorted_keys.map(function(id){ ent:trip_summaries{id} })
-    };
-    */
 
     profile = function(key){
         get_profile = function(k) {
@@ -186,19 +137,11 @@ ruleset io.picolabs.wrangler.PDS {
 
     defaultProfile = {
       "name": "",
-      "notes": "",
-      "location": "",
-      "model": "",
       "description": "",
-      "pohoto": "https://s3.amazonaws.com/k-mycloud/a169x672/unknown.png"
+      "photo": "https://s3.amazonaws.com/k-mycloud/a169x672/unknown.png"
     };
 
-//    defaultCloud = {
-//      "mySchemaName" : "Person",
-//      "myDoorbell" : "none"
-//    };
-
-  }
+  }//End Global
 // Rules
 
 //------------------------------- ent: general
@@ -215,9 +158,8 @@ ruleset io.picolabs.wrangler.PDS {
     always {
       //set ent:general{hash_path} value;
       ent:general := ent:general.put([hash_path], value);
-      raise pds event "data_added" with 
-         namespace = namespace and
-         keyvalue = keyvalue;
+      raise pds event "data_added"
+        attributes {"namespace": namespace, "keyvalue": keyvalue}
     }
   }
 
@@ -234,9 +176,8 @@ ruleset io.picolabs.wrangler.PDS {
     always {
       //set ent:general{ hash_path } avalue;
       ent:general := ent:general.put([hash_path], avalue);
-      raise pds event "data_updated" with 
-        namespace = namespace and
-        keyvalue = keyvalue if last;
+      raise pds event "data_updated"
+        attributes {"namespace": namespace, "keyvalue": keyvalue} if last;
     }
   }
 
@@ -251,9 +192,8 @@ ruleset io.picolabs.wrangler.PDS {
     always {
       //clear ent:general{hash_path};
       ent:general := ent:general.delete(hash_path);
-      raise pds event "data_deleted" with 
-        namespace = namespace and
-        keyvalue = keyvalue;
+      raise pds event "data_deleted"
+        attributes {"namespace": namespace, "keyvalue": keyvalue}
     }
   }
 
@@ -266,8 +206,8 @@ ruleset io.picolabs.wrangler.PDS {
     always {
       //clear ent:general{namespace};
       ent:general := ent:general.delete(namespace);
-      raise pds event "namespace_deleted" with 
-        namespace = namespace;
+      raise pds event "namespace_deleted"
+        attributes {"namespace": namespace}
     }
   }
 
@@ -281,171 +221,49 @@ ruleset io.picolabs.wrangler.PDS {
     always {
       //set ent:general{namespace} mapvalues;
       ent:general := ent:general.put([namespace], mapvalues);
-      raise pds event "new_map_added"  with 
-           namespace = namespace and
-           mapvalues = mapvalues;
+      raise pds event "new_map_added"
+        attributes {"namespace": namespace, "mapvalues": mapvalues};
     }
   }
 
-  // I dont think we need myCloud any more.
-  /*
-  rule SDS_init_mycloud {
-    select when web sessionReady
-    if (ent:general{"myCloud"} == 0) then 
-    noop()
-    fired {
-      set ent:general{"myCloud"} defaultCloud;
-    }
-  }
-
-  // ------------------------------------------------------------------------
-  rule SDS_legacy_person {
-    select when web sessionReady
-    pre {
-      schema = ent:general{["myCloud", "mySchemaName"]};
-    }
-    if (schema eq "person") then  
-    noop()
-    fired {
-      set ent:general{["myCloud", "mySchemaName"]} "Person";
-    }
-  }
-*/
-
-
-  // profile
-  /*
-  rule init_profile { // should we combine with edit_profile? we only need to add created varible check in edit.
-    select when pds init_profile 
-    pre {
-      profile = ent:profile;
-      buildProfile = function(){
-        created = time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});
-        newProfile = event:attrs().defaultsTo(0, "no attrs");
-        ConstructedProfile = newProfile// does || work?
-                  .put(["Name"], (newProfile{"Name"} || defaultProfile{"Name"})) 
-                  .put(["Description"], (newProfile{"Description"} || defaultProfile{"Description"})) 
-                  .put(["location"], (newProfile{"location"} || defaultProfile{"location"})) 
-                  .put(["model"], (newProfile{"model"} || defaultProfile{"model"})) 
-                  .put(["model_description"], (newProfile{"model_description"} || defaultProfile{"model_description"})) 
-                  .put(["Photo"], (newProfile{"Photo"} || defaultProfile{"Photo"})) 
-                  .put(["_created"], created)
-                  .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
-                  ;
-        ConstructedProfile;
-      };
-      newly_constructed_profile = (profile == 0) => 
-                                    buildProfile() | 
-                                      "profile exsist";
-      
-    }
-    if (profile == 0) then  
-      noop()
-    
-    fired {
-      set ent:profile newly_constructed_profile;
-    }
-  }
-  */
-  rule update_profile {
+  // ent: profile
+  rule update_profile {//should we check if atleast name, description and photo are ALL contained before saving the info?
     select when pds updated_profile
     pre {
-      profile = ent:profile || defaultProfile;
-      all_attrs = event:attrs().defaultsTo(0, "no attrs");
-      newProfile = all_attrs;
-      created = function(){time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});};
+      newProfile = event:attrs().defaultsTo({}, "no attrs").klog("newProfile: ");
+      created = function(){
+        //time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});
+        time:now()
+      };
+
       buildProfile = function(newProfile){
-        ConstructedProfile = newProfile// does || work?
+        profile = ent:profile || defaultProfile;
+        ConstructedProfile = newProfile
                   .put(["name"], (newProfile{"name"} || profile{"name"})) 
-                  .put(["description"], (newProfile{"description"} || profile{"description"})) 
-                  .put(["location"], (newProfile{"location"} || profile{"location"})) 
-                  .put(["model"], (newProfile{"model"} || profile{"model"})) 
-                  .put(["model_description"], (newProfile{"model_description"} || profile{"model_description"})) 
+                  .put(["description"], (newProfile{"description"} || profile{"description"}))  
                   .put(["photo"], (newProfile{"photo"} || profile{"photo"})) 
                   .put(["_created"], (profile{"_created"}||created()))
-                  .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
+                  //.put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
+                  .put(["_modified"], time:now())
                   ;
-        ConstructedProfile;
+        ConstructedProfile
       };
-      newly_constructed_profile = (newProfile neq 0) => // as long as we have something to update
+      newly_constructed_profile = ((newProfile.keys()).length().klog("Checking length: ") > 0).klog("Result: ") => // as long as we have something to update
                                     buildProfile(newProfile) | 
                                       "nothing to update";
       
     }
-    if (newly_constructed_profile != "nothing to update") then  
+    if (newly_constructed_profile.klog("newly_constructed_profile: ") != "nothing to update") then  
       noop()
     fired {
-      //set ent:profile newly_constructed_profile;
-      ent:profile := newly_constructed_profile;
-      raise pds event "profile_updated" attributes all_attrs.put(["_status"],"success");
+      ent:profile := newly_constructed_profile.klog("Got here... newly_constructed_profile: ");
+      raise pds event "profile_updated" attributes newProfile.put(["_status"],"success");
     }
     else{
-      raise pds event "profile_updated" attributes all_attrs.put(["_status"],"failure");
-    }
-  }
- /* rule SDS_update_profile {  // do we need this rule?
-    select when sds new_profile_item_available
-    pre {
-      // get when sds was created.
-      created = profile("_created") || time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});
-      newProfile = event:attrs();
-      newProfileWithImage = newProfile
-                .put(["myProfilePhoto"], (newProfile{"Photo"} || defaultProfile{"Photo"})) 
-                .put(["_created"], created)
-                .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
-                ;
-    }
-    noop()
-    always {
-      set ent:profile newProfileWithImage;
-      raise sds event "profile_updated" attributes newProfileWithImage;
+      raise pds event "profile_updated" attributes newProfile.put(["_status"],"failure");
     }
   }
 
-// pass any number of key value pair 
-  rule SDS_update_profile_partial {
-    select when sds updated_profile_item_available
-    //foreach event:attrs() setting(profile_key, profile_value)
-    foreach event:attrs() setting(profile_value, profile_key)//NPE sets value before key
-
-    
-      noop()
-    
-
-    fired {
-      set ent:profile {} if not ent:profile; // creates a profile ent if not aready there
-      set ent:profile{profile_key} profile_value;
-      raise sds event "profile_updated" on last;
-    }
-
-  }
-
-  rule SDS_new_profile_schema {
-    select when sds new_profile_schema
-    pre{
-      hash_path = ["myCloud", "mySchemaName"]; // whats my cloud for ???
-      mySchemaName = event:attr("mySchemaName").defaultsTo("", "no mySchemaName");
-
-    }
-    noop()
-    always {
-      set ent:general{hash_path} mySchemaName; // why is this stored in general and not profile?
-    }
-  }
-
-  rule SDS_update_doorbell {
-    select when sds new_doorbell_available
-    pre{
-      doorbell = event:attr("doorbell").defaultsTo("", "no doorbell");
-      hash_path = ["myCloud", "myDoorbell"];
-    }
-    noop()
-    always {// why do we put this in both profile and general ??? 
-      set ent:profile{"myDoorbell"} doorbell;
-      set ent:general{hash_path} doorbell;
-    }
-  }
-  */
 //----------------------------settings
     // ent:settings 
     //     "a169x222" : {
@@ -468,90 +286,23 @@ ruleset io.picolabs.wrangler.PDS {
     }
     noop()
     always {
-      //set ent:settings{[set_rid, "name"]}   set_name ;
       ent:settings := ent:settings.put([set_rid, "name"], set_name);
-      //set ent:settings{[set_rid, "rid"]}    set_rid ;
       ent:settings := ent:settings.put([set_rid, "rid"], set_rid);
-      //set ent:settings{[set_rid, "schema"]} set_schema if set_schema;
       ent:settings := ent:settings.put([set_rid, "schema"], set_schima) if set_schema;
-      //set ent:settings{[set_rid, "data", set_attr]} set_value if set_attr;
       ent:settings := ent:settings.put([set_rid, "data"], set_attr) if set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }
-  /*
-  rule SDS_add_settings_schema {
-    select when sds new_settings_schema
-    pre {
-      setName   = event:attr("Name").defaultsTo("unknown","no Name");
-      setRID    = event:attr("RID").defaultsTo("unknown","no RID");
-      setSchema = event:attr("Schema").defaultsTo([],"no Schema");
-      setData   = event:attr("Data").defaultsTo({},"no Data");
 
-      gotData = ent:settings{[setRID, "setData"]};
-
-    }
-    noop()
-    always {
-      set ent:settings{[setRID, "Name"]}   setName;
-      set ent:settings{[setRID, "RID"]}    setRID;
-      set ent:settings{[setRID, "Schema"]} setSchema;
-      set ent:settings{[setRID, "Data"]}   setData if not gotData;
-    }
-  }
-
-  rule SDS_add_settings_data {
-    select when sds new_settings_data
-    pre {
-      setRID    = event:attr("RID").defaultsTo("unknown","no RID");
-      setData   = event:attr("Data").defaultsTo({},"no Data");
-      hash_path = [setRID, "setData"];
-    }
-    noop()
-    always {
-      set ent:settings{hash_path} setData;
-    }
-  }
-
-  rule SDS_add_settings {
-    select when sds new_settings_available
-    pre {
-      setRID    = event:attr("RID").defaultsTo("unknown","no RID");
-      setData   = event:attr("Data").defaultsTo({},"no Data");
-      hash_path     = [setRID, "setData"];
-    }
-    noop()
-    always {
-      set ent:settings{hash_path} setData.delete(["setRID"]); // why not use clear????
-    }
-  }
-
-  rule SDS_add_settings_attribute {
-    select when sds new_settings_attribute
-    pre {
-      setRID    = event:attr("RID").defaultsTo("unknown","no RID");
-      setAttr   = event:attr("setAttr").defaultsTo("unknown","no setAttr");
-      setValue  = event:attr("Value").defaultsTo("unknown","no Value");
-      hash_path = [setRID, "setData", setAttr];
-    }
-    noop()
-    always {
-      set ent:settings{hash_path} setValue;
-    }
-  }
- */ 
  rule clearPDS {
     select when pds clear_all_data
     pre{
     }
     noop()
     always {
-      //clear ent:general;
-      //clear ent:profile;
-      //clear ent:settings;
-      ent:general := null;
-      ent:profile := null;
-      ent:settings := null;
+      clear ent:general;
+      clear ent:profile;
+      clear ent:settings;
     }
   }
   // ------------------------------------------------------------------------

@@ -36,7 +36,9 @@ ruleset wrangler {
                               { "domain": "wrangler", "type": "channel_deletion_requested",
                                 "attrs": [ "eci" ] },
                               { "domain": "wrangler", "type": "install_rulesets_requested",
-                                "attrs": [ "rids" ] } ] }
+                                "attrs": [ "rids" ] },
+                              { "domain": "wrangler", "type": "deletion_requested",
+                                "attrs": [ ] } ] }
 // ********************************************************************************************
 // ***                                                                                      ***
 // ***                                      FUNCTIONS                                       ***
@@ -63,11 +65,11 @@ ruleset wrangler {
       result
     }
 
-    picoFromName = function(){
+    picoFromName = function(pico_name){
       return = ent:children.defaultsTo([]).collect(function(child){
                                               (child{"name"} ==  pico_name) => "target" | "non_targets"
                                             });
-      return{"target"}.head().defaultsTo("Error: no pico exists for given name.")
+      return{"target"}.head().defaultsTo("Error")//no pico exists for given name
     }
 
     deleteChild = defaction(pico_name){
@@ -363,8 +365,7 @@ ruleset wrangler {
       {
        "name": name,
        "id" : child.id,
-       "eci": channel.id,
-       "status": "pending_initialization"
+       "eci": channel.id
       }
     }
 
@@ -382,15 +383,15 @@ ruleset wrangler {
 // create child from prototype will take the name with a option of a prototype that defaults to base.
  
   outfitChild = defaction(parent,child,proto_name){ 
-    prototype_name = (proto_name == "") => "base" | proto_name
+    prototype_name = (proto_name == "") => "base" | proto_name.defaultsTo("base")//defaultsTo in case of undefined
     prototypes = getPrototypes()
     basePrototype = getPrototypes().base
-    prototype = prototypes{prototype_name}.defaultsTo(basePrototype,"prototype not found").klog("prototype: ")
+    prototype = prototypes{prototype_name}.defaultsTo(basePrototype,"prototype not found").klog("using prototype: ")
     rids = prototype{"rids"}
     attributes = {
       "child": child,
       "parent": parent,
-      "prototype": {"name": prototype_name.defaultsTo("base"), "prototype": prototype}
+      "prototype": {"name": prototype_name, "prototype": prototype}
     }
     rids_to_install = (prototype_name ==  "base") =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
 
@@ -399,6 +400,14 @@ ruleset wrangler {
       event:send({"eci": child.eci, "eid": "ProtoOutfit",
             "domain": "wrangler", "type": "create_prototype",
             "attrs": attributes})
+    }
+    returns
+    {
+      "name": child.name,
+      "id" : child.id,
+      "eci": child.eci,
+      "prototype": prototype,
+      "prototype_name": prototype_name
     }
   }
    /* randomName = function(namespace){
@@ -676,16 +685,41 @@ ruleset wrangler {
       createPico(name) setting(child)
       outfitChild(myself(),
                   child, 
-                  prototype_name)
+                  prototype_name) setting(child_with_prototype)
     }
     fired {
       ent:children := ent:children.defaultsTo([]).append(child);
       //raise information event "child_created" //for return_rid
       //    attributes return_attrs;
+      raise wrangler event "child_init_events_needed"
+        attributes event:attrs().put(["child"],child_with_prototype);
       name.klog("Pico created with name: ");
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");
+      last;
+    }
+  }
+
+  rule send_init_events_to_child{
+    select when wrangler child_init_events_needed
+    foreach event:attr("child"){"prototype"}{"initialization_events"} setting(event_info)
+    pre{
+      a = event_info.klog("event_info: ")
+      child = event:attr("child");
+      domain = event_info.domain;
+      type = event_info.type;
+      attrs = event_info.attrs;
+    }
+    if true then
+      event:send({
+                  "eci": child.eci.klog("Raising event to: "), 
+                  "eid": "initialize",
+                  "domain": domain,
+                  "type": type,
+                  "attrs": attrs
+                  })
+    fired{
     }
   }
 
@@ -765,4 +799,66 @@ ruleset wrangler {
         attributes event:attrs().put(["results"],results) on final;
     }
   }
+
+//Child deletion (child requesting parent for deletion)------------------
+  rule begin_deletion_request{//in child
+    select when wrangler deletion_requested
+    pre {
+    }
+    if false then
+      noop()//perform any sort of checks in this ruleset to prevent firing, such as the authorization of the source to delete this pico
+    fired{
+      last;
+    }
+  }
+
+  rule process_deletion_request{//in child
+    select when wrangler deletion_requested
+    pre {
+      parent_eci = ent:parent.eci;
+      attributes = event:attrs().put([],myself())//the parent will need to know that the child is the one really requesting the deletion
+    }
+    every{
+      event:send({"eci": parent_eci, "eid": "DeletionRequest",
+                "domain": "wrangler", "type": "child_requests_deletion",
+                "attrs": attributes})
+      send_directive("Requesting deletion from parent.")
+    }
+    fired{
+    }
+  }
+
+  rule check_child_existence{//in parent
+    select when wrangler child_requests_deletion
+    pre {
+      name = event:attr("name");
+      id = event:attr("id");
+      eci = event:attr("eci");
+      target_child = picoFromName(name);
+      hasChild = (target_child != "Error"
+                  && target_child.eci == eci
+                  && target_child.id == id) => true | false;
+    }
+    if not hasChild then
+      send_directive("Invalid request", {"err": "Given pico is not a child of this pico or does not exist."})
+    fired{
+      last;
+    }
+  }
+
+  rule process_child_deletion_request{//in parent
+    select when wrangler child_requests_deletion
+    pre {//consider adding more checks here if needed, or select on a different rule so developers can perform their own checks
+      name = event:attr("name");
+      id = event:attr("id");
+      eci = event:attr("eci");
+    }
+    if true then
+    noop()
+    fired{
+      raise wrangler event "child_deletion"
+        attributes {"pico_name": name}
+    }
+  }
+
 }//end ruleset

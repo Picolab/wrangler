@@ -232,8 +232,7 @@ ruleset io.picolabs.wrangler.PDS {
     pre {
       newProfile = event:attrs().defaultsTo({}, "no attrs").klog("newProfile: ");
       created = function(){
-        //time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});
-        time:now()
+        time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"});
       };
 
       buildProfile = function(newProfile){
@@ -243,8 +242,7 @@ ruleset io.picolabs.wrangler.PDS {
                   .put(["description"], (newProfile{"description"} || profile{"description"}))  
                   .put(["photo"], (newProfile{"photo"} || profile{"photo"})) 
                   .put(["_created"], (profile{"_created"}||created()))
-                  //.put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
-                  .put(["_modified"], time:now())
+                  .put(["_modified"], time:strftime(time:now(), "%Y%m%dT%H%M%S%z", {"tz":"UTC"}))
                   ;
         ConstructedProfile
       };
@@ -286,10 +284,10 @@ ruleset io.picolabs.wrangler.PDS {
     }
     noop()
     always {
-      ent:settings := ent:settings.put([set_rid, "name"], set_name);
-      ent:settings := ent:settings.put([set_rid, "rid"], set_rid);
-      ent:settings := ent:settings.put([set_rid, "schema"], set_schima) if set_schema;
-      ent:settings := ent:settings.put([set_rid, "data"], set_attr) if set_attr;
+      ent:settings := ent:settings.put([set_rid, "name"], set_name).klog("Setting name: ");
+      ent:settings := ent:settings.put([set_rid, "rid"], set_rid).klog("Setting rid: ");
+      ent:settings := ent:settings.put([set_rid, "schema"], set_schima).klog("Setting schema: ") if set_schema;
+      ent:settings := ent:settings.put([set_rid, "data"], set_attr).klog("Setting attr: ") if set_attr;
       raise pds event "settings_added" attributes event:attrs();
     }
   }

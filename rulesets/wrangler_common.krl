@@ -88,19 +88,12 @@ ruleset io.picolabs.wrangler.common {
                               "attrs" : {"attr1":"3",
                                           "attr2":"4"
                                         }
-                            },
-                            {
-                              "domain": "wrangler",
-                              "type"  : "base_prototype_event3",
-                              "attrs" : {"attr1":"5",
-                                          "attr2":"6"
-                                        }
                             }
                             ], // array of maps
       "PDS" : {
                 "profile" : {
                             "name":"base",
-                            "description":"discription of the general pds created",
+                            "description":"description of the general pds created",
                             "photo":"https://geo1.ggpht.com/cbk?panoid=gsb1YUyceEtoOLMIVk2TQA&output=thumbnail&cb_client=search.TACTILE.gps&thumb=2&w=408&h=256&yaw=87.31411&pitch=0"
                             },
                 "general" : {"test":{"subtest":"just a test"}},

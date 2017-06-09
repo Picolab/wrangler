@@ -16,7 +16,7 @@ ruleset wrangler {
     logging on
     provides rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, 
+    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, myself,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults
     shares rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset

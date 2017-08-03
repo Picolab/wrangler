@@ -1,6 +1,6 @@
 // operators are camel case, variables are snake case.
-    
-ruleset wrangler {
+
+ruleset io.picolabs.wrangler {
   meta {
     name "Wrangler Core"
     description <<
@@ -16,12 +16,12 @@ ruleset wrangler {
     logging on
     provides rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, myself,
+    children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults
     shares rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, checkPicoName, randomPicoName, createChild, deleteChild, pico, 
+    children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults, __testing
   }
@@ -43,7 +43,7 @@ ruleset wrangler {
 // ***                                                                                      ***
 // ***                                      FUNCTIONS                                       ***
 // ***                                                                                      ***
-// ******************************************************************************************** 
+// ********************************************************************************************
     getPrototypes = function(){
       common:prototypes().prototypes
     }
@@ -85,7 +85,7 @@ ruleset wrangler {
       }
       returns
       {
-        "status": true,
+
         "updated_children": filtered_children.dont_delete,
         "child": child_to_delete.id
       }
@@ -100,11 +100,11 @@ ruleset wrangler {
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
 // ********************************************************************************************
-    rulesets = function() { 
+    rulesets = function() {
       eci = meta:eci;
       rids = engine:listAllEnabledRIDs();
       {
-       "status"   : (rids !=  "error"),
+
         "rids"     : rids
       }.klog("rulesets :")
     }
@@ -113,18 +113,18 @@ ruleset wrangler {
       rids = ( _rids.typeof() == "Array" ) => _rids | ( _rids.typeof() == "String" ) => _rids.split(";") | "" ;
       results = rids.map(function(rid) {engine:describeRuleset(rid);});
       {
-       "status"   : not results.isnull(),
+
        "description"     : results
       }.klog("rulesetsInfo :")
     }
 
-    // installRulesets defaction will need a "with eci" for external picos eci 
+    // installRulesets defaction will need a "with eci" for external picos eci
 //    installRulesets = defaction(rids, _eci, name){
 //      //configure using eci = meta:eci and name = "none"
 //      eci =  "cj2mlhueu0000m8ny9n2qbmpd" //_eci || ent:id ||  //meta:eci
 //      name =  name || "none"
 //      pico_eci = (name == "none") => eci | picoECIFromName(name) /* this will need to be pico_id and not eci */
-//      //new_ruleset = engine:installRuleset( { "pico_id": eci.klog("pico_id: "), "rid": rids.klog("rids: ") } ).klog("new_bananas") 
+//      //new_ruleset = engine:installRuleset( { "pico_id": eci.klog("pico_id: "), "rid": rids.klog("rids: ") } ).klog("new_bananas")
 //      new_ruleset = engine:installRuleset( ent:id ) setting(resp) with base = <base> and url = <url>
 //      send_directive("installed #{rids}")
 //    }
@@ -153,30 +153,30 @@ ruleset wrangler {
 
 // ********************************************************************************************
 // ***                                      Channels                                        ***
-// ******************************************************************************************** 
+// ********************************************************************************************
     nameFromEci = function(eci){ // internal function call
       results = channel(eci);
       channel_single = results{"channels"};
       channel_single{"name"}
-    } 
+    }
     eciFromName = function(name){
       results = channel(name);
       channel_single = results{"channels"};
       channel_single{"eci"}
     }
     alwaysEci = function(value){   // always return a eci wether given a eci or name
-      eci = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) => 
+      eci = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) =>
               value |
               eciFromName(value);
-      eci       
+      eci
     }
     lastCreatedEci = function(){
       channel = ent:lastCreatedEci;
       eci = channel{"cid"};
       eci
     }
-    // takes name or eci as id returns single channel . needed for backwards compatability 
-    channel = function(id,collection,filtered) { 
+    // takes name or eci as id returns single channel . needed for backwards compatability
+    channel = function(id,collection,filtered) {
       eci = meta:eci;
       chans = ent:channels;
       channels = chans;
@@ -191,15 +191,15 @@ ruleset wrangler {
                                               } });*/
       single_channel = function(value,chans){
          // if value is a number with ((([A-Z]|\d)*-)+([A-Z]|\d)*) attribute is eci.
-        attribute = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) => 
+        attribute = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) =>
                 "eci" |
                 "name";
         channel_list = chans;
-        filtered_channels = channel_list.filter(function(channel){(channel{attribute}== value)}); 
+        filtered_channels = channel_list.filter(function(channel){(channel{attribute}== value)});
         result = filtered_channels.head().defaultsTo({},standardError("no channel found, by .head()"));
         (result)
       };
-      type = function(chan){ // takes a chans 
+      type = function(chan){ // takes a chans
         group = (chan.typeof() ==  "Map")=> // for robustness check type.
         chan{collection} | "error";
         (group)
@@ -208,7 +208,7 @@ ruleset wrangler {
       return2 = filtered.isnull() => return1 | return1{filtered};
       results = (id.isnull()) => return2 | single_channel(id,channels);
       {
-        "status"   : (channels !=  "error"),
+
         "channels" : results
       }.klog("channels: ")
     }
@@ -217,7 +217,6 @@ ruleset wrangler {
       results = pci:get_eci_attributes(Eci
         ).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
       {
-        "status"   : (results !=  "error"),
         "attributes" : results
       }.klog("attributes")
     }
@@ -225,23 +224,21 @@ ruleset wrangler {
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo("","no name or eci provided"),"no eci going with name") ;
       results = {}; //pci:get_eci_policy(Eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
       {
-        "status"   : (results !=  "error"),
         "policy" : results
       }.klog("policy")
     }
     channelType = function(eci,name) { // old accounts may have different structure as there types, "type : types"
       Eci = eci.defaultsTo(alwaysEci(name).defaultsTo("","no name or eci provided"),"no eci going with name") ;
-      getType = function(eci) { 
+      getType = function(eci) {
         type = pci:get_eci_type(eci).defaultsTo("error",standardError("undefined"));
         // this code below belongs higher up in software layer
         // temp = (type.typeof() ==  "str" ) => type | type.typeof() ==  "array" => type[0] |  type.keys();
-        // type2 = (temp.typeof() ==  "array") => temp[0] | temp;   
+        // type2 = (temp.typeof() ==  "array") => temp[0] | temp;
         // type2;
         type
       };
       type = getType(Eci);
       {
-        "status":(type !=  "error"),
         "type" : type
       }.klog("type")
     }
@@ -260,7 +257,7 @@ ruleset wrangler {
       set_type = {}//pci:set_eci_type(eci, type)
       send_directive("updated channel type for #{eci}")
     }
-    
+
 //    deleteChannel = defaction(value) {
 //      //eci = alwaysEci(value)
 //      self = myself()
@@ -270,7 +267,7 @@ ruleset wrangler {
 //      })
 //      send_directive("deleted channel #{eci}")
 //    }
-    
+
     deleteChannel = defaction(eci) {
       every {
         engine:removeChannel(eci)
@@ -292,12 +289,11 @@ ruleset wrangler {
       channel_rec = {"name": channel.name,
                     "eci": channel.id,
                     "type": channel.type,
-                    "attributes": options.attributes 
+                    "attributes": options.attributes
                     }.klog("new channel");
       all_channels = ent:channels => ent:channels | []; // [] if first channel
       updated_channel = all_channels.append(channel_rec).klog("new channel list: ");
       {
-       "status": channel.isnull(),
        "channel": channel,
        "updated_channels": updated_channel
       }
@@ -305,26 +301,24 @@ ruleset wrangler {
     }
 // ********************************************************************************************
 // ***                                      Picos                                           ***
-// ******************************************************************************************** 
+// ********************************************************************************************
   myself = function(){
       { "id": ent:id, "eci": ent:eci, "name": ent:name }
   }
 
-  children = function() {
+  children = function(name) {
+
     _children = ent:children.defaultsTo([]);
-    status = (not(_children.isnull()));
+    _return = name => _children.filter(function(child){child{"name"} == name}) | _children;
     {
-      "status" : status,
-      "children" : _children
+      "children" : _return
     }.klog("children :")
   }
 
   parent = function() {
     _parent = ent:parent.defaultsTo({});
-    status = not _parent.isnull();
     {
-      "status" : status,
-      "parent" :  _parent 
+      "parent" :  _parent
     }.klog("parent :")
   }
 
@@ -346,7 +340,6 @@ ruleset wrangler {
   name = function() {
     return = ent:name;
     {
-      "status" : not return.isnull(),
       "picoName" : return
     }.klog("name :")
   }
@@ -355,17 +348,19 @@ ruleset wrangler {
                           .head();
     pico{"eci"}
   }
-  
-    createPico = defaction(name){
+
+    createPico = defaction(name, rids){
       every{
         engine:newPico() setting(child);
-        engine:newChannel(child.id, "main", "secret") setting(channel);
+        engine:newChannel(child{"id"}, "main", "secret") setting(channel);
+        engine:installRuleset(child{"id"},rids);
       }
       returns
       {
        "name": name,
-       "id" : child.id,
-       "eci": channel.id
+       "id" : child{"id"},
+       "eci": channel{"id"},
+       "rids": rids
       }
     }
 
@@ -373,43 +368,12 @@ ruleset wrangler {
       children_map = ent:children.collect(function(child){
                                             (child.name == name) => "childToUpdate" | "otherChildren"
                                           });//separate the children, returns two arrays
-      updated_child = children_map.childToUpdate.head().put(["status"], "initialized");//update the status
+      updated_child = children_map.childToUpdate.head();
       updated_children = children_map.otherChildren.append(updated_child);//reunite with the other children
       updated_children
     }
 
-// at creation wrangler will create child and send prototype to child and 
-// then wrangler in the child will handle the creation of the pico and its prototypes
-// create child from prototype will take the name with a option of a prototype that defaults to base.
- 
-  outfitChild = defaction(parent,child,proto_name){ 
-    prototype_name = (proto_name == "") => "base" | proto_name.defaultsTo("base")//defaultsTo in case of undefined
-    prototypes = getPrototypes()
-    basePrototype = getPrototypes().base
-    prototype = prototypes{prototype_name}.defaultsTo(basePrototype,"prototype not found").klog("using prototype: ")
-    rids = prototype{"rids"}
-    attributes = {
-      "child": child,
-      "parent": parent,
-      "prototype": {"name": prototype_name, "prototype": prototype}
-    }
-    rids_to_install = (prototype_name ==  "base") =>  basePrototype{"rids"}  |   basePrototype{"rids"}.append(rids)
 
-    every{
-      engine:installRuleset(child.id.klog("child_id in outfitChild: "), rids_to_install.klog("rids to be installed in child: "))
-      event:send({"eci": child.eci, "eid": "ProtoOutfit",
-            "domain": "wrangler", "type": "create_prototype",
-            "attrs": attributes})
-    }
-    returns
-    {
-      "name": child.name,
-      "id" : child.id,
-      "eci": child.eci,
-      "prototype": prototype,
-      "prototype_name": prototype_name
-    }
-  }
    /* randomName = function(namespace){
         n = 5;
         array = (0).range(n).map(function(n){
@@ -446,7 +410,7 @@ ruleset wrangler {
           (random:word())
           });
         names= array.collect(function(name){
-          (checkPicoName( name )) => "unique" | "taken"
+          (uniquePicoName( name )) => "unique" | "taken"
         });
         name = names{"unique"} || [];
 
@@ -455,20 +419,20 @@ ruleset wrangler {
     }
 
     //returns true if given name is unique
-    checkPicoName = function(name){
-          picos = children().children;
+    uniquePicoName = function(name){
+          picos = children(){"children"};
           names = picos.none(function(child){
             pico_name = child{"name"};
             (pico_name ==  name)
             });
-          (names).klog("checkPicoName : ")
+          (names).klog("uniquePicoName : ")
 
-    }      
- 
+    }
+
 
 // ********************************************************************************************
 // ***                                      Utilities                                       ***
-// ******************************************************************************************** 
+// ********************************************************************************************
   //-------------------- error handling ----------------------
     standardOut = function(message) {
       msg = ">> " + message + " results: >>";
@@ -487,7 +451,7 @@ ruleset wrangler {
       value
     }
   }
-  // string or array return array 
+  // string or array return array
   // string or array return string
 
 // ********************************************************************************************
@@ -495,47 +459,49 @@ ruleset wrangler {
 // ***                                      Rulesets                                        ***
 // ***                                                                                      ***
 // ********************************************************************************************
-  
+
   rule installRulesets {
     select when wrangler install_rulesets_requested
-    pre { 
+    pre {
       rids = event:attr("rids").defaultsTo("",standardError(" "))
       rid_list = (rids.typeof() ==  "Array") => rids | rids.split(re#;#)
-      b = rid_list.klog("attr Rids") 
+      b = rid_list.klog("attr Rids")
     }
     if(rids !=  "") then  // should we be valid checking?
       installRulesets(rid_list)
     fired {
+    raise wrangler event "ruleset_added"
+      attributes event:attrs().put({"rids": rid_list});
      rids.klog(standardOut("success installed rids "));
      null.klog(">> successfully  >>")
-          } 
+          }
     else {
      null.klog(">> could not install rids #{rids} >>")
     }
   }
-  rule uninstallRulesets { // should this handle multiple uninstalls ??? 
+  rule uninstallRulesets { // should this handle multiple uninstalls ???
     select when wrangler uninstall_rulesets_requested
     pre {
       rids = event:attr("rids").defaultsTo("", ">>  >> ")
       rid_list = rids.typeof() ==  "array" => rids | rids.split(re#;#)
     }
-    
+
       uninstallRulesets(rid_list)
-   
+
     fired {
       null.klog (standardOut("success uninstalled rids #{rids}"));
       null.klog(">> successfully  >>")
-          } 
+          }
     else {
       null.klog(">> could not uninstall rids #{rids} >>")
     }
   }
- 
+
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ********************************************************************************************
   /*  <eci options>
-    name     : <string>        // default is "Generic ECI channel" 
+    name     : <string>        // default is "Generic ECI channel"
     eci_type : <string>        // default is "PCI"
     attributes: <array>
     policy: <map>  */
@@ -561,22 +527,22 @@ ruleset wrangler {
       //channel_results = check_name => createChannel(options) | {}
     }
           // do we need to check the format of name? is it wrangler"s job?
-    if(check_name) then  //channel_name.match(re#\w[\w-]*#)) then 
-         
+    if(check_name) then  //channel_name.match(re#\w[\w-]*#)) then
+
       engine:newChannel(meta:picoId, options.name, options.eci_type) setting(channel);
-         
+
     fired {
      ent:channels := ent:channels.defaultsTo([]).append({"name": channel.name,
                                           "eci": channel.id,
                                           "type": channel.type,
-                                          "attributes": options.attributes 
+                                          "attributes": options.attributes
                                          }.klog("new channel"));
      ent:lastCreatedEci := channel;
      channel_name.klog(standardOut("success created channels "));
      null.klog(">> successfully  >>");
-      raise wrangler event "channel_created" // event to nothing  
+      raise wrangler event "channel_created" // event to nothing
             attributes event:attrs().put(["eci"],lastCreatedEci().klog("lastCreatedEci: ")) // function to access a magic varible set during creation
-          } 
+          }
     else {
       //error warn "douplicate name, failed to create channel"+channel_name;
      null.klog(">> could not create channels #{channel_name} >>")
@@ -597,11 +563,11 @@ ruleset wrangler {
     }
     if(value !=  "" && attributes !=  "error") then  // check?? redundant????
       updateAttributes(value.klog("value: "),attrs_two)
-    
+
     fired {
      value.klog (standardOut("success updated channel #{value} attributes : "));
      null.klog(">> successfully >>")
-    } 
+    }
     else {
      null.klog(">> could not update channel #{value} attributes >>")
     }
@@ -616,7 +582,7 @@ ruleset wrangler {
     }
     if(value !=  "" && policy !=  "error") then  // check?? redundant?? whats better??
       updatePolicy(value.klog("value: "), policy)
-    
+
     fired {
      null.klog (standardOut("success updated channel #{value} policy"));
      null.klog(">> successfully  >>")
@@ -629,14 +595,14 @@ ruleset wrangler {
 
 
   rule updateChannelType {
-    select when wrangler update_channel_type_requested 
+    select when wrangler update_channel_type_requested
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
       type = event:attr("channel_type").defaultsTo("error", standardError("undefined"))// policy needs to be a map, do we need to cast types?
     }
     if(eci !=  "" && type !=  "error") then  // check?? redundant?? whats better??
       updateType(value.klog("value: "), type)
-    
+
     fired {
      null.klog (standardOut("success updated channel #{eci} type"));
      null.klog(">> successfully  >>")
@@ -652,52 +618,47 @@ ruleset wrangler {
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
     }
-    
+
       deleteChannel(value.klog("value: "))
-    
+
     fired {
      value.klog (standardOut("success deleted channel "));
      null.klog(">> successfully  >>");
-    } 
+    }
    // else { -------------------------------------------// can we reach this point?
     // null.klog(">> could not delete channel #{value} >>");
    //    }
   }
-  
 
-  
+
+
 // ********************************************************************************************
 // ***                                      Picos                                           ***
 // ********************************************************************************************
   //-------------------- Picos initializing  ----------------------
-  rule createChild { 
+  rule createChild {
     select when wrangler child_creation
     pre {
-      name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));    
-      prototype_name = event:attr("prototype").defaultsTo("base", "using base prototype");
-      uniqueName = checkPicoName(name).klog("uniqueName ");   
-
+      name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
+      uniqueName = uniquePicoName(name).klog("uniqueName ");
+      rids = event:attr("rids");
+      _rids = rids.typeof() == "String" => rids| rids.split(re#;#);
       //send this info back to whatever ruleset raised it
       //return_attrs = event:attrs().put(["updated_info"], children);
       //return_rid = event:attr("return_rid") || "";//what ruleset to send the new pico's info back to
     }
     if(uniqueName) then every {
-      createPico(name) setting(child)
-      outfitChild(myself(),
-                  child, 
-                  prototype_name) setting(child_with_prototype)
+      createPico(name,_rids) setting(child)
+
     }
     fired {
       ent:children := ent:children.defaultsTo([]).append(child);
-      //raise information event "child_created" //for return_rid
-      //    attributes return_attrs;
-      raise wrangler event "child_init_events_needed"
-        attributes event:attrs().put(["child"],child_with_prototype);
+      raise wrangler event "child_initialized"
+        attributes event:attrs().put(["child"],child);
       name.klog("Pico created with name: ");
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");
-      last;
     }
   }
 
@@ -713,7 +674,7 @@ ruleset wrangler {
     }
     if true then
       event:send({
-                  "eci": child.eci.klog("Raising event to: "), 
+                  "eci": child.eci.klog("Raising event to: "),
                   "eid": "initialize",
                   "domain": domain,
                   "type": type,
@@ -726,15 +687,15 @@ ruleset wrangler {
   rule childComplete{
     select when wrangler child_completed
     pre{
-      updated_children = updateChildCompletion(event:attrs("name")).klog("Status updated children: ");
+      updated_children = updateChildCompletion(event:attrs("name"));
     }
     noop()
     fired{
       ent:children := updated_children;
     }
   }
-   
-  rule initializePrototype { 
+
+  rule initializePrototype {
     select when wrangler create_prototype //raised from parent in new child
     pre {
       child = event:attr("child");

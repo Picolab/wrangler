@@ -12,14 +12,15 @@ ruleset io.picolabs.wrangler {
     >>
     author "BYU Pico Lab"
 
-    use module io.picolabs.wrangler.common alias common
     logging on
-    provides rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
+    provides skyQuery ,
+    rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults
-    shares rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
+    shares skyQuery ,
+    rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
     children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription

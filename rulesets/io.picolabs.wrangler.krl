@@ -46,28 +46,28 @@ ruleset io.picolabs.wrangler {
 // ***                                                                                      ***
 // ********************************************************************************************
 
-  config= {"os_rids": ["io.picolabs.PDS","io.picolabs.wrangler",]}
+  config= {"os_rids": ["io.picolabs.pds","io.picolabs.wrangler","io.picolabs.visual_params"]}
   /*
        skyQuery is used to programmatically call function inside of other picos from inside a rule.
        parameters;
           eci - The eci of the pico which contains the function to be called
-          mod - The ruleset ID or alias of the module  
-          func - The name of the function in the module 
+          mod - The ruleset ID or alias of the module
+          func - The name of the function in the module
           params - The parameters to be passed to function being called
-          optional parameters 
-          _host - The host of the pico engine being queried. 
+          optional parameters
+          _host - The host of the pico engine being queried.
                   Note this must include protocol (http:// or https://) being used and port number if not 80.
                   For example "http://localhost:8080", which also is the default.
           _path - The sub path of the url which does not include mod or func.
                   For example "/sky/cloud/", which also is the default.
           _root_url - The entire url except eci, mod , func.
-                  For example, dependent on _host and _path is 
-                  "http://localhost:8080/sky/cloud/", which also is the default.  
-       skyQuery on success (if status code of request is 200) returns results of the called function. 
+                  For example, dependent on _host and _path is
+                  "http://localhost:8080/sky/cloud/", which also is the default.
+       skyQuery on success (if status code of request is 200) returns results of the called function.
        skyQuery on failure (if status code of request is not 200) returns a Map of error information which contains;
                error - general error message.
                httpStatus - status code returned from http get command.
-               skyQueryError - The value of the "error key", if it exist, of the function results.   
+               skyQueryError - The value of the "error key", if it exist, of the function results.
                skyQueryErrorMsg - The value of the "error_str", if it exist, of the function results.
                skyQueryReturnValue - The function call results.
      */
@@ -83,7 +83,7 @@ ruleset io.picolabs.wrangler {
        web_hook = root_url + eci + "/"+mod+"/" + func;
 
        response = http:get(web_hook.klog("URL"), {}.put(params)).klog("response ");
-       status = response{"status_code"};// pass along the status 
+       status = response{"status_code"};// pass along the status
        error_info = {
          "error": "sky query request was unsuccesful.",
          "httpStatus": {
@@ -96,13 +96,13 @@ ruleset io.picolabs.wrangler {
        response_error = (response_content.typeof() == "Map" && (not response_content{"error"}.isnull())) => response_content{"error"} | 0;
        response_error_str = (response_content.typeof() == "Map" && (not response_content{"error_str"}.isnull())) => response_content{"error_str"} | 0;
        error = error_info.put({"skyQueryError": response_error,
-                               "skyQueryErrorMsg": response_error_str, 
+                               "skyQueryErrorMsg": response_error_str,
                                "skyQueryReturnValue": response_content});
        is_bad_response = (response_content.isnull() || (response_content == "null") || response_error || response_error_str);
        // if HTTP status was OK & the response was not null and there were no errors...
        (status == 200 && not is_bad_response ) => response_content | error
      }
-     
+
     //returns a list of children that are contained in a given subtree at the starting child. No ordering is guaranteed in the result
     gatherSubtree = function(child){
       pico_array = [child.klog("child at start: ")];
@@ -173,33 +173,13 @@ ruleset io.picolabs.wrangler {
       }.klog("rulesetsInfo :")
     }
 
-    // installRulesets defaction will need a "with eci" for external picos eci
-//    installRulesets = defaction(rids, _eci, name){
-//      //configure using eci = meta:eci and name = "none"
-//      eci =  "cj2mlhueu0000m8ny9n2qbmpd" //_eci || ent:id ||  //meta:eci
-//      name =  name || "none"
-//      pico_eci = (name == "none") => eci | picoECIFromName(name) /* this will need to be pico_id and not eci */
-//      //new_ruleset = engine:installRuleset( { "pico_id": eci.klog("pico_id: "), "rid": rids.klog("rids: ") } ).klog("new_bananas")
-//      new_ruleset = engine:installRuleset( ent:id ) setting(resp) with base = <base> and url = <url>
-//      send_directive("installed #{rids}")
-//    }
-
     installRulesets = defaction(rids){
       every{
         engine:installRuleset(ent:id, rids) setting(new_ruleset)
         send_directive("installed #{rids}")
       }
+      returns {}
     }
-
-//    uninstallRulesets = defaction(rids, _eci, name){
-//      //configure using eci = meta:eci and name="none"
-//      eci = _eci || ent:id  //meta:eci
-//      name = (name.typeof() == "String") => name | "none"
-//      pico_eci = /* this will need to be pico_id and not eci */ (name== "none") => eci | picoECIFromName(name)
-//      //deleted = /* not implemented */ engine:uninstallRuleset( { "pico_id": eci, "rid": rids } )
-//      deleted = engine:uninstallRuleset( { "pico_id": eci, "rid": rids } )
-//      send_directive("uninstalled #{rids} in pico #{pico_eci}")
-//    }
 
     uninstallRulesets = defaction(rids){
       deleted = engine:uninstallRuleset(ent:id, rids)
@@ -370,8 +350,8 @@ ruleset io.picolabs.wrangler {
     }.klog("children :")
   }
 
-  parent = function() {
-    _parent = ent:parent.defaultsTo({});
+  parent_eci = function() {
+    _parent = ent:parent_eci.defaultsTo({});
     {
       "parent" :  _parent
     }.klog("parent :")
@@ -406,12 +386,24 @@ ruleset io.picolabs.wrangler {
 
     createPico = defaction(name, rids){
       every{
-        engine:newPico() setting(child);
-        engine:newChannel(child{"id"}, "main", "secret") setting(channel);
-        engine:installRuleset(child{"id"},rids);
+        engine:newChannel(meta:picoId, name, "children") setting(parent_eci);// new eci for parent to child
+        engine:newPico() setting(child);// newpico
+        engine:newChannel(child{"id"}, "main", "secret") setting(channel);// new child root eci
+        engine:installRuleset(child{"id"},rids.append(config{"os_rids"}));// install child OS
+        event:send( // intoroduce child to itself and parent
+          { "eci": channel{"id"},
+            "domain": "wrangler", "type": "child_created",
+            "attrs": ({
+              "parent_eci": parent_eci{"id"},
+             "name": name,
+             "id" : child{"id"},
+             "eci": channel{"id"},
+             "rids": rids
+            }.put("rs_attrs",event:attrs()))
+            });
       }
-      returns
-      {
+      returns {
+        "parent_eci": parent_eci{"id"},
        "name": name,
        "id" : child{"id"},
        "eci": channel{"id"},
@@ -698,73 +690,42 @@ ruleset io.picolabs.wrangler {
       uniqueName = uniquePicoName(name).klog("uniqueName ");
       rids = event:attr("rids");
       _rids = (rids.typeof() == "Array" => rids | rids.split(re#;#))
-               .append(config{"os_rids"});
     }
     if(uniqueName) then every {
-      createPico(name,_new_rids) setting(child)
-
+      createPico(name,_rids) setting(child)
     }
     fired {
       ent:children := ent:children.defaultsTo([]).append(child);
-      raise wrangler event "child_initialized"
-        attributes event:attrs().put(["child"],child);
-      name.klog("Pico created with name: ");
+      /*raise wrangler event "child_initialized"
+        attributes event:attrs().put(["child"],child);*/ // role of the child
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");
     }
   }
 
-  rule send_init_events_to_child{
-    select when wrangler child_init_events_needed
-    foreach event:attr("child"){"prototype"}{"initialization_events"} setting(event_info)
-    pre{
-      a = event_info.klog("event_info: ")
-      child = event:attr("child");
-      domain = event_info.domain;
-      type = event_info.type;
-      attrs = event_info.attrs;
-    }
-    if true then
-      event:send({
-                  "eci": child.eci.klog("Raising event to: "),
-                  "eid": "initialize",
-                  "domain": domain,
-                  "type": type,
-                  "attrs": attrs
-                  })
-    fired{
-    }
-  }
-
-  rule childComplete{
-    select when wrangler child_completed
-    pre{
-      updated_children = updateChildCompletion(event:attrs("name"));
-    }
-    noop()
-    fired{
-      ent:children := updated_children;
-    }
-  }
-
-  rule initializePrototype {
-    select when wrangler create_prototype //raised from parent in new child
+  rule child_created {
+    select when wrangler child_created
     pre {
-      child = event:attr("child");
-      parent = event:attr("parent").klog("parent: ");
-      prototype = event:attr("prototype").klog("Initializing prototype using: ");
+      parent_eci    = event:attr("parent_eci")
+      name          = event:attr("name")
+      id            = event:attr("id")
+      eci           = event:attr("eci")
+      rs_attrs      = event:attr("rs_attrs")
     }
-    if true then
-      noop()
-    always {
-      ent:creation_prototype := prototype;
-      ent:name := child.name;
-      ent:id := child.id;
-      ent:eci := child.eci;
-      ent:parent := parent;
-      raise wrangler event "prototype_setup"
-            attributes event:attrs();
+    if true
+    then
+      event:send(
+        { "eci": parent_eci,
+          "domain": "wrangler", "type": "child_initialized",
+          "attrs": event:attrs() })
+    fired {
+      ent:parent_eci := parent_eci;
+      ent:name := name;
+      ent:id := id;
+      ent:eci := eci;
+      raise visual event "update"
+        attributes rs_attrs.put("dname",name)
     }
   }
 
@@ -813,7 +774,16 @@ ruleset io.picolabs.wrangler {
         attributes event:attrs().put(["results"],results) on final;
     }
   }
-
+  rule delete_child_testing {
+    select when wrangler child_delete
+    pre {
+      child_id = event:attr("id");
+    }
+    if true then
+      engine:removePico(child_id)
+    fired{
+    }
+  }
 //Child deletion (child requesting parent for deletion)------------------
   rule begin_deletion_request{//in child
     select when wrangler deletion_requested

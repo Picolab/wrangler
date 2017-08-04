@@ -1,4 +1,4 @@
-ruleset io.picolabs.wrangler.PDS {
+ruleset io.picolabs.pds {
   meta {
     name "PDS"
     description <<

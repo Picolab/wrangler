@@ -44,10 +44,64 @@ ruleset io.picolabs.wrangler {
 // ***                                      FUNCTIONS                                       ***
 // ***                                                                                      ***
 // ********************************************************************************************
-    getPrototypes = function(){
-      common:prototypes().prototypes
-    }
 
+  config= {"os_rids": ["io.picolabs.PDS","io.picolabs.wrangler",]}
+  /*
+       skyQuery is used to programmatically call function inside of other picos from inside a rule.
+       parameters;
+          eci - The eci of the pico which contains the function to be called
+          mod - The ruleset ID or alias of the module  
+          func - The name of the function in the module 
+          params - The parameters to be passed to function being called
+          optional parameters 
+          _host - The host of the pico engine being queried. 
+                  Note this must include protocol (http:// or https://) being used and port number if not 80.
+                  For example "http://localhost:8080", which also is the default.
+          _path - The sub path of the url which does not include mod or func.
+                  For example "/sky/cloud/", which also is the default.
+          _root_url - The entire url except eci, mod , func.
+                  For example, dependent on _host and _path is 
+                  "http://localhost:8080/sky/cloud/", which also is the default.  
+       skyQuery on success (if status code of request is 200) returns results of the called function. 
+       skyQuery on failure (if status code of request is not 200) returns a Map of error information which contains;
+               error - general error message.
+               httpStatus - status code returned from http get command.
+               skyQueryError - The value of the "error key", if it exist, of the function results.   
+               skyQueryErrorMsg - The value of the "error_str", if it exist, of the function results.
+               skyQueryReturnValue - The function call results.
+     */
+     skyQuery = function(eci, mod, func, params,_host,_path,_root_url) { // path must start with "/"", _host must include protocol(http:// or https://)
+       //.../sky/cloud/<eci>/<rid>/<name>?name0=value0&...&namen=valuen
+       createRootUrl = function (_host,_path){
+         host = _host || meta:host;
+         path = _path || "/sky/cloud/";
+         root_url = host+path;
+         root_url
+       };
+       root_url = _root_url || createRootUrl(_host,_path);
+       web_hook = root_url + eci + "/"+mod+"/" + func;
+
+       response = http:get(web_hook.klog("URL"), {}.put(params)).klog("response ");
+       status = response{"status_code"};// pass along the status 
+       error_info = {
+         "error": "sky query request was unsuccesful.",
+         "httpStatus": {
+             "code": status,
+             "message": response{"status_line"}
+         }
+       };
+       // clean up http return
+       response_content = response{"content"}.decode();
+       response_error = (response_content.typeof() == "Map" && (not response_content{"error"}.isnull())) => response_content{"error"} | 0;
+       response_error_str = (response_content.typeof() == "Map" && (not response_content{"error_str"}.isnull())) => response_content{"error_str"} | 0;
+       error = error_info.put({"skyQueryError": response_error,
+                               "skyQueryErrorMsg": response_error_str, 
+                               "skyQueryReturnValue": response_content});
+       is_bad_response = (response_content.isnull() || (response_content == "null") || response_error || response_error_str);
+       // if HTTP status was OK & the response was not null and there were no errors...
+       (status == 200 && not is_bad_response ) => response_content | error
+     }
+     
     //returns a list of children that are contained in a given subtree at the starting child. No ordering is guaranteed in the result
     gatherSubtree = function(child){
       pico_array = [child.klog("child at start: ")];
@@ -637,18 +691,16 @@ ruleset io.picolabs.wrangler {
 // ********************************************************************************************
   //-------------------- Picos initializing  ----------------------
   rule createChild {
-    select when wrangler child_creation
+    select when wrangler child_creation or wrangler new_child_request
     pre {
       name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
       uniqueName = uniquePicoName(name).klog("uniqueName ");
       rids = event:attr("rids");
-      _rids = rids.typeof() == "String" => rids| rids.split(re#;#);
-      //send this info back to whatever ruleset raised it
-      //return_attrs = event:attrs().put(["updated_info"], children);
-      //return_rid = event:attr("return_rid") || "";//what ruleset to send the new pico's info back to
+      _rids = (rids.typeof() == "Array" => rids | rids.split(re#;#))
+               .append(config{"os_rids"});
     }
     if(uniqueName) then every {
-      createPico(name,_rids) setting(child)
+      createPico(name,_new_rids) setting(child)
 
     }
     fired {

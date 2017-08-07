@@ -16,13 +16,13 @@ ruleset io.picolabs.wrangler {
     provides skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
+    children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults
     shares skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, channelAttributes, channelPolicy, channelType, //channel
-    children, parent, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
+    children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
     eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
     standardError, decodeDefaults, __testing
   }
@@ -315,25 +315,12 @@ ruleset io.picolabs.wrangler {
         "eci_type" : type,
         "attributes" : {"channel_attributes" : attrs},
         "policy" : decoded_policy//{"policy" : policy}
-      }*/
-
-    createChannel = function(options, _id){
-      id = _id || ent:id;
-      //channel = engine:newChannel({ "name":options.name, "type": options.eci_type, "pico_id": id });
-      channel = engine:newChannel(id, options.name, options.eci_type);
-      channel_rec = {"name": channel.name,
-                    "eci": channel.id,
-                    "type": channel.type,
-                    "attributes": options.attributes
-                    }.klog("new channel");
-      all_channels = ent:channels => ent:channels | []; // [] if first channel
-      updated_channel = all_channels.append(channel_rec).klog("new channel list: ");
-      {
-       "channel": channel,
-       "updated_channels": updated_channel
       }
-      //send_directive("created channel #{new_eci}")
-    }
+
+    createChannel = defaction(id , name, type){
+      engine:newChannel(id , name, type) setting(channel)
+      send_directive("created channel #{new_eci}")
+    }*/
 // ********************************************************************************************
 // ***                                      Picos                                           ***
 // ********************************************************************************************
@@ -351,7 +338,7 @@ ruleset io.picolabs.wrangler {
   }
 
   parent_eci = function() {
-    _parent = ent:parent_eci.defaultsTo({});
+    _parent = ent:parent_eci.defaultsTo("");
     {
       "parent" :  _parent
     }.klog("parent :")
@@ -386,7 +373,7 @@ ruleset io.picolabs.wrangler {
 
     createPico = defaction(name, rids){
       every{
-        engine:newChannel(meta:picoId, name, "children") setting(parent_eci);// new eci for parent to child
+        engine:newChannel(meta:picoId, name, "children") setting(parent_channel);// new eci for parent to child
         engine:newPico() setting(child);// newpico
         engine:newChannel(child{"id"}, "main", "secret") setting(channel);// new child root eci
         engine:installRuleset(child{"id"},rids.append(config{"os_rids"}));// install child OS
@@ -394,16 +381,25 @@ ruleset io.picolabs.wrangler {
           { "eci": channel{"id"},
             "domain": "wrangler", "type": "child_created",
             "attrs": ({
-              "parent_eci": parent_eci{"id"},
+              "parent_eci": parent_channel{"id"},
              "name": name,
              "id" : child{"id"},
              "eci": channel{"id"},
-             "rids": rids
-            }.put("rs_attrs",event:attrs()))
+             "rids": rids,
+             "rs_attrs":event:attrs()
+            })
             });
+        event:send( // tell child that a ruleset was added
+          { "eci": channel{"id"},
+            "domain": "wrangler", "type": "ruleset_added",
+            "attrs": ({
+             "rids": rids,
+             "rs_attrs":event:attrs()
+            })
+          });
       }
       returns {
-        "parent_eci": parent_eci{"id"},
+        "parent_eci": parent_channel{"id"},
        "name": name,
        "id" : child{"id"},
        "eci": channel{"id"},
@@ -688,16 +684,16 @@ ruleset io.picolabs.wrangler {
     pre {
       name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
       uniqueName = uniquePicoName(name).klog("uniqueName ");
-      rids = event:attr("rids");
+      rids = event:attr("rids").defaultsTo([]);
       _rids = (rids.typeof() == "Array" => rids | rids.split(re#;#))
     }
     if(uniqueName) then every {
       createPico(name,_rids) setting(child)
     }
     fired {
-      ent:children := ent:children.defaultsTo([]).append(child);
-      /*raise wrangler event "child_initialized"
-        attributes event:attrs().put(["child"],child);*/ // role of the child
+      ent:children := ent:children.defaultsTo([]).append(child); // this is bypassed when module is used
+      raise wrangler event "ruleset_added"
+        attributes event:attrs().put({"rids": _rids})
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");

@@ -168,7 +168,7 @@ ruleset io.picolabs.oauth_server {
     select when oauth approve
     pre {
       code = random:uuid()
-      owner_eci = event:attr("owner_eci")
+      owner_id = event:attr("owner_id")
     }
     send_directive("respond", {
       "code": code,
@@ -176,7 +176,7 @@ ruleset io.picolabs.oauth_server {
       "redirect_uri": ent:query{"redirect_uri"}
     })
     fired {
-      ent:codes{code} := { "request": ent:query, "owner_eci": owner_eci };
+      ent:codes{code} := { "request": ent:query, "owner_id": owner_id };
       clear ent:query;
       last
     }
@@ -229,13 +229,13 @@ ruleset io.picolabs.oauth_server {
     pre {
       client_id = ent:client{"client_id"}
       client_rids = (ent:client{"client_rids"}).split(re#;#)
-      owner_eci = ent:code{"owner_eci"};
+      owner_id = ent:code{"owner_id"}.klog("owner_id in oauth_token_access_token");
     }
     every {
-      engine:newChannel(engine:getPicoIDByECI(owner_eci), client_id, "oauth") setting(new_channel) //HEY !!!!! TODO this should use wrangler and not engine!!!
-      engine:installRuleset(engine:getPicoIDByECI(owner_eci),client_rids)
-      event:send( // tell child that a ruleset was added
-        { "eci": owner_eci,
+      engine:newChannel(owner_id, client_id, "oauth") setting(new_channel) //HEY !!!!! TODO this should use wrangler and not engine!!!
+      engine:installRuleset(owner_id,client_rids)
+      event:send(
+        { "eci": new_channel{"id"},
           "domain": "wrangler", "type": "ruleset_added",
           "attrs": ({
            "rids": client_rids

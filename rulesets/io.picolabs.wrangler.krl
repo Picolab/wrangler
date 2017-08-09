@@ -175,7 +175,7 @@ ruleset io.picolabs.wrangler {
 
     installRulesets = defaction(rids){
       every{
-        engine:installRuleset(ent:id, rids) setting(new_ruleset)
+        engine:installRuleset(meta:picoId, rids) setting(new_ruleset)
         send_directive("installed #{rids}")
       }
       returns {}
@@ -513,11 +513,11 @@ ruleset io.picolabs.wrangler {
     if(rids !=  "") then  // should we be valid checking?
       installRulesets(rid_list)
     fired {
-    raise wrangler event "ruleset_added"
-      attributes event:attrs().put({"rids": rid_list});
-     rids.klog(standardOut("success installed rids "));
-     null.klog(">> successfully  >>")
-          }
+      raise wrangler event "ruleset_added"
+        attributes event:attrs().put({"rids": rid_list});
+      rids.klog(standardOut("success installed rids "));
+      null.klog(">> successfully  >>")
+    }
     else {
      null.klog(">> could not install rids #{rids} >>")
     }

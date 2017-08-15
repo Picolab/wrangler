@@ -692,8 +692,6 @@ ruleset io.picolabs.wrangler {
     }
     fired {
       ent:children := ent:children.defaultsTo([]).append(child); // this is bypassed when module is used
-      raise wrangler event "ruleset_added"
-        attributes event:attrs().put({"rids": _rids})
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");

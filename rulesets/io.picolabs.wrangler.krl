@@ -18,7 +18,7 @@ ruleset io.picolabs.wrangler {
     channel, //channel
     children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
     eciFromName,
-    standardError,
+    standardError
     shares skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, //channel
@@ -188,7 +188,9 @@ ruleset io.picolabs.wrangler {
     }
 
     uninstallRulesets = defaction(rids){
-      deleted = engine:uninstallRuleset(meta:picoId, rids)
+      every{
+       engine:uninstallRuleset(meta:picoId, rids)
+      }returns{}
     }
 
 // ********************************************************************************************

@@ -15,16 +15,16 @@ ruleset io.picolabs.wrangler {
     logging on
     provides skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
-    channel, channelAttributes, channelPolicy, channelType, //channel
+    channel, //channel
     children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
-    eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
-    standardError, decodeDefaults
+    eciFromName,
+    standardError,
     shares skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
-    channel, channelAttributes, channelPolicy, channelType, //channel
+    channel, //channel
     children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
-    eciFromName, subscriptionAttributes,checkSubscriptionName, //subscription
-    standardError, decodeDefaults, __testing
+    eciFromName,
+    standardError, __testing
   }
   global {
     __testing = { "queries": [ { "name": "__testing" } ],
@@ -121,7 +121,7 @@ ruleset io.picolabs.wrangler {
     }
 
     picoFromName = function(pico_name){
-      return = ent:children.defaultsTo([]).collect(function(child){
+      return = children(){"children"}.defaultsTo([]).collect(function(child){
                                               (child{"name"} ==  pico_name) => "target" | "non_targets"
                                             });
       return{"target"}.head().defaultsTo("Error")//no pico exists for given name
@@ -136,7 +136,6 @@ ruleset io.picolabs.wrangler {
 
       every {
         engine:removePico(child_to_delete{"id"})
-        send_directive("Deleting child", {"message": "Deleting pico with the given name: "+pico_name})
       }
       returns
       {
@@ -155,14 +154,14 @@ ruleset io.picolabs.wrangler {
 // ********************************************************************************************
 // ***                                      Rulesets                                        ***
 // ********************************************************************************************
-    rulesets = function() {
+    registeredRulesets = function() {
       eci = meta:eci;
       rids = engine:listAllEnabledRIDs();
       {
-
         "rids"     : rids
-      }.klog("rulesets :")
+      }.klog("registeredRulesets :")
     }
+
     rulesetsInfo = function(_rids) {//takes an array of rids as parameter // can we write this better???????
       //check if its an array vs string, to make this more robust.
       rids = ( _rids.typeof() == "Array" ) => _rids | ( _rids.typeof() == "String" ) => _rids.split(";") | "" ;
@@ -173,43 +172,44 @@ ruleset io.picolabs.wrangler {
       }.klog("rulesetsInfo :")
     }
 
+    installedRulesets = function() {
+      eci = meta:eci;
+      rids = engine:listInstalledRIDs();
+      {
+        "rids"     : rids
+      }.klog("installedRulesets :")
+    }
+
     installRulesets = defaction(rids){
       every{
         engine:installRuleset(meta:picoId, rids) setting(new_ruleset)
-        send_directive("installed #{rids}")
       }
       returns {}
     }
 
     uninstallRulesets = defaction(rids){
-      deleted = engine:uninstallRuleset(ent:id, rids)
-      send_directive("uninstalled #{rids} in pico #{ent:id}")
+      deleted = engine:uninstallRuleset(meta:picoId, rids)
     }
 
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ********************************************************************************************
     nameFromEci = function(eci){ // internal function call
-      results = channel(eci);
-      channel_single = results{"channels"};
-      channel_single{"name"}
+      channel = channel(eci){"channels"};
+      channel{"name"}
     }
     eciFromName = function(name){
-      results = channel(name);
-      channel_single = results{"channels"};
-      channel_single{"eci"}
+      channel = channel(name){"channels"};
+      channel{"eci"}
     }
+    // will not work .........
     alwaysEci = function(value){   // always return a eci wether given a eci or name
       eci = (value.match(re#(^(([A-Z]|\d)+-)+([A-Z]|\d)+$)#)) =>
               value |
               eciFromName(value);
       eci
     }
-    lastCreatedEci = function(){
-      channel = ent:lastCreatedEci;
-      eci = channel{"cid"};
-      eci
-    }
+
     // takes name or eci as id returns single channel . needed for backwards compatability
     channel = function(id,collection,filtered) {
       eci = meta:eci;
@@ -247,80 +247,14 @@ ruleset io.picolabs.wrangler {
         "channels" : results
       }.klog("channels: ")
     }
-    channelAttributes = function(eci,name) {
-      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo("","no name or eci provided"),"no eci going with name") ;
-      results = pci:get_eci_attributes(Eci
-        ).defaultsTo("error",standardError("get_eci_attributes")); // list of ECIs assigned to userid
-      {
-        "attributes" : results
-      }.klog("attributes")
-    }
-    channelPolicy = function(eci,name) {
-      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo("","no name or eci provided"),"no eci going with name") ;
-      results = {}; //pci:get_eci_policy(Eci).defaultsTo("error",standardError("undefined")); // list of ECIs assigned to userid
-      {
-        "policy" : results
-      }.klog("policy")
-    }
-    channelType = function(eci,name) { // old accounts may have different structure as there types, "type : types"
-      Eci = eci.defaultsTo(alwaysEci(name).defaultsTo("","no name or eci provided"),"no eci going with name") ;
-      getType = function(eci) {
-        type = pci:get_eci_type(eci).defaultsTo("error",standardError("undefined"));
-        // this code below belongs higher up in software layer
-        // temp = (type.typeof() ==  "str" ) => type | type.typeof() ==  "array" => type[0] |  type.keys();
-        // type2 = (temp.typeof() ==  "array") => temp[0] | temp;
-        // type2;
-        type
-      };
-      type = getType(Eci);
-      {
-        "type" : type
-      }.klog("type")
-    }
-    updateAttributes = defaction(value, attributes){
-      eci = alwaysEci(value)
-      set_eci = {}//pci:set_eci_attributes(eci, attributes)
-      send_directive("updated channel attributes for #{eci}")
-    }
-    updatePolicy = defaction(value, policy){
-      eci = alwaysEci(value)
-      set_polcy = {}//pci:set_eci_policy(eci, policy) // policy needs to be a map, do we need to cast types?
-      send_directive("updated channel policy for #{eci}")
-    }
-    updateType = defaction(value, type){
-      eci = alwaysEci(value)
-      set_type = {}//pci:set_eci_type(eci, type)
-      send_directive("updated channel type for #{eci}")
-    }
-
-//    deleteChannel = defaction(value) {
-//      //eci = alwaysEci(value)
-//      self = myself()
-//      deleteeci = engine:removeChannel({
-//        "pico_id": self{"id"},
-//        "eci": eci.klog("eci to be removed")
-//      })
-//      send_directive("deleted channel #{eci}")
-//    }
 
     deleteChannel = defaction(eci) {
-      every {
         engine:removeChannel(eci)
-        send_directive("deleted channel #{eci}")
-      }
     }
-
-    /*options = {
-        "name" : channel_name,
-        "eci_type" : type,
-        "attributes" : {"channel_attributes" : attrs},
-        "policy" : decoded_policy//{"policy" : policy}
-      }
 
     createChannel = defaction(id , name, type){
       engine:newChannel(id , name, type) setting(channel)
-      send_directive("created channel #{new_eci}")
-    }*/
+    }
 // ********************************************************************************************
 // ***                                      Picos                                           ***
 // ********************************************************************************************
@@ -329,7 +263,6 @@ ruleset io.picolabs.wrangler {
   }
 
   children = function(name) {
-
     _children = ent:children.defaultsTo([]);
     _return = name => _children.filter(function(child){child{"name"} == name}) | _children;
     {
@@ -416,36 +349,13 @@ ruleset io.picolabs.wrangler {
       updated_children
     }
 
-
-   /* randomName = function(namespace){
-        n = 5;
-        array = (0).range(n).map(function(n){
-          (random:word());
-          });
-        names= array.collect(function(name){
-          (checkName( namespace +":"+ name )) => "unique" | "taken";
-        });
-        name = names{"unique"} || [];
-
-        unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
-        (namespace +":"+ unique_name);
-    }*/
-    // optimize by taking a list of names, to prevent multiple network calls to channels when checking for unique name
     checkName = function(name){
-          chan = channel(name, null, null);
-          //channels = channels(); worse bug ever!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          /*{
-          "last_active": 1426286486,
-          "name": "Oauth Developer ECI",
-          "type": "OAUTH",
-          "eci": "158E6E0C-C9D2-11E4-A556-4DDC87B7806A",
-          "attributes": null}
-          */
-          chs = chan{"channels"}.defaultsTo({},standardOut("no channel found"));
-          encoded_chan = chs.encode().klog("encode chs :");
+          chan = channel(name, null, null){"channels"}.defaultsTo({},standardOut("no channel found"));
+          encoded_chan = chan.encode().klog("encode chan :");
           return = encoded_chan.match(re#{}#);
           (return)
     }
+    // optimize by taking a list of names, to prevent multiple network calls to channels when checking for unique name
 
     randomPicoName = function(){
         n = 5;
@@ -486,13 +396,7 @@ ruleset io.picolabs.wrangler {
       error = ">> error: " + message + " >>";
       error
     }
-    decodeDefaults = function(value) {
-      //decoded_value = value.decode().klog("decoded_value: ");
-      //error = decoded_value{"error"};
-      //return = (error.typeof() ==  "array") =>  error[0].defaultsTo(decoded_value,"decoded: ") | decoded_value;
-      //return.klog("return: ")
-      value
-    }
+
   }
   // string or array return array
   // string or array return string
@@ -515,25 +419,22 @@ ruleset io.picolabs.wrangler {
     fired {
       raise wrangler event "ruleset_added"
         attributes event:attrs().put({"rids": rid_list});
-      rids.klog(standardOut("success installed rids "));
-      null.klog(">> successfully  >>")
+      rids.klog(standardOut("successfully installed rids "));
     }
     else {
      null.klog(">> could not install rids #{rids} >>")
     }
   }
+
   rule uninstallRulesets { // should this handle multiple uninstalls ???
     select when wrangler uninstall_rulesets_requested
     pre {
       rids = event:attr("rids").defaultsTo("", ">>  >> ")
       rid_list = rids.typeof() ==  "array" => rids | rids.split(re#;#)
     }
-
       uninstallRulesets(rid_list)
-
     fired {
-      null.klog (standardOut("success uninstalled rids #{rids}"));
-      null.klog(">> successfully  >>")
+      null.klog (standardOut("successfully uninstalled rids #{rids}"));
           }
     else {
       null.klog(">> could not uninstall rids #{rids} >>")
@@ -543,137 +444,35 @@ ruleset io.picolabs.wrangler {
 // ********************************************************************************************
 // ***                                      Channels                                        ***
 // ********************************************************************************************
-  /*  <eci options>
-    name     : <string>        // default is "Generic ECI channel"
-    eci_type : <string>        // default is "PCI"
-    attributes: <array>
-    policy: <map>  */
 
   rule createChannel {
     select when wrangler channel_creation_requested
     pre {
       channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"))
       type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"))
-      attributes = event:attr("attributes").defaultsTo("", standardError("missing event attr attributes"))
-
-      attrs =  decodeDefaults(attributes)
-      // policy = event:attr("policy").defaultsTo("", standardError("missing event attr attributes"))
-      // do we need to check if we need to decode ?? what would we check?
-      // decoded_policy = policy.decode() || policy //what does .decode() return on failure??
-      options = {
-        "name" : channel_name,
-        "eci_type" : type,
-        "attributes" : {"channel_attributes" : attrs}
-        //,"policy" : decoded_policy//{"policy" : policy}
-      }.klog("options for channel cration");
       check_name = checkName(channel_name);
-      //channel_results = check_name => createChannel(options) | {}
     }
-          // do we need to check the format of name? is it wrangler"s job?
-    if(check_name) then  //channel_name.match(re#\w[\w-]*#)) then
-
-      engine:newChannel(meta:picoId, options{"name"}, options{"eci_type"}) setting(channel);
-
+    if(check_name) then
+      engine:newChannel(meta:picoId, channel_name , type) setting(channel);
     fired {
-     ent:channels := ent:channels.defaultsTo([]).append({"name": channel{"name"},
-                                          "eci": channel{"id"},
-                                          "type": channel{"type"},
-                                          "attributes": options{"attributes"}
-                                         }.klog("new channel"));
-     ent:lastCreatedEci := channel;
-     channel_name.klog(standardOut("success created channels "));
-     null.klog(">> successfully  >>");
+     channel_name.klog(standardOut("successfully created channel "));
       raise wrangler event "channel_created" // event to nothing
-            attributes event:attrs().put(["eci"],lastCreatedEci().klog("lastCreatedEci: ")) // function to access a magic varible set during creation
+            attributes event:attrs().put(["eci"],channel{"id"})
           }
     else {
-      //error warn "douplicate name, failed to create channel"+channel_name;
      null.klog(">> could not create channels #{channel_name} >>")
           }
     }
-
- // we should add a append / modifie channel attributes rule set.
- //  takes in new and modified values and puts them in.
-  rule updateChannelAttributes {
-    select when wrangler update_channel_attributes_requested
-    pre {
-      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
-      attributes = event:attr("attributes").defaultsTo("error", standardError("undefined"))
-      //attrs = attributes.split(re#;/)
-      attrs =  decodeDefaults(attributes)
-      attrs_two = {"channel_attributes" : attrs}
-      //channels = Channel();
-    }
-    if(value !=  "" && attributes !=  "error") then  // check?? redundant????
-      updateAttributes(value.klog("value: "),attrs_two)
-
-    fired {
-     value.klog (standardOut("success updated channel #{value} attributes : "));
-     null.klog(">> successfully >>")
-    }
-    else {
-     null.klog(">> could not update channel #{value} attributes >>")
-    }
-  }
-
-  rule updateChannelPolicy {
-    select when wrangler update_channel_policy_requested // channel_policy_update_requested
-    pre {
-      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci &| name")), standardError("looking for name instead of eci."))
-      policy_string = event:attr("policy").defaultsTo("error", standardError("undefined"))// policy needs to be a map, do we need to cast types?
-      policy = decodeDefaults(policy_string)
-    }
-    if(value !=  "" && policy !=  "error") then  // check?? redundant?? whats better??
-      updatePolicy(value.klog("value: "), policy)
-
-    fired {
-     null.klog (standardOut("success updated channel #{value} policy"));
-     null.klog(">> successfully  >>")
-    }
-    else {
-     null.klog(">> could not update channel #{value} policy >>")
-    }
-
-  }
-
-
-  rule updateChannelType {
-    select when wrangler update_channel_type_requested
-    pre {
-      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
-      type = event:attr("channel_type").defaultsTo("error", standardError("undefined"))// policy needs to be a map, do we need to cast types?
-    }
-    if(eci !=  "" && type !=  "error") then  // check?? redundant?? whats better??
-      updateType(value.klog("value: "), type)
-
-    fired {
-     null.klog (standardOut("success updated channel #{eci} type"));
-     null.klog(">> successfully  >>")
-    }
-    else {
-     null.klog(">> could not update channel #{eci} type >>")
-    }
-
-  }
 
   rule deleteChannel {
     select when wrangler channel_deletion_requested
     pre {
       value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
-    }
-
-      deleteChannel(value.klog("value: "))
-
+    } deleteChannel(value)
     fired {
-     value.klog (standardOut("success deleted channel "));
-     null.klog(">> successfully  >>");
+     value.klog (standardOut("successfully deleted channel "));
     }
-   // else { -------------------------------------------// can we reach this point?
-    // null.klog(">> could not delete channel #{value} >>");
-   //    }
   }
-
-
 
 // ********************************************************************************************
 // ***                                      Picos                                           ***
@@ -692,6 +491,7 @@ ruleset io.picolabs.wrangler {
     }
     fired {
       ent:children := ent:children.defaultsTo([]).append(child); // this is bypassed when module is used
+      child.klog("successfully created child ");
     }
     else{
       name.klog(" duplicate Pico name, failed to create pico named ");

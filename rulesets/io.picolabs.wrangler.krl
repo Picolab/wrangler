@@ -334,11 +334,10 @@ ruleset io.picolabs.wrangler {
           });
       }
       returns {
-        "parent_eci": parent_channel{"id"},
+       "parent_eci": parent_channel{"id"},
        "name": name,
        "id" : child{"id"},
-       "eci": channel{"id"},
-       "rids": rids
+       "eci": channel{"id"}
       }
     }
 

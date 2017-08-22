@@ -16,15 +16,14 @@ ruleset io.picolabs.wrangler {
     provides skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, //channel
-    children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
-    eciFromName,
-    standardError
+    children, parent_eci, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico, myself,
+    eciFromName
     shares skyQuery ,
     rulesets, rulesetsInfo, installRulesets, uninstallRulesets, //ruleset
     channel, //channel
-    children, parent_eci, attributes, prototypes, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,
+    children, parent_eci, name, profile, pico, uniquePicoName, randomPicoName, createChild, deleteChild, pico,  myself,
     eciFromName,
-    standardError, __testing
+     __testing
   }
   global {
     __testing = { "queries": [ { "name": "__testing" } ],
@@ -233,7 +232,7 @@ ruleset io.picolabs.wrangler {
                 "name";
         channel_list = chans;
         filtered_channels = channel_list.filter(function(channel){(channel{attribute}== value)});
-        result = filtered_channels.head().defaultsTo({},standardError("no channel found, by .head()"));
+        result = filtered_channels.head().defaultsTo({},"no channel found, by .head()");
         (result)
       };
       type = function(chan){ // takes a chans
@@ -351,7 +350,7 @@ ruleset io.picolabs.wrangler {
     }
 
     checkName = function(name){
-          chan = channel(name, null, null){"channels"}.defaultsTo({},standardOut("no channel found"));
+          chan = channel(name, null, null){"channels"}.defaultsTo({},"no channel found");
           encoded_chan = chan.encode().klog("encode chan :");
           return = encoded_chan.match(re#{}#);
           (return)
@@ -368,7 +367,7 @@ ruleset io.picolabs.wrangler {
         });
         name = names{"unique"} || [];
 
-        unique_name =  name.head().defaultsTo("",standardError("unique name failed"));
+        unique_name =  name.head().defaultsTo("","unique name failed");
         (unique_name).klog("randomPicoName : ")
     }
 
@@ -382,26 +381,7 @@ ruleset io.picolabs.wrangler {
           (names).klog("uniquePicoName : ")
 
     }
-
-
-// ********************************************************************************************
-// ***                                      Utilities                                       ***
-// ********************************************************************************************
-  //-------------------- error handling ----------------------
-    standardOut = function(message) {
-      msg = ">> " + message + " results: >>";
-      msg
-    }
-
-    standardError = function(message) {
-      error = ">> error: " + message + " >>";
-      error
-    }
-
   }
-  // string or array return array
-  // string or array return string
-
 // ********************************************************************************************
 // ***                                                                                      ***
 // ***                                      Rulesets                                        ***
@@ -411,7 +391,7 @@ ruleset io.picolabs.wrangler {
   rule installRulesets {
     select when wrangler install_rulesets_requested
     pre {
-      rids = event:attr("rids").defaultsTo("",standardError(" "))
+      rids = event:attr("rids").defaultsTo(""," ")
       rid_list = (rids.typeof() ==  "Array") => rids | rids.split(re#;#)
       b = rid_list.klog("attr Rids")
     }
@@ -420,7 +400,7 @@ ruleset io.picolabs.wrangler {
     fired {
       raise wrangler event "ruleset_added"
         attributes event:attrs().put({"rids": rid_list});
-      rids.klog(standardOut("successfully installed rids "));
+      rids.klog("successfully installed rids ");
     }
     else {
      null.klog(">> could not install rids #{rids} >>")
@@ -435,7 +415,7 @@ ruleset io.picolabs.wrangler {
     }
       uninstallRulesets(rid_list)
     fired {
-      null.klog (standardOut("successfully uninstalled rids #{rids}"));
+      null.klog ("successfully uninstalled rids #{rids}");
           }
     else {
       null.klog(">> could not uninstall rids #{rids} >>")
@@ -449,14 +429,14 @@ ruleset io.picolabs.wrangler {
   rule createChannel {
     select when wrangler channel_creation_requested
     pre {
-      channel_name = event:attr("channel_name").defaultsTo("", standardError("missing event attr channels"))
-      type = event:attr("channel_type").defaultsTo("Unknown", standardError("missing event attr channel_type"))
+      channel_name = event:attr("channel_name").defaultsTo("", "missing event attr channels")
+      type = event:attr("channel_type").defaultsTo("Unknown", "missing event attr channel_type")
       check_name = checkName(channel_name);
     }
     if(check_name) then
       engine:newChannel(meta:picoId, channel_name , type) setting(channel);
     fired {
-     channel_name.klog(standardOut("successfully created channel "));
+     channel_name.klog("successfully created channel ");
       raise wrangler event "channel_created" // event to nothing
             attributes event:attrs().put(["eci"],channel{"id"})
           }
@@ -468,10 +448,10 @@ ruleset io.picolabs.wrangler {
   rule deleteChannel {
     select when wrangler channel_deletion_requested
     pre {
-      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", standardError("missing event attr eci or name")), standardError("looking for name instead of eci."))
+      value = event:attr("eci").defaultsTo(event:attr("name").defaultsTo("", "missing event attr eci or name"), "looking for name instead of eci.")
     } deleteChannel(value)
     fired {
-     value.klog (standardOut("successfully deleted channel "));
+     value.klog ("successfully deleted channel ");
     }
   }
 
@@ -482,7 +462,7 @@ ruleset io.picolabs.wrangler {
   rule createChild {
     select when wrangler child_creation or wrangler new_child_request
     pre {
-      name = event:attr("name");//.defaultsTo(randomPicoName(),standardError("missing event attr name, random word used instead."));
+      name = event:attr("name");//.defaultsTo(randomPicoName(),"missing event attr name, random word used instead.");
       uniqueName = uniquePicoName(name).klog("uniqueName ");
       rids = event:attr("rids").defaultsTo([]);
       _rids = (rids.typeof() == "Array" => rids | rids.split(re#;#))
@@ -529,7 +509,7 @@ ruleset io.picolabs.wrangler {
   rule delete_child_name_check {
     select when wrangler child_deletion
     pre {
-      pico_name = event:attr("pico_name").defaultsTo("", standardError("missing pico name for deletion"));
+      pico_name = event:attr("pico_name").defaultsTo("", "missing pico name for deletion");
     }
     if not hasChild(pico_name) then
       send_directive("Invalid deletion", {"err": "No child of this pico has the given name: "+pico_name})
